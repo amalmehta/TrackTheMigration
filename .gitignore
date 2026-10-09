@@ -1,0 +1,5 @@
+# Raw downloads from the Movebank Data Repository (~300 MB); rebuilt by `npm run fetch`
+data/raw/
+node_modules/
+.DS_Store
+.claude/

@@ -1,0 +1,479 @@
+{
+  "generated": "2026-10-09T21:07:10.744Z",
+  "groups": {
+    "land": "Land mammals",
+    "marine": "Marine animals",
+    "birds": "Birds"
+  },
+  "species": [
+    {
+      "id": "wildebeest",
+      "name": "Wildebeest",
+      "scientific": "Connochaetes taurinus",
+      "group": "land",
+      "region": "Southern Kenya: Mara, Athi-Kaputiei and Amboseli",
+      "blurb": "White-bearded wildebeest from three Kenyan populations fitted with GPS collars to compare how far and how directly each one moves across grasslands crossed by roads, fences and towns.",
+      "groupName": "Land mammals",
+      "source": {
+        "title": "Data from: Comparison of movement strategies of three populations of white-bearded wildebeest",
+        "paperCitation": "Stabach JA, Hughey LF, Crego RD, Fleming CH, Hopcraft JGC, Leimgruber P, Morrison TA, Ogutu JO, Reid RS, Worden JS, Boone RB. 2022. Increasing anthropogenic disturbance restricts wildebeest movement across East African grazing systems. Front Ecol Evol. doi:10.3389/fevo.2022.846171",
+        "authors": [
+          "Stabach, Jared A.",
+          "Hughey, Lacey F.",
+          "Reid, Robin S.",
+          "Worden, Jeffrey S.",
+          "Leimgruber, Peter",
+          "Boone, Randall B."
+        ],
+        "issued": "2020-12-01",
+        "doi": "10.5441/001/1.h0t27719",
+        "doiUrl": "https://doi.org/10.5441/001/1.h0t27719",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1095",
+        "dataCitation": "Stabach, Jared A.; Hughey, Lacey F.; Reid, Robin S.; Worden, Jeffrey S.; Leimgruber, Peter; Boone, Randall B. (2020) Data from: Comparison of movement strategies of three populations of white-bearded wildebeest. Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/1ff949f2-3df4-45fb-ac16-bbf1ddf32108/content"
+      },
+      "stats": {
+        "rawFixes": 279082,
+        "usableFixes": 279082,
+        "animalsInStudy": 36,
+        "animalsShown": 30,
+        "pointsShown": 32206,
+        "start": "2010-05-25T18:00:00.000Z",
+        "end": "2013-01-15T14:00:00.000Z",
+        "medianKm": 1373,
+        "longestKm": 3332,
+        "bbox": [
+          34.816,
+          -2.941,
+          37.685,
+          -1.119
+        ]
+      },
+      "processing": {
+        "maxKmh": 20,
+        "thinHours": 12,
+        "maxGapHours": 120,
+        "maxAnimals": 30,
+        "maxPoints": 1500
+      }
+    },
+    {
+      "id": "zebra",
+      "name": "Plains Zebra",
+      "scientific": "Equus quagga (burchellii)",
+      "group": "land",
+      "region": "Northern Botswana: Okavango Delta to Makgadikgadi",
+      "blurb": "Burchell's zebra crossing between the Okavango Delta and the Makgadikgadi grasslands as the rains arrive.",
+      "groupName": "Land mammals",
+      "source": {
+        "title": "Data from: In search of greener pastures: using satellite images to predict the effects of environmental change on zebra migration",
+        "paperCitation": "Bartlam-Brooks HLA, Beck PSA, Bohrer G, Harris S (2013) In search of greener pastures—using satellite images to predict the effects of environmental change on zebra migration. Journal of Geophysical Research: Biogeosciences v 188, p 1–11. doi:10.1002/jgrg.20096",
+        "authors": [
+          "Bartlam-Brooks, Hattie L.A.",
+          "Harris, Stephen"
+        ],
+        "issued": "2013-08-01",
+        "doi": "10.5441/001/1.f3550b4f",
+        "doiUrl": "https://doi.org/10.5441/001/1.f3550b4f",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.342",
+        "dataCitation": "Bartlam-Brooks, Hattie L.A.; Harris, Stephen (2013) Data from: In search of greener pastures: using satellite images to predict the effects of environmental change on zebra migration. Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/9672ab98-93db-4943-bbb0-ef1a9435545d/content"
+      },
+      "stats": {
+        "rawFixes": 53794,
+        "usableFixes": 53776,
+        "animalsInStudy": 7,
+        "animalsShown": 7,
+        "pointsShown": 5960,
+        "start": "2007-10-25T00:00:00.000Z",
+        "end": "2009-06-01T15:00:00.000Z",
+        "medianKm": 2341,
+        "longestKm": 2991,
+        "bbox": [
+          23.437,
+          -20.803,
+          25.353,
+          -19.213
+        ]
+      },
+      "processing": {
+        "maxKmh": 20,
+        "thinHours": 6,
+        "maxGapHours": 120,
+        "maxAnimals": 30,
+        "maxPoints": 1500
+      }
+    },
+    {
+      "id": "mule-deer",
+      "name": "Mule Deer",
+      "scientific": "Odocoileus hemionus",
+      "group": "land",
+      "region": "Western Wyoming, USA",
+      "blurb": "GPS-collared mule deer from the Sublette herd, moving each spring and autumn between low sagebrush winter range and mountain summer range.",
+      "groupName": "Land mammals",
+      "source": {
+        "title": "Data from: Study \"Wyoming Sublette Mule Deer (2018-2020)\"",
+        "paperCitation": "",
+        "authors": [
+          "Wilde, Luke",
+          "Monteith, Kevin L.",
+          "Kauffman, Matthew J."
+        ],
+        "issued": "2026-05-21",
+        "doi": "10.5441/001/1.708",
+        "doiUrl": "https://doi.org/10.5441/001/1.708",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.3619",
+        "dataCitation": "Wilde, Luke; Monteith, Kevin L.; Kauffman, Matthew J. (2026) Data from: Study \"Wyoming Sublette Mule Deer (2018-2020)\". Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/de7b956a-f5b6-4727-a2cc-a119a1217a68/content"
+      },
+      "stats": {
+        "rawFixes": 948632,
+        "usableFixes": 948632,
+        "animalsInStudy": 135,
+        "animalsShown": 40,
+        "pointsShown": 40249,
+        "start": "2018-01-01T07:00:00.000Z",
+        "end": "2021-01-01T06:00:00.000Z",
+        "medianKm": 1578,
+        "longestKm": 2663,
+        "bbox": [
+          -111.355,
+          41.665,
+          -108.382,
+          44.365
+        ]
+      },
+      "processing": {
+        "maxKmh": 20,
+        "thinHours": 24,
+        "maxGapHours": 120,
+        "maxAnimals": 40,
+        "maxPoints": 1100
+      }
+    },
+    {
+      "id": "blue-whale",
+      "name": "Blue Whale",
+      "scientific": "Balaenoptera musculus",
+      "group": "marine",
+      "region": "Eastern North Pacific: California to the Costa Rica Dome",
+      "blurb": "Argos-tagged blue whales off California heading south in winter to Baja California and the Costa Rica Dome, then north again to feed.",
+      "groupName": "Marine animals",
+      "source": {
+        "title": "Data from: Behavioural estimation of blue whale movements in the Northeast Pacific from state-space model analysis of satellite tracks",
+        "paperCitation": "Bailey H, Mate BR, Palacios DM, Irvine L, Bograd SJ, Costa DP (2009) Behavioural estimation of blue whale movements in the Northeast Pacific from state-space model analysis of satellite tracks. Endangered Species Research 10: 93–106. doi:10.3354/esr00239",
+        "authors": [
+          "Mate, Bruce R.",
+          "Palacios, Daniel M.",
+          "Irvine, Ladd M.",
+          "Follett, Tomas M."
+        ],
+        "issued": "2019-02-08",
+        "doi": "10.5441/001/1.5ph88fk2",
+        "doiUrl": "https://doi.org/10.5441/001/1.5ph88fk2",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.837",
+        "dataCitation": "Mate, Bruce R.; Palacios, Daniel M.; Irvine, Ladd M.; Follett, Tomas M. (2019) Data from: Behavioural estimation of blue whale movements in the Northeast Pacific from state-space model analysis of satellite tracks. Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/bab61b80-771a-4568-bfb4-41ff356ee8c6/content"
+      },
+      "stats": {
+        "rawFixes": 16249,
+        "usableFixes": 5783,
+        "animalsInStudy": 143,
+        "animalsShown": 40,
+        "pointsShown": 2752,
+        "start": "1995-09-18T23:24:00.000Z",
+        "end": "2009-04-10T00:18:00.000Z",
+        "medianKm": 6525,
+        "longestKm": 14583,
+        "bbox": [
+          -149.3,
+          6.37,
+          -89.941,
+          53.118
+        ]
+      },
+      "processing": {
+        "maxKmh": 15,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 800
+      }
+    },
+    {
+      "id": "humpback-whale",
+      "name": "Humpback Whale",
+      "scientific": "Megaptera novaeangliae",
+      "group": "marine",
+      "region": "Australia's east coast to the Southern Ocean",
+      "blurb": "East Australian humpbacks tagged on their southward and northward migrations and on Antarctic feeding grounds.",
+      "groupName": "Marine animals",
+      "source": {
+        "title": "Data from: Australia’s east coast humpback whales: satellite tag derived movements on breeding grounds, feeding grounds and along the northern and southern migration.",
+        "paperCitation": "Andrews-Goff V, Gales N, Childerhouse SJ, Laverick SM, Polanowski AM, Double MC. 2023. Australia’s east coast humpback whales: satellite tag derived movements on breeding grounds, feeding grounds and along the northern and southern migration. Biodivers Data J. 11:e114729. https://doi.org/10.3897/BDJ.11.e114729",
+        "authors": [
+          "Andrews-Goff, Virginia",
+          "Gales, Nick",
+          "Childerhouse, Simon J.",
+          "Laverick, Sarah M.",
+          "Polanowski, Andrea M.",
+          "Double, Michael C."
+        ],
+        "issued": "2023-12-12",
+        "doi": "10.5441/001/1.294",
+        "doiUrl": "https://doi.org/10.5441/001/1.294",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1660",
+        "dataCitation": "Andrews-Goff, Virginia; Gales, Nick; Childerhouse, Simon J.; Laverick, Sarah M.; Polanowski, Andrea M.; Double, Michael C. (2023) Data from: Australia’s east coast humpback whales: satellite tag derived movements on breeding grounds, feeding grounds and along the northern and southern migration.. Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/aca1254b-7574-4677-a4d0-5fc23415859f/content"
+      },
+      "stats": {
+        "rawFixes": 30388,
+        "usableFixes": 25447,
+        "animalsInStudy": 50,
+        "animalsShown": 40,
+        "pointsShown": 1986,
+        "start": "2008-10-24T05:18:00.000Z",
+        "end": "2011-07-27T23:18:00.000Z",
+        "medianKm": 1669,
+        "longestKm": 7563,
+        "bbox": [
+          101.067,
+          -70.025,
+          183.786,
+          -15.825
+        ]
+      },
+      "processing": {
+        "maxKmh": 15,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 800
+      }
+    },
+    {
+      "id": "loggerhead-turtle",
+      "name": "Loggerhead Turtle",
+      "scientific": "Caretta caretta",
+      "group": "marine",
+      "region": "Japan and the North Pacific",
+      "blurb": "Female loggerheads leaving their nesting beaches in Japan for feeding grounds in the East China Sea and the open North Pacific.",
+      "groupName": "Marine animals",
+      "source": {
+        "title": "Data from: Latitudinal cline in the ratio of foraging dichotomy in the North Pacific population of loggerhead turtles revealed a priority conservation area",
+        "paperCitation": "Okuyama J, Watabe A, Takuma S, Tanaka K, Shirai K, Murakami-Sugihara N, Arita M, Fujita K, Nishizawa H, Narazaki T, et al. 2022. Latitudinal cline in the ratio of foraging dichotomy in the North Pacific population of loggerhead turtles revealed a priority conservation area. Divers Distrib. 28(8):1568-1581. doi:10.1111/ddi.13531",
+        "authors": [
+          "Okuyama, Junichi",
+          "Watabe, Akemi",
+          "Takuma, Shunichi",
+          "Tanaka, Kentaro",
+          "Shirai, Kotaro",
+          "Murakami-Sugihara, Naoko",
+          "Arita, Mamiko",
+          "Fujita, Kento",
+          "Nishizawa, Hideaki",
+          "Narazaki, Tomoko",
+          "Yamashita, Yoshiya",
+          "Kameda, Kazunari"
+        ],
+        "issued": "2022-12-22",
+        "doi": "10.5441/001/1.m3c90703",
+        "doiUrl": "https://doi.org/10.5441/001/1.m3c90703",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1350",
+        "dataCitation": "Okuyama, Junichi; Watabe, Akemi; Takuma, Shunichi; Tanaka, Kentaro; Shirai, Kotaro; Murakami-Sugihara, Naoko; Arita, Mamiko; Fujita, Kento; Nishizawa, Hideaki; Narazaki, Tomoko; Yamashita, Yoshiya; Kameda, Kazunari (2022) Data from: Latitudinal cline in the ratio of foraging dichotomy in the North Pacific population of loggerhead turtles revealed a priority conservation area. Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/7045a29d-6034-43ff-8ec8-7ce46c736691/content"
+      },
+      "stats": {
+        "rawFixes": 17360,
+        "usableFixes": 4895,
+        "animalsInStudy": 12,
+        "animalsShown": 12,
+        "pointsShown": 2127,
+        "start": "2015-07-26T03:36:00.000Z",
+        "end": "2019-01-09T02:24:00.000Z",
+        "medianKm": 4540,
+        "longestKm": 14121,
+        "bbox": [
+          122.38,
+          26.181,
+          189.556,
+          41.719
+        ]
+      },
+      "processing": {
+        "maxKmh": 10,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 800
+      }
+    },
+    {
+      "id": "white-stork",
+      "name": "White Stork",
+      "scientific": "Ciconia ciconia",
+      "group": "birds",
+      "region": "Europe and the Middle East to Africa",
+      "blurb": "Satellite-tracked white storks from nine countries, some followed for a decade, flying to Africa by the western route over Gibraltar or the eastern route over the Bosphorus and Israel.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Study \"MPIAB Argos white stork tracking (1991-2017)\"",
+        "paperCitation": "Berthold P, Bossche Wvd, Jakubiec Z, Kaatz C, Kaatz M, Querner U. 2002. Long-term satellite tracking sheds light upon variable migration strategies of White Storks (Ciconia ciconia). J Ornithol. 143. doi:10.1007/BF02465604",
+        "authors": [
+          "Berthold, Peter",
+          "Kaatz, Christoph",
+          "Kaatz, Michael",
+          "Querner, Ulrich",
+          "van den Bossche, Willem",
+          "Chernetsov, Nikita",
+          "Fiedler, Wolfgang",
+          "Wikelski, Martin"
+        ],
+        "issued": "2022-12-26",
+        "doi": "10.5441/001/1.k29d81dh",
+        "doiUrl": "https://doi.org/10.5441/001/1.k29d81dh",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.743",
+        "dataCitation": "Berthold, Peter; Kaatz, Christoph; Kaatz, Michael; Querner, Ulrich; van den Bossche, Willem; Chernetsov, Nikita; Fiedler, Wolfgang; Wikelski, Martin (2022) Data from: Study \"MPIAB Argos white stork tracking (1991-2017)\". Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/f0147626-8366-4b23-9a55-b2a76e75acbc/content"
+      },
+      "stats": {
+        "rawFixes": 222661,
+        "usableFixes": 51362,
+        "animalsInStudy": 204,
+        "animalsShown": 40,
+        "pointsShown": 14805,
+        "start": "1993-07-30T17:24:00.000Z",
+        "end": "2017-01-21T18:18:00.000Z",
+        "medianKm": 19792,
+        "longestKm": 180458,
+        "bbox": [
+          -16.335,
+          -34.161,
+          45.119,
+          54.973
+        ]
+      },
+      "processing": {
+        "maxKmh": 80,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 1200
+      }
+    },
+    {
+      "id": "osprey",
+      "name": "Osprey",
+      "scientific": "Pandion haliaetus",
+      "group": "birds",
+      "region": "North America to South America",
+      "blurb": "Ospreys from Oregon–Washington, Minnesota, New York and New Jersey tracked by satellite to wintering grounds from Mexico to Brazil.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Fall migration routes, timing, and wintering sites of North American ospreys as determined by satellite telemetry",
+        "paperCitation": "Martell MS, Henny CJ, Nye PE, Solensky MJ (2001) Fall migration routes, timing, and wintering sites of North American ospreys as determined by satellite telemetry. The Condor 103(4): 715–724. doi:10.1650/0010-5422(2001)103[0715:FMRTAW]2.0.CO;2",
+        "authors": [
+          "Martell, Mark S.",
+          "Douglas, David"
+        ],
+        "issued": "2019-01-03",
+        "doi": "10.5441/001/1.sv6335t3",
+        "doiUrl": "https://doi.org/10.5441/001/1.sv6335t3",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.736",
+        "dataCitation": "Martell, Mark S.; Douglas, David (2019) Data from: Fall migration routes, timing, and wintering sites of North American ospreys as determined by satellite telemetry. Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/d9c00b17-8072-41a1-a44c-1e7612ce9405/content"
+      },
+      "stats": {
+        "rawFixes": 86383,
+        "usableFixes": 23852,
+        "animalsInStudy": 112,
+        "animalsShown": 40,
+        "pointsShown": 7185,
+        "start": "1995-08-21T13:24:00.000Z",
+        "end": "2002-11-25T08:24:00.000Z",
+        "medianKm": 14367,
+        "longestKm": 54026,
+        "bbox": [
+          -123.276,
+          -18.499,
+          -49.594,
+          53.006
+        ]
+      },
+      "processing": {
+        "maxKmh": 80,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 1200
+      }
+    },
+    {
+      "id": "bar-tailed-godwit",
+      "name": "Bar-tailed Godwit",
+      "scientific": "Limosa lapponica",
+      "group": "birds",
+      "region": "New Zealand, the Yellow Sea and Alaska",
+      "blurb": "Light-level geolocator tracks of godwits from New Zealand: north via the Yellow Sea to Alaska, then a non-stop flight across the Pacific home. Only stopover sites are known, so flights are drawn as straight lines.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Study \"Bar-tailed Godwit geolocator tracking New Zealand 2013-2014\"",
+        "paperCitation": "Lisovski S, Hoye BJ, Conklin JR, Battley PF, Fuller RA, Gosbell KB, Klaassen M, Lee CB, Murray NJ, Bauer S. 2024. Predicting resilience of migratory birds to environmental change. Proc Natl Acad Sci USA. 121(19):e2311146121. https://doi.org/10.1073/pnas.2311146121",
+        "authors": [
+          "Battley, Phil F.",
+          "Lisovski, Simeon",
+          "Conklin, Jesse R."
+        ],
+        "issued": "2024-12-30",
+        "doi": "10.5441/001/1.327",
+        "doiUrl": "https://doi.org/10.5441/001/1.327",
+        "license": "Attribution 4.0 International",
+        "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.3100",
+        "dataCitation": "Battley, Phil F.; Lisovski, Simeon; Conklin, Jesse R. (2024) Data from: Study \"Bar-tailed Godwit geolocator tracking New Zealand 2013-2014\". Movebank Data Repository.",
+        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/c1908560-b8b8-4fc4-8b76-d2fbbf7beee9/content"
+      },
+      "stats": {
+        "rawFixes": 103,
+        "usableFixes": 103,
+        "animalsInStudy": 18,
+        "animalsShown": 18,
+        "pointsShown": 193,
+        "start": "2013-02-12T07:54:00.000Z",
+        "end": "2014-10-26T00:00:00.000Z",
+        "medianKm": 27815,
+        "longestKm": 30155,
+        "bbox": [
+          119.803,
+          -46.47,
+          207,
+          69.109
+        ]
+      },
+      "processing": {
+        "maxKmh": 120,
+        "thinHours": 0,
+        "maxGapHours": 1440,
+        "maxAnimals": 40,
+        "maxPoints": 800
+      }
+    }
+  ]
+}

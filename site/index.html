@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Track the Migration</title>
+  <meta name="description" content="Real animal migrations — wildebeest, zebra, whales, turtles, storks and more — replayed on a 3D globe from published GPS and satellite tracking data.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b3b5c'/%3E%3Cpath d='M6 20c5-9 12-11 20-8' stroke='%2360a5fa' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='26' cy='12' r='3' fill='%23fb923c'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Apply the saved theme before first paint.
+    try {
+      const t = JSON.parse(localStorage.getItem('ttm.settings') || '{}').theme;
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div id="map" aria-label="3D globe showing animal migration tracks"></div>
+
+  <aside id="panel" class="panel" aria-label="Migrations">
+    <header class="panel-head">
+      <div>
+        <h1>Track the Migration</h1>
+        <p class="tagline">Real animal tracks on a 3D globe</p>
+      </div>
+      <div class="head-buttons">
+        <button id="settings-btn" class="icon-btn" title="Settings (⌘,)" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.4zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+        </button>
+        <button id="collapse-btn" class="icon-btn collapse" aria-label="Collapse panel" aria-expanded="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="panel-body">
+      <section id="info" class="info" hidden aria-live="polite"></section>
+      <button id="all-btn" class="species-row all" aria-pressed="true">
+        <span class="swatch-stack" aria-hidden="true"></span>
+        <span class="row-text"><strong>All migrations</strong><small>Every species, one year at a time</small></span>
+      </button>
+      <div id="species-list"></div>
+
+    </div>
+  </aside>
+
+  <div id="timebar" class="timebar" role="group" aria-label="Playback">
+    <button id="play-btn" class="play" aria-label="Play">
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+    </button>
+    <div class="time-main">
+      <div class="time-labels">
+        <span id="time-label" class="time-label">—</span>
+        <span id="time-active" class="time-active"></span>
+      </div>
+      <input id="time-slider" type="range" min="0" max="1000" value="0" step="1" aria-label="Time">
+      <div id="month-ticks" class="month-ticks" aria-hidden="true"></div>
+    </div>
+    <div class="time-controls">
+      <div class="seg" role="radiogroup" aria-label="Time mode">
+        <button id="mode-season" role="radio" aria-checked="true" title="Every tracked year laid over one calendar year">Season</button>
+        <button id="mode-dates" role="radio" aria-checked="false" title="Real dates, start to finish">Dates</button>
+      </div>
+      <label class="speed">
+        <span class="sr-only">Speed</span>
+        <select id="speed-select" aria-label="Playback speed">
+          <option value="1">1 day/s</option>
+          <option value="3">3 days/s</option>
+          <option value="7">1 week/s</option>
+          <option value="14">2 weeks/s</option>
+          <option value="30">1 month/s</option>
+          <option value="91">3 months/s</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div id="loading" class="loading" role="status">Loading tracks…</div>
+
+  <!-- Feedback tab -->
+  <button id="feedback-tab" class="feedback-tab" aria-haspopup="dialog">Feedback</button>
+  <dialog id="feedback-dialog" class="sheet" aria-labelledby="fb-title">
+    <form method="dialog" id="feedback-form">
+      <h2 id="fb-title">Feedback</h2>
+      <p class="muted">Spotted a bug, or want a species added? This opens a pre-filled GitHub issue in a new tab. Nothing is sent until you submit it there.</p>
+      <label class="field">
+        <span>What's on your mind?</span>
+        <textarea id="fb-text" rows="5" required></textarea>
+      </label>
+      <div class="actions">
+        <button value="cancel" class="btn ghost" formnovalidate>Cancel</button>
+        <button id="fb-send" value="send" class="btn primary">Open GitHub issue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Settings -->
+  <dialog id="settings-dialog" class="sheet" aria-labelledby="st-title">
+    <form method="dialog" id="settings-form">
+      <h2 id="st-title">Settings</h2>
+      <fieldset>
+        <legend>Look</legend>
+        <label class="field row"><span>Theme</span>
+          <select name="theme"><option value="system">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+        <label class="field row"><span>Map</span>
+          <select name="basemap"><option value="satellite">Satellite</option><option value="theme">Street map (follows theme)</option></select></label>
+        <label class="field row check"><span>3D terrain</span><input type="checkbox" name="terrain"></label>
+        <label class="field row"><span>Terrain height</span>
+          <input type="range" name="exaggeration" min="1" max="3" step="0.5"><output data-for="exaggeration"></output></label>
+      </fieldset>
+      <fieldset>
+        <legend>Tracks</legend>
+        <label class="field row check"><span>Show full routes</span><input type="checkbox" name="showRoutes"></label>
+        <label class="field row"><span>Trail length</span>
+          <select name="trailDays"><option value="7">1 week</option><option value="30">1 month</option><option value="90">3 months</option><option value="180">6 months</option></select></label>
+        <label class="field row"><span>Distances in</span>
+          <select name="units"><option value="km">Kilometres</option><option value="mi">Miles</option></select></label>
+      </fieldset>
+      <fieldset>
+        <legend>Playback</legend>
+        <label class="field row"><span>Start in</span>
+          <select name="mode"><option value="season">Season view</option><option value="dates">Real dates</option></select></label>
+        <label class="field row"><span>Speed</span>
+          <select name="speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7">1 week/s</option><option value="14">2 weeks/s</option><option value="30">1 month/s</option><option value="91">3 months/s</option></select></label>
+        <label class="field row check"><span>Play on open</span><input type="checkbox" name="autoplay"></label>
+      </fieldset>
+      <div class="actions">
+        <button type="button" id="settings-reset" class="btn ghost">Reset to defaults</button>
+        <button value="close" class="btn primary">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "track-the-migration",
+  "private": true,
+  "description": "Track the Migration: real animal migrations on a 3D globe",
+  "type": "module",
+  "scripts": {
+    "fetch": "node scripts/fetch-data.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "serve": "node scripts/serve.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
