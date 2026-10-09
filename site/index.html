@@ -1,29 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Track the Migration</title>
-  <meta name="description" content="Real animal migrations — wildebeest, zebra, whales, turtles, storks and more — replayed on a 3D globe from published GPS and satellite tracking data.">
+  <meta name="description" content="Real animal migrations — wildebeest, zebra, whales, turtles, storks and more — replayed on a 3D globe from published GPS and satellite tracking data, with stories, charts and live NASA layers.">
+  <meta name="theme-color" content="#05070c">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230b3b5c'/%3E%3Cpath d='M6 20c5-9 12-11 20-8' stroke='%2360a5fa' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='26' cy='12' r='3' fill='%23fb923c'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.min.css">
   <link rel="stylesheet" href="styles.css">
   <script>
-    // Apply the saved theme before first paint.
+    // Apply the saved theme before first paint (default: dark).
     try {
       const t = JSON.parse(localStorage.getItem('ttm.settings') || '{}').theme;
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      else if (t === 'system') delete document.documentElement.dataset.theme;
     } catch (e) {}
   </script>
 </head>
 <body>
+  <canvas id="stars" aria-hidden="true"></canvas>
   <div id="map" aria-label="3D globe showing animal migration tracks"></div>
 
-  <aside id="panel" class="panel" aria-label="Migrations">
+  <!-- Left panel: species and the current selection -->
+  <aside id="panel" class="panel glass" aria-label="Migrations">
     <header class="panel-head">
-      <div>
+      <div class="brand">
         <h1>Track the Migration</h1>
-        <p class="tagline">Real animal tracks on a 3D globe</p>
+        <p class="tagline">Real animal journeys on a living globe</p>
       </div>
       <div class="head-buttons">
         <button id="settings-btn" class="icon-btn" title="Settings (⌘,)" aria-label="Settings">
@@ -34,7 +41,6 @@
         </button>
       </div>
     </header>
-
     <div class="panel-body">
       <section id="info" class="info" hidden aria-live="polite"></section>
       <button id="all-btn" class="species-row all" aria-pressed="true">
@@ -42,20 +48,111 @@
         <span class="row-text"><strong>All migrations</strong><small>Every species, one year at a time</small></span>
       </button>
       <div id="species-list"></div>
-
     </div>
   </aside>
 
-  <div id="timebar" class="timebar" role="group" aria-label="Playback">
+  <!-- Layers button + popover (top right) -->
+  <button id="layers-btn" class="float-btn glass" aria-haspopup="true" aria-expanded="false" aria-controls="layers-pop" title="Map layers">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 8.5 12 14l10-5.5L12 3zm-7.6 9.3L2 13.6 12 19l10-5.4-2.4-1.3L12 16.4l-7.6-4.1z"/></svg>
+    <span>Layers</span>
+  </button>
+  <div id="layers-pop" class="popover glass" hidden>
+    <h3>Base map</h3>
+    <div class="seg-radio">
+      <label><input type="radio" name="basemap" value="satellite"><span>Satellite</span></label>
+      <label><input type="radio" name="basemap" value="theme"><span>Street map</span></label>
+    </div>
+    <h3>Live overlay <small>NASA, follows the date</small></h3>
+    <div id="overlay-list"></div>
+    <h3>On the globe</h3>
+    <label class="switch-row"><span>3D terrain</span><input type="checkbox" name="terrain" role="switch"></label>
+    <label class="switch-row"><span>Day &amp; night by season</span><input type="checkbox" name="nightShade" role="switch"></label>
+    <label class="switch-row"><span>Glow and stars</span><input type="checkbox" name="effects" role="switch"></label>
+    <label class="switch-row"><span>Full routes</span><input type="checkbox" name="showRoutes" role="switch"></label>
+  </div>
+
+  <!-- Overlay legend -->
+  <div id="legend" class="legend glass" hidden aria-live="polite">
+    <div class="legend-head"><b id="legend-title"></b><span id="legend-date"></span></div>
+    <div id="legend-ramp" class="legend-ramp"></div>
+    <div class="legend-scale"><span id="legend-min"></span><span id="legend-max"></span></div>
+    <p id="legend-why" class="legend-why"></p>
+    <p id="legend-shift" class="legend-shift" hidden>No NASA data for the animals' own year, so this shows the same season in the nearest year that has it.</p>
+  </div>
+
+  <!-- Follow-an-animal readout -->
+  <section id="hud" class="hud glass" hidden aria-label="Following an animal" aria-live="off">
+    <header class="hud-head">
+      <span id="hud-icon" class="hud-icon"></span>
+      <div class="hud-names"><b id="hud-title"></b><span id="hud-sub"></span></div>
+      <button id="hud-recenter" class="chip" hidden>Recentre</button>
+      <button id="hud-close" class="icon-btn" aria-label="Stop following (Esc)" title="Stop following (Esc)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div id="hud-date" class="hud-date"></div>
+    <div class="hud-stats">
+      <div><b id="hud-speed"></b><span id="hud-speed-note"></span></div>
+      <div><b id="hud-dist"></b><span id="hud-dist-note"></span></div>
+      <div><b id="hud-day"></b><span id="hud-day-note"></span></div>
+      <div><b id="hud-place"></b><span id="hud-place-note"></span></div>
+    </div>
+    <div class="hud-profile-wrap">
+      <div id="hud-profile" class="hud-profile"></div>
+      <div id="hud-tip" class="chart-tip small"></div>
+    </div>
+  </section>
+
+  <!-- Story card -->
+  <section id="story" class="story glass" hidden aria-label="Story" aria-live="polite">
+    <div class="story-top">
+      <span id="story-icon" class="story-icon"></span>
+      <span id="story-kicker" class="kicker"></span>
+      <button id="story-exit" class="icon-btn" aria-label="Exit story (Esc)" title="Exit story (Esc)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <h2 id="story-title" class="story-title"></h2>
+    <p id="story-text" class="story-text"></p>
+    <div class="story-nav">
+      <div id="story-dots" class="story-dots"></div>
+      <span id="story-count" class="muted"></span>
+      <button id="story-prev" class="btn ghost">Back</button>
+      <button id="story-next" class="btn primary">Next</button>
+    </div>
+  </section>
+
+  <!-- Charts drawer -->
+  <section id="charts" class="charts glass" hidden aria-label="Charts">
+    <header class="charts-head">
+      <div>
+        <h2 id="charts-title"></h2>
+        <p id="charts-sub" class="muted"></p>
+      </div>
+      <div class="charts-actions">
+        <button id="charts-clear" class="chip" hidden>Clear selection</button>
+        <button id="charts-table" class="chip" aria-pressed="false">Table</button>
+        <button id="charts-close" class="icon-btn" aria-label="Close charts">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <div id="charts-body" class="charts-body"></div>
+    <div id="chart-tip" class="chart-tip"></div>
+  </section>
+
+  <!-- Time bar -->
+  <div id="timebar" class="timebar glass" role="group" aria-label="Playback">
     <button id="play-btn" class="play" aria-label="Play">
       <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
       <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
     </button>
+    <div class="time-now">
+      <span id="time-label" class="time-label">—</span>
+      <span id="time-year" class="time-year"></span>
+    </div>
     <div class="time-main">
-      <div class="time-labels">
-        <span id="time-label" class="time-label">—</span>
-        <span id="time-active" class="time-active"></span>
-      </div>
+      <div class="time-labels"><span id="time-active" class="time-active"></span></div>
       <input id="time-slider" type="range" min="0" max="1000" value="0" step="1" aria-label="Time">
       <div id="month-ticks" class="month-ticks" aria-hidden="true"></div>
     </div>
@@ -64,21 +161,27 @@
         <button id="mode-season" role="radio" aria-checked="true" title="Every tracked year laid over one calendar year">Season</button>
         <button id="mode-dates" role="radio" aria-checked="false" title="Real dates, start to finish">Dates</button>
       </div>
-      <label class="speed">
-        <span class="sr-only">Speed</span>
+      <div class="time-row">
         <select id="speed-select" aria-label="Playback speed">
           <option value="1">1 day/s</option>
           <option value="3">3 days/s</option>
+          <option value="4">4 days/s</option>
+          <option value="5">5 days/s</option>
+          <option value="6">6 days/s</option>
           <option value="7">1 week/s</option>
           <option value="14">2 weeks/s</option>
           <option value="30">1 month/s</option>
           <option value="91">3 months/s</option>
         </select>
-      </label>
+        <button id="charts-btn" class="chip" aria-pressed="false" title="Charts">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+          Charts
+        </button>
+      </div>
     </div>
   </div>
 
-  <div id="loading" class="loading" role="status">Loading tracks…</div>
+  <div id="loading" class="loading glass" role="status">Loading tracks…</div>
 
   <!-- Feedback tab -->
   <button id="feedback-tab" class="feedback-tab" aria-haspopup="dialog">Feedback</button>
@@ -97,19 +200,23 @@
     </form>
   </dialog>
 
-  <!-- Settings -->
+  <!-- Settings: every preference in one place -->
   <dialog id="settings-dialog" class="sheet" aria-labelledby="st-title">
     <form method="dialog" id="settings-form">
       <h2 id="st-title">Settings</h2>
       <fieldset>
         <legend>Look</legend>
         <label class="field row"><span>Theme</span>
-          <select name="theme"><option value="system">Match system</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+          <select name="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="system">Match system</option></select></label>
         <label class="field row"><span>Map</span>
           <select name="basemap"><option value="satellite">Satellite</option><option value="theme">Street map (follows theme)</option></select></label>
+        <label class="field row"><span>NASA overlay</span>
+          <select name="overlay"><option value="none">None</option><option value="vegetation">Vegetation greenness</option><option value="sst">Sea surface temperature</option><option value="snow">Snow cover</option></select></label>
         <label class="field row check"><span>3D terrain</span><input type="checkbox" name="terrain"></label>
         <label class="field row"><span>Terrain height</span>
           <input type="range" name="exaggeration" min="1" max="3" step="0.5"><output data-for="exaggeration"></output></label>
+        <label class="field row check"><span>Day &amp; night by season</span><input type="checkbox" name="nightShade"></label>
+        <label class="field row check"><span>Glow, pulse and stars</span><input type="checkbox" name="effects"></label>
       </fieldset>
       <fieldset>
         <legend>Tracks</legend>
@@ -127,6 +234,7 @@
           <select name="speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7">1 week/s</option><option value="14">2 weeks/s</option><option value="30">1 month/s</option><option value="91">3 months/s</option></select></label>
         <label class="field row check"><span>Play on open</span><input type="checkbox" name="autoplay"></label>
       </fieldset>
+      <p class="muted small">Keys: Space play/pause · ← → story scenes · Esc stop following or exit a story · ⌘, settings</p>
       <div class="actions">
         <button type="button" id="settings-reset" class="btn ghost">Reset to defaults</button>
         <button value="close" class="btn primary">Done</button>
@@ -135,6 +243,7 @@
   </dialog>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/5.24.0/maplibre-gl.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

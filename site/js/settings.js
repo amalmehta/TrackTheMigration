@@ -4,10 +4,13 @@
 const KEY = 'ttm.settings';
 
 export const DEFAULTS = Object.freeze({
-  theme: 'system',      // system | light | dark
+  theme: 'dark',        // system | light | dark
   basemap: 'satellite', // satellite | theme
   terrain: true,
   exaggeration: 1.5,
+  overlay: 'none',      // none | vegetation | sst | snow (NASA GIBS)
+  nightShade: true,     // seasonal day/night shading on the globe
+  effects: true,        // glowing trails, pulsing heads, starfield
   showRoutes: true,
   trailDays: 30,
   units: 'km',

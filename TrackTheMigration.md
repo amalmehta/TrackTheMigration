@@ -79,6 +79,22 @@ Decided without asking:
 - Feedback goes to a pre-filled GitHub issue (no backend).
 - Colours: land mammals warm, marine animals blue, birds green, with a light and a dark shade for each. A unit test enforces the spacing.
 
+Asked and answered (2026-10-09, "make it a beautiful deep interactive viz"):
+- Build all four deep-dive features: follow an animal, linked migration charts, live NASA environment layers, and guided stories.
+- Cinematic redesign. Keep the same nine species.
+
+Decided without asking (v2):
+- Overlays, all from NASA GIBS with no key:
+  - Vegetation (MODIS NDVI monthly, 2000 onward)
+  - Sea temperature (GHRSST AVHRR-OI daily, 1981–2020, chosen because it covers the 1990s whale data)
+  - Snow (MODIS monthly)
+  - Dates outside an archive show the same season in the nearest covered year, with a note in the legend.
+- Night shading is seasonal: the sun's latitude is real for the date, but its longitude follows the view so the visible face stays lit.
+- Following an animal switches to real dates for that animal's journey, dims the others, and tucks the panel away on screens under 1400 px wide.
+- Stories: four to six scenes each, written only from the study abstracts plus numbers computed live from the tracks. Each ends by riding along with the animal that went farthest.
+- Species silhouettes from PhyloPic (CC0, public domain or CC BY, credited in the app). Fonts: Inter and Fraunces (Google Fonts). Charts: D3 7 from cdnjs.
+- The default theme is now dark, and the light theme is kept.
+
 CHANGELOG:
 
 - 2026-10-09 — created
@@ -100,3 +116,4 @@ CHANGELOG:
 - 2026-10-05 — added meta-instruction: applications include a settings button or tab
 - 2026-10-08 — added meta-instruction: color-code tags by similarity (related share a hue family, each distinct)
 - 2026-10-09 — built v1: data pipeline from the Movebank Data Repository (9 migrations), a 3D globe site with Season/Dates playback, Settings (⌘,), a feedback tab, tests, docs, and GitHub Pages deploy
+- 2026-10-09 — v2: cinematic redesign (glowing trails, starfield, seasonal day/night, silhouettes, dark glass UI); follow-an-animal mode with live readout and journey profile; linked charts (migration calendar, brushable latitude chart, monthly and per-animal distance); live NASA GIBS layers (vegetation, sea temperature, snow); guided stories for all nine species; 40 tests; docs updated

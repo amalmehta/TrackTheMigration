@@ -1,35 +1,44 @@
 # System Design
 
-Track the Migration is a static website. A Node script turns published animal-tracking datasets into small JSON files. The browser loads those files and animates them on a MapLibre 3D globe. There is no server, database or API key.
+Track the Migration is a static website. Build-time scripts turn published animal-tracking datasets, silhouettes and colour palettes into small files under `site/`. The browser loads them and animates them on a MapLibre 3D globe. Charts are drawn with D3, and NASA imagery is streamed live by date. There is no server, database or API key.
 
 ## Architecture
 
 ```mermaid
 flowchart TB
-  subgraph Build["Build time — npm run fetch (scripts/)"]
-    REG[datasets.mjs<br>which packages, how to clean them]
+  subgraph Build["Build time (scripts/)"]
+    REG[datasets.mjs<br>which packages, how to clean]
     FETCH[fetch-data.mjs]
+    ASSETS[fetch-assets.mjs]
     RAW[(data/raw/<br>CSV cache, git-ignored)]
     REG --> FETCH
-    FETCH -->|download once| RAW
-    RAW -->|stream-parse| FETCH
+    FETCH <--> RAW
   end
+  MDR[(Movebank Data Repository)] -->|CSV + metadata| FETCH
+  PHY[(PhyloPic API)] -->|silhouettes + credits| ASSETS
+  WV[(NASA Worldview palettes)] -->|legend colours| ASSETS
+  FETCH --> DATA[(site/data/*.json)]
+  ASSETS --> DATA
+  ASSETS --> ICONS[(site/icons/*.svg)]
 
-  MDR[(Movebank Data Repository<br>DSpace REST API)] -->|CSV + metadata| FETCH
-  FETCH -->|index.json + one file per species| DATA[(site/data/)]
-
-  subgraph Browser["Browser — site/"]
-    APP[app.js<br>panel · playback · camera]
-    TR[tracks.js<br>interpolation, trails, seasons]
-    PAL[palette.js<br>species colours]
-    SET[settings.js<br>preferences + dialog]
-    ML[MapLibre GL 5<br>globe + terrain]
-    APP --> TR & PAL & SET & ML
+  subgraph Browser["Browser (site/js/)"]
+    APP[app.js<br>wiring · clock · panel · layers menu]
+    STORE[store.js<br>shared state · events · formatting]
+    GLOBE[globe.js<br>map · layers · frame · night · overlays · camera]
+    FOLLOW[follow.js<br>ride-along · readout · profile]
+    CHARTS[charts.js<br>calendar · linked charts · brush]
+    STORY[story.js + stories.js<br>guided scenes]
+    PURE[tracks.js · solar.js · environment.js · palette.js<br>pure, unit-tested]
+    SET[settings.js]
+    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET
+    GLOBE & FOLLOW & CHARTS & STORY --> STORE
+    GLOBE & FOLLOW & CHARTS --> PURE
   end
-
   DATA --> APP
-  TILES[Sentinel-2 cloudless / OpenFreeMap<br>Mapzen terrain tiles] --> ML
-  FETCH -. shares .-> TR
+  ICONS --> APP
+  GIBS[(NASA GIBS WMTS<br>tiles by date)] --> GLOBE
+  TILES[(Sentinel-2 · OpenFreeMap · Terrain Tiles)] --> GLOBE
+  FETCH -. shares .-> PURE
   GH[GitHub Actions] -->|npm test, then deploy site/| PAGES[GitHub Pages]
 ```
 
@@ -37,90 +46,123 @@ flowchart TB
 
 | Component | Job |
 |---|---|
-| `scripts/datasets.mjs` | The registry of migrations. Each entry has the repository package and file IDs, the one-line description, and the cleaning settings (speed limit, thinning, caps, accepted Argos classes). |
-| `scripts/fetch-data.mjs` | Downloads each CSV (cached) and reads the package metadata (authors, DOI, licence, paper). It filters bad fixes, then simplifies and caps each track. It writes `site/data/<id>.json` and `site/data/index.json` with stats and citations. |
-| `site/js/tracks.js` | Pure track maths shared by Node and the browser: distance, antimeridian unwrapping, the speed filter, thinning, interpolation, trails, and splitting tracks by calendar year. |
-| `site/js/app.js` | Builds the map and layers, renders the species list and info card, runs the playback loop, frames the camera, handles clicks and the feedback tab. |
+| `scripts/datasets.mjs` | The registry of migrations: repository IDs, a one-line description, and cleaning settings (speed limit, thinning, caps, accepted Argos classes, geolocator stopovers). |
+| `scripts/fetch-data.mjs` | Downloads each CSV (cached) and reads the package metadata (authors, DOI, licence, paper, abstract). It filters bad fixes, simplifies and caps each track, and writes `site/data/<id>.json` and `index.json`. |
+| `scripts/fetch-assets.mjs` | Downloads the chosen PhyloPic silhouettes and records their credits and licences. Turns NASA Worldview's palettes into 24-stop legends for the overlays. Writes `assets.json` and `site/icons/`. |
+| `site/js/store.js` | Shared state (selection, clock, follow, story, chart selection), a tiny event bus, data loading, and formatting helpers. |
+| `site/js/globe.js` | Owns the map. Responsibilities: <ul><li>base map and 3D terrain</li><li>seasonal night shading (a canvas source)</li><li>NASA overlays (tiles swapped by date)</li><li>routes, gradient trails with glow, pulsing heads and the focus ring</li><li>the per-frame update and camera framing</li></ul> |
+| `site/js/follow.js` | Ride-along mode. The camera eases toward the animal each frame, and pauses when the person drags. The readout shows speed, distance, day, and ground height or distance from start. A two-row D3 journey profile with a playhead can be hovered and scrubbed. |
+| `site/js/charts.js` | The charts drawer. <ul><li>All species: a migration calendar heatmap.</li><li>One species: latitude or longitude through the year, with a brush and click-to-follow; distance per day by month; distance per animal, with click-to-follow.</li><li>A table view of the same numbers.</li></ul> |
+| `site/js/stories.js` / `story.js` | Story content (scenes with time, camera, overlay and follow) and its player (card, progress, keyboard, and restoring the person's settings afterwards). |
+| `site/js/tracks.js` | Track maths shared by Node and the browser. <ul><li>Cleaning: distance, antimeridian unwrap, speed filter, thinning.</li><li>Playback: interpolation, trails, year splitting.</li><li>Analysis: cumulative distance, speed, seasonal movement, main axis of movement.</li></ul> |
+| `site/js/solar.js` | Subsolar point, sun altitude, a twilight darkness curve, and a fast night painter with cached per-row and per-column trig. |
+| `site/js/environment.js` | NASA overlay definitions, date snapping (monthly or weekly), and moving out-of-archive dates to the nearest covered year. |
 | `site/js/palette.js` | Species colours in hue families (land: warm, marine: blue, birds: green), with a light and a dark shade for each. |
-| `site/js/settings.js` | Preferences with defaults, saved in `localStorage`. Binds the Settings dialog and the ⌘, shortcut. |
-| `scripts/serve.mjs` | A dependency-free static server for local use. |
-| `.github/workflows/pages.yml` | Runs the tests, then publishes `site/` to GitHub Pages. |
+| `site/js/settings.js` | Every preference, saved in `localStorage`. Binds the Settings dialog and the ⌘, shortcut. |
+| `scripts/serve.mjs`, `.github/workflows/pages.yml` | Local static server; CI that tests, then deploys `site/`. |
 
 ## Main flows
 
-**Building data**
+**The frame** (each animation frame while playing)
 
-1. For each dataset, download the tracking CSV from `…/server/api/core/bitstreams/<uuid>/content` unless it is already cached.
-2. Read the package item for authors, issue date, DOI, licence and the related paper.
-3. Stream the CSV line by line. Drop rows marked invisible or as outliers, rows with missing or impossible coordinates, and (for Argos data) location classes other than 3, 2, 1, A or G.
-4. Per animal:
-   - sort by time
-   - apply the speed filter
-   - thin to one fix per N hours
-   - cap the point count
-   - unwrap longitudes across the antimeridian
-   - round to about 10 m and 6 minutes
-5. Keep the animals with the longest tracks, up to the cap. Write the per-species file and add stats and citation to the index.
+1. The clock advances. In Season view that is a fraction of the year; in Dates view, hours.
+2. For every animated instance, `positionAt` interpolates the head, and `trailAt` collects the last N days. An instance is one animal-year in Season view, or one animal in Dates view.
+3. Heads and trails go into GeoJSON sources. Trails use `lineMetrics`, so a per-species `line-gradient` fades each tail from transparent to full colour. A blurred copy underneath gives the glow.
+4. Night is repainted only when the sun moves noticeably (about 1° of latitude or 6° of view longitude). The overlay's tiles swap only when its snapped date changes, at most every 1.2 s while playing.
+5. The follow camera, readout and chart playheads update.
 
-Geolocator data (bar-tailed godwit) has one row per stopover with arrival and departure times. Both times become points, so the bird waits at each site and then flies.
+The JavaScript work per frame is about 2 ms for all 645 instances, plus about 6 ms on the occasional night repaint.
 
-**Playback (each animation frame)**
+**Following an animal**
 
-- *Dates mode*: each animal is one instance, and they all share the clock `t`.
-- *Season mode*: each animal-year is one instance. Every instance is evaluated at the same fraction of its own year, so all years overlap.
-- For each instance, `positionAt` interpolates the head. It returns nothing inside gaps longer than `maxGapHours`, so untracked stretches stay blank. `trailAt` collects the last N days. Heads and trails are written to two GeoJSON sources. Full routes are a third, static source.
+1. Switch to Dates mode, with the clock range set to that animal's tracking period.
+2. Dim every other animal and highlight its route.
+3. Fly to it at a zoom and tilt suited to its group.
+4. Then ease the camera toward it every frame, unless the person has dragged the map.
 
-**Choosing a species**
+On narrower screens the panel tucks away, and the camera padding reserves room for the readout.
 
-1. Load its JSON file. It is cached after the first load, and *All* loads every file.
-2. Rebuild the instances and routes, and render the info card.
-3. Frame the camera. Zoom comes from `cameraForBounds`. The centre is the bbox centre, and `padding` keeps it out from under the panel and time bar. Land species tilt to 55° to show terrain. Ocean-basin species stay flat at globe zoom.
+**Charts ↔ globe**
 
-**Changing settings**
+- Brushing the latitude chart builds a set of animal keys. `state.highlight` dims everything else on the globe and in the other charts.
+- Clicking a line or bar starts following that animal.
+- The calendar's cells set the season.
 
-Settings update the shared object, persist it, and notify `app.js`, which applies only what changed. Changing the base map swaps the style. Terrain is switched off first, because MapLibre can't carry a terrain mesh across styles. Terrain, projection and layers come back on `style.load`.
+**Stories**
+
+- Each scene sets Season time (`MM-DD`), playback speed and an overlay.
+- It then frames the camera in one of three ways: the whole species range, wherever the animals are at that time, or a fixed view.
+- The last scene follows the animal that travelled farthest.
+- Exiting restores the person's overlay, speed and mode.
+- `{placeholders}` (animal count, years, farthest animal and its distance) are computed from the loaded data.
+
+**Night shading**
+
+- The sun's latitude comes from the playback date, so polar day and night are real for the season.
+- Its longitude is set 40° east of the view, so the face you're looking at is lit and night curves round the far limb. This is a lighting choice, not the real time of day.
+- The canvas source re-reads the canvas, and a paint-property nudge makes 3D terrain redraw its cached drape.
 
 ## Where data lives
 
 | Data | Where | Committed? |
 |---|---|---|
-| Raw CSVs and metadata | `data/raw/` | No (about 300 MB; rebuilt by `npm run fetch`) |
-| Processed tracks | `site/data/<species>.json` (6 KB – 1.1 MB each, about 2.8 MB total) | Yes |
+| Raw CSVs and metadata | `data/raw/` | No (about 300 MB; `npm run fetch`) |
+| Processed tracks | `site/data/<species>.json` (about 2.8 MB total) | Yes |
 | Species list, stats, citations | `site/data/index.json` | Yes |
+| Silhouette credits, overlay legends | `site/data/assets.json`, `site/icons/*.svg` | Yes |
+| Story text | `site/js/stories.js` | Yes |
 | Viewer preferences | Browser `localStorage` key `ttm.settings` | n/a |
-| Imagery, map and terrain tiles | Third-party tile servers, fetched at runtime | n/a |
+| Imagery, maps, terrain, NASA overlays | Third-party tile servers, fetched at runtime | n/a |
 
 ## Key decisions and trade-offs
 
-- **Build-time fetch, not live API calls.** The site is fast and works without any API, and an API change can't break it. The source studies are archived and don't change. The cost is that new data means re-running `npm run fetch` and committing.
-- **Movebank Data Repository as the only source.** Every package has a DOI, a clear licence (CC0 or CC BY) and a consistent CSV format, so one parser covers all nine species. Some iconic migrations, such as Serengeti wildebeest, Arctic terns and caribou, have no open package there, so they aren't included.
-- **Wildebeest are the Kenyan populations.** These are Mara, Athi-Kaputiei and Amboseli. No open-licensed Serengeti-Mara data package was found.
-- **MapLibre GL 5 globe with raster-DEM terrain.** This gives a true 3D globe that zooms to valley level. It needs no API key and no build step (loaded from cdnjs). Three.js or globe.gl would look similar zoomed out, but lose detail zoomed in.
-- **Key-free tiles.** Imagery is EOX Sentinel-2 cloudless 2016 (CC BY 4.0). Street maps are OpenFreeMap. Terrain is the Mapzen/AWS Terrain Tiles. The cost is depending on their availability and fair-use limits.
-- **Thinning and caps.** Each species shows at most 30–40 animals and a bounded number of points. This keeps every file small enough for phones and the frame loop under a millisecond or two. Fine-scale movement is lost.
-- **Season view by default.** Overlaying years shows timing ("who moves when") better than raw dates spread over decades. It's labelled clearly, and Dates mode is one click away.
-- **Colour by hue family.** Related species share a family, with shades checked for ΔE ≥ 20 in both modes. Track colours follow the map underneath (bright shades on imagery or dark maps), and the list swatches match the map.
-- **No framework, no bundler.** The project is plain ES modules, so it's easy to host, read and change.
-- **Feedback through GitHub issues.** It needs no backend, and the viewer sees and submits the issue themselves. The cost is that it needs a GitHub account.
+- **Build-time fetch, not live API calls.** The site stays fast and can't break when an API changes. New data means re-running the scripts.
+- **Movebank Data Repository as the only track source.** Every package has a DOI, an open licence and the same CSV shape. Iconic migrations without an open package (Serengeti wildebeest, Arctic tern, caribou, sharks) aren't included.
+- **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
+- **NASA GIBS for live layers.** These are key-free and time-enabled.
+  - Layers were chosen for coverage: NDVI monthly (2000 onward), AVHRR-OI sea temperature daily (1981–2020, which covers the 1990s whale data), and snow monthly.
+  - Out-of-archive dates use the nearest covered year, and the legend says so.
+- **Season view by default.** Overlaying years shows timing better than dates spread over decades. Following an animal switches to real dates, because a single journey is easiest to read in order.
+- **Gradient trails per species layer.** `line-gradient` can't be data-driven, so there are 9 trail layers and 9 glow layers, one per species.
+- **Night as a mercator canvas** rather than vector polygons. This gives smooth twilight and copes with the poles and the antimeridian. Cost: about 6 ms per repaint, kept rare.
+- **Stories hand-written from abstracts, numbers computed live.** Claims stay traceable to the study. Anything quantitative about the tracks shown comes from the data. `tests/stories.test.mjs` checks the structure.
+- **Chart colours** use the species hue (one series per chart, so no legend box). The calendar uses a one-hue light-to-dark ramp per row with row labels, so identity never depends on colour alone. Every chart has a table view.
+- **Dark theme by default.** It suits the space background and glowing tracks. A full light theme is one setting away.
+- **Silhouettes from PhyloPic.** Every image is CC0, public domain or CC BY, and credited on its species card.
 
 ## Testing
 
-- `npm test` runs `node:test` unit tests:
-  - Track maths: distances, antimeridian unwrapping, speed filter, thinning, caps, binary search, interpolation and gaps, trails, year splitting, and season mapping.
-  - The colour rules: every species has a colour, each sits in its group's hue family, every pair has ΔE ≥ 20, and colours contrast with the background, all in both light and dark.
-- CI runs the same tests before every deploy.
-- Checked by hand in a browser at desktop and 375 px phone sizes:
-  - all species load and frame
-  - Season and Dates modes, scrubbing, and play/pause
-  - settings (theme, base map switch with terrain on, terrain, routes), with no console errors
-  - the feedback dialog builds the right issue URL
-  - no horizontal scroll on phones
+`npm test` runs 40 `node:test` unit tests, and CI runs the same tests before every deploy.
+
+- **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping.
+- **Analysis** (`analysis.test.mjs`):
+  - cumulative distance, speed over a window, year fraction, seasonal movement, main axis of movement
+  - subsolar point at the solstices, sun altitude, the darkness curve, the night canvas
+  - NASA date snapping, the nearest-year fallback, tile URLs
+- **Palette** (`palette.test.mjs`): hue families, pairwise ΔE ≥ 20 and contrast against the background, in light and dark.
+- **Stories** (`stories.test.mjs`): one per species, 4–6 scenes, valid dates, views, overlays and placeholders, each ending in a ride-along.
+
+Checked by hand in a browser, at desktop, 800 px and 375 px phone sizes, with no console errors:
+
+- All View: the starfield, glow and night shading.
+- Species: fly-to framing with the panel, charts and readout open.
+- Follow mode: the camera ride, readout values (ground height checked against Amboseli's real ~1,150 m), profile hover and scrub, Esc.
+- Charts:
+  - the calendar
+  - the brush highlighting the same animals on the globe
+  - click-to-follow and the table view
+- Stories: scenes, overlay switching, and settings restored on exit.
+- Overlays: legend dates, and the nearest-year note.
+- Themes: light and dark.
+- Phone: bottom-sheet layout, no horizontal scroll.
 
 ## Known limits
 
-- **Positions are approximate.** Argos fixes can be off by kilometres. Geolocator positions (godwit) are only stopover sites, accurate to around 100–200 km. Lines between fixes are straight, not the animal's real path. Long jumps are drawn as straight lines in the map's projection, not as great circles.
-- **Only a sample is shown.** These are the 30–40 longest-tracked animals per species, thinned. The info card says exactly what's shown and links to the full data.
-- **Season view mixes years.** Animals tracked in different years appear together, so it shows typical timing, not a single moment.
-- **No live tracking.** All studies are archived. Nothing updates on its own.
-- **Third-party tiles.** If EOX, OpenFreeMap or the terrain tiles are down, the base map or terrain will be missing, but the tracks still draw.
-- **3D terrain is heavy on low-end devices.** It can be switched off in Settings.
+- **Positions are approximate.** Argos fixes can be off by kilometres. Geolocator positions (godwit) are only stopovers, accurate to around 100–200 km. Lines between fixes are straight, not the real path, and long jumps are drawn straight in the map's projection rather than as great circles.
+- **Only a sample is shown.** These are the 30–40 longest-tracked animals per species, thinned. Speeds in the readout and charts come from these thinned fixes, so short bursts are smoothed out.
+- **Season view mixes years.** Animals tracked in different years appear together.
+- **Night shading is seasonal, not clock time.** The sun's longitude follows the view, by design.
+- **Overlays may show a different year** when the animals' own year isn't in NASA's archive (the legend says so). Monthly layers change only once a month.
+- **No live tracking.** All studies are archived.
+- **Third-party tiles.** If EOX, OpenFreeMap, the terrain tiles or NASA GIBS are down, that layer is missing, but tracks and charts still work.
+- **Heavier on low-end devices.** 3D terrain, glow and night shading can each be switched off.

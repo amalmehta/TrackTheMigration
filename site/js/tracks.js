@@ -142,3 +142,76 @@ export function seasonToHours(year, fraction) {
 }
 
 export const HOURS = { year: HOURS_PER_YEAR, day: 24 };
+
+// --- Analysis helpers (follow mode and charts) ---
+
+// Running distance in km at each point.
+export function cumulativeKm(pts) {
+  const out = new Float64Array(pts.length);
+  for (let i = 1; i < pts.length; i++) out[i] = out[i - 1] + haversineKm(pts[i - 1], pts[i]);
+  return out;
+}
+
+// Distance travelled by time t, interpolating inside the current leg.
+export function distanceAt(pts, cum, t) {
+  const i = indexAtOrBefore(pts, t);
+  if (i < 0) return 0;
+  if (i >= pts.length - 1) return cum[pts.length - 1];
+  const f = (t - pts[i][2]) / (pts[i + 1][2] - pts[i][2] || 1);
+  return cum[i] + (cum[i + 1] - cum[i]) * f;
+}
+
+// Average speed (km/day) over the window [t - windowHours, t], or null
+// when the window falls outside the track or across a tracking gap.
+export function speedAt(pts, cum, t, windowHours = 24, maxGapHours = Infinity) {
+  if (!positionAt(pts, t, maxGapHours)) return null;
+  const t0 = Math.max(pts[0][2], t - windowHours);
+  if (t - t0 <= 0) return null;
+  if (!positionAt(pts, t0, maxGapHours)) return null;
+  return ((distanceAt(pts, cum, t) - distanceAt(pts, cum, t0)) / (t - t0)) * 24;
+}
+
+// Day of year as a fraction 0..1 for a time in hours.
+export function yearFraction(h) {
+  const y = new Date(h * 3.6e6).getUTCFullYear();
+  return (h - yearStartHours(y)) / (yearStartHours(y + 1) - yearStartHours(y));
+}
+
+// Mean km/day in each of `bins` equal slices of the year, pooled over all
+// animals. Legs longer than maxGapHours are skipped (not tracked then).
+// Returns { kmPerDay: number[]|null[], days: number[] } — days of tracking per bin.
+export function seasonalMovement(tracks, bins = 12, maxGapHours = Infinity) {
+  const km = new Float64Array(bins);
+  const hours = new Float64Array(bins);
+  for (const pts of tracks) {
+    for (let i = 1; i < pts.length; i++) {
+      const dt = pts[i][2] - pts[i - 1][2];
+      if (dt <= 0 || dt > maxGapHours) continue;
+      const mid = (pts[i][2] + pts[i - 1][2]) / 2;
+      const b = Math.min(bins - 1, Math.floor(yearFraction(mid) * bins));
+      km[b] += haversineKm(pts[i - 1], pts[i]);
+      hours[b] += dt;
+    }
+  }
+  return {
+    kmPerDay: Array.from(km, (k, b) => (hours[b] > 0 ? (k / hours[b]) * 24 : null)),
+    days: Array.from(hours, (h) => h / 24),
+  };
+}
+
+// Is the movement mostly north–south or east–west? Sums each animal's own
+// spans in degrees of arc, so a herd spread out sideways doesn't count.
+export function mainAxis(tracks) {
+  let lat = 0;
+  let lon = 0;
+  for (const pts of tracks) {
+    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+    for (const [x, y] of pts) {
+      if (y < minLat) minLat = y; if (y > maxLat) maxLat = y;
+      if (x < minLon) minLon = x; if (x > maxLon) maxLon = x;
+    }
+    lat += maxLat - minLat;
+    lon += (maxLon - minLon) * Math.cos(toRad((minLat + maxLat) / 2));
+  }
+  return lon > lat ? 'lon' : 'lat';
+}

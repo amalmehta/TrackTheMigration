@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "fetch": "node scripts/fetch-data.mjs",
+    "assets": "node scripts/fetch-assets.mjs",
     "test": "node --test tests/*.test.mjs",
     "serve": "node scripts/serve.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }
