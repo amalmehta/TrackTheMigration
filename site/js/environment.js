@@ -56,7 +56,63 @@ export const ENV_LAYERS = {
     why: 'Compare where animals spend the winter with where the snow lies.',
     for: ['land', 'birds'],
   },
+  footprint: {
+    title: 'Human footprint',
+    short: 'Human footprint',
+    detail: 'Index 0–100, 1995–2004 · SEDAC',
+    layer: 'Human_Footprint_1995-2004',
+    matrix: 'GoogleMapsCompatible_Level7',
+    maxzoom: 7,
+    period: 'static',
+    years: [1995],
+    palette: 'Human_Footprint_1995-2004',
+    legendMin: '0 wild',
+    legendMax: '100',
+    units: '',
+    why: 'Roads, farms, towns and lights combined: 0 is wilderness, 100 a city.',
+    for: ['land', 'birds'],
+    group: 'people',
+  },
+  population: {
+    title: 'Population density',
+    short: 'People',
+    detail: 'People per km², 2000–2020 · SEDAC GPWv4',
+    layer: 'GPW_Population_Density_{year}',
+    matrix: 'GoogleMapsCompatible_Level7',
+    maxzoom: 7,
+    period: 'static',
+    years: [2000, 2005, 2010, 2015, 2020],
+    palette: 'GPW_Population_Density_2010',
+    legendMin: '< 1',
+    legendMax: '≥ 1,000',
+    units: 'per km²',
+    why: 'How many people live here, from the census year nearest the animals\u2019 year.',
+    for: ['land', 'birds'],
+    group: 'people',
+  },
+  lights: {
+    title: 'Night lights',
+    short: 'Night lights',
+    detail: 'Black Marble, 2012 & 2016 · NASA VIIRS',
+    layer: 'VIIRS_Black_Marble',
+    matrix: 'GoogleMapsCompatible_Level8',
+    maxzoom: 8,
+    period: 'year',
+    years: [2012, 2016],
+    first: '2012-01-01',
+    last: '2016-01-01',
+    stops: ['#000000', '#1a1408', '#5c4413', '#c99a3a', '#ffe9a8', '#ffffff'],
+    legendMin: 'dark',
+    legendMax: 'bright',
+    units: '',
+    why: 'Where people light up the night: towns, roads, gas flares.',
+    for: ['land', 'birds', 'marine'],
+    group: 'people',
+  },
 };
+
+// The archive year nearest to y.
+const nearestYear = (years, y) => years.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
 
 const pad = (n) => String(n).padStart(2, '0');
 const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
@@ -67,6 +123,10 @@ const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.ge
 export function overlayDate(key, hours) {
   const L = ENV_LAYERS[key];
   let d = new Date(hours * 3.6e6);
+  if (L.period === 'static' || L.period === 'year') {
+    const y = nearestYear(L.years, d.getUTCFullYear());
+    return { date: `${y}-01-01`, year: y, shifted: L.years.length > 1 ? y !== d.getUTCFullYear() : false, fixed: L.period === 'static' && L.years.length === 1 };
+  }
   const first = new Date(L.first + 'T00:00:00Z');
   const last = new Date(L.last + 'T00:00:00Z');
   let shifted = false;
@@ -85,6 +145,10 @@ export function overlayDate(key, hours) {
 
 export function tileUrl(key, date) {
   const L = ENV_LAYERS[key];
-  return `${GIBS}/${L.layer}/default/${date}/${L.matrix}/{z}/{y}/{x}.png`;
+  const layer = L.layer.replace('{year}', date.slice(0, 4));
+  // Layers without a time dimension take no date in the URL.
+  return L.period === 'static'
+    ? `${GIBS}/${layer}/default/${L.matrix}/{z}/{y}/{x}.png`
+    : `${GIBS}/${layer}/default/${date}/${L.matrix}/{z}/{y}/{x}.png`;
 }
 

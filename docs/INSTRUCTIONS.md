@@ -33,11 +33,35 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - While you follow an animal, the readout says when it is *staying put*, and for how long.
 - Switch stopovers off in **Layers** or Settings.
 
-### Share a moment
-- **Share** (in the time bar) copies a link to exactly what you're looking at:
+### Human footprint along the way
+- For land animals and birds, every fix was matched at build time with the Human Footprint index underneath it. While you follow one, the readout shows **Human footprint here**, with that animal's median.
+- The species charts include **Human footprint where they went**: the share of fixes in wild, light, moderate and heavy footprint. It's split by group, so the three wildebeest populations line up side by side.
+
+### Share a moment, embed it, record it
+- **Share** (in the time bar) opens a menu:
+  - **Copy link** gives a link to exactly what you're looking at:
   - species, date and the animal you're following
   - story scene, NASA overlay, filters and camera
+  - **Copy embed code** gives an `<iframe>` you can paste into a blog or slide. It shows just the globe and the clock, plays on its own, and links back to the full site. Any link with `?embed=1` works the same way.
+  - **Record a 12-second video** plays the globe and saves a video file with a title, the date and the data credit. It's WebM in Chrome and Firefox, MP4 in Safari, and it's made in your browser, so nothing is uploaded.
 - The address bar keeps that link up to date as you explore. A shared link opens paused at its moment; a link to a story scene plays from that scene.
+
+### Race animals against each other
+- **Shift-click** dots, from any species, to add them to a race (up to four). While following an animal you can also press **+ Race** in its readout.
+- A tray lists the racers. Press **Race ▶**:
+  - every racer starts on day 1, the day its own tracking began
+  - a leaderboard ranks them by distance, with what each is doing ("on the move", "staying put", "tag ended")
+  - a distance-over-time chart shows all of them; drag on it to scrub
+- **Split screen** gives each racer its own mini-globe that follows it.
+- If one track is far longer than the rest (a stork tracked for 12 years against godwits tracked for one), the race is sized to the others. **Show all days** extends it.
+- **×** ends the race.
+
+### Guess where
+- **Guess where** on the All migrations card starts a 10-round game.
+- Each round stops at a real moment in a real animal's journey, chosen so the animal moves a fair distance over the next 30 days.
+- Tap the globe where you think it will be in 30 days, then **Lock in**. It plays forward and shows where it really went.
+- You score up to 1,000 points per round. The scoring is scaled to how far the animal moved, so a godwit crossing an ocean and a wildebeest moving between pastures are equally fair.
+- **Copy my score** at the end gives you a line to paste anywhere.
 
 ### Ride along with an animal
 - Click any dot or route, or **Follow the farthest** on a species card. The camera follows that animal.
@@ -71,6 +95,10 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
   - **Vegetation greenness**: NDVI, monthly, 2000 onward
   - **Sea surface temperature**: daily, 1981–2020
   - **Snow cover**: monthly, 2000 onward
+- People overlays:
+  - **Human footprint**: 0 wild to 100 city, SEDAC 1995–2004
+  - **Population density**: the census year nearest the animals' year, 2000–2020
+  - **Night lights**: NASA Black Marble, 2012 or 2016
 - A legend shows the date being displayed. If the animals' year has no NASA data (for example blue whales in the 1990s and vegetation), it shows the same season in the nearest year that has data, and says so.
 - The same menu switches 3D terrain, day and night by season, glow and stars, and full routes on or off.
 
@@ -105,6 +133,8 @@ This rebuilds the tracks from the Movebank Data Repository. The first run downlo
 - `npm run fetch -- zebra osprey` rebuilds only those species.
 - `SHOW_ABSTRACTS=1` prints each study's abstract.
 
+Land animals and birds also get a Human Footprint value for every fix. NASA GIBS tiles are cached in `data/raw/hf/`, about 700 small PNGs on the first run.
+
 ```bash
 npm run assets
 ```
@@ -137,11 +167,13 @@ This re-downloads the PhyloPic silhouettes with their credits, and rebuilds the 
 npm test
 ```
 
-This runs 56 unit tests:
+This runs 61 unit tests:
 - the track maths, analysis helpers and sun position
 - stopover detection and clustering
 - the night shading and the NASA date handling
 - reference-data facets and share-link parsing
+- the PNG decoder and footprint sampling maths
+- the people overlays' nearest-year logic
 - the colour rules for all 13 species and the story content
 
 See [System design → Testing](SYSTEM-DESIGN.md#testing) for what's checked by hand.

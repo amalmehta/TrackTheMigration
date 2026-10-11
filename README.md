@@ -1,6 +1,6 @@
 # Track the Migration
 
-Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, turtles, storks, geese and godwits, replayed on a living 3D globe from published tracking data. It includes guided stories, linked charts, live NASA layers, filters for who each animal is, the places they stopped, a camera that rides along with any animal, and links that open at the exact moment you share.
+Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, turtles, storks, geese and godwits, replayed on a living 3D globe from published tracking data. It includes guided stories, linked charts, live NASA nature and human-impact layers, filters for who each animal is, the places they stopped, a camera that rides along with any animal, races between animals, a "guess where" game, embeds and video export, and links that open at the exact moment you share.
 
 **[Open the live site →](https://amalmehta.github.io/TrackTheMigration/)**
 
@@ -13,6 +13,8 @@ Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, t
 | Where they stopped: white-fronted geese across Arctic Russia | Who they are: ospreys coloured by flyway |
 |---|---|
 | ![Stopover sites as rings, brighter when in use](docs/images/stopovers-goose.jpg) | ![Ospreys coloured by East, Midwest and West flyway, with a matching chart legend](docs/images/filters-osprey.jpg) |
+
+![A race: a bar-tailed godwit, a humpback whale and Prinzesschen the stork from the day each set off, with a split screen, leaderboard and distance-over-time chart](docs/images/race.jpg)
 
 ![Linked charts: white stork latitude through the year, distance by month and per animal](docs/images/charts-white-stork.jpg)
 

@@ -27,8 +27,8 @@ export const STORIES = {
       },
       {
         title: 'Athi-Kaputiei: hemmed in',
-        text: 'Just south of Nairobi the grass is better, but roads, fences and spreading settlements cut across the plains. Wildebeest here moved the least, about 13 km a day, and less directly than the other herds.',
-        view: { center: [36.95, -1.62], zoom: 9.6, pitch: 60, bearing: 20 }, at: '08-01', speed: 3,
+        text: 'Just south of Nairobi the grass is better, but roads, fences and spreading settlements cut across the plains. The overlay shows NASA\u2019s human footprint index. Wildebeest here moved the least, about 13 km a day, and less directly than the other herds.',
+        view: { center: [36.95, -1.62], zoom: 9.6, pitch: 60, bearing: 20 }, at: '08-01', speed: 3, overlay: 'footprint',
       },
       {
         title: 'The Mara: green and in between',
@@ -312,7 +312,7 @@ export const STORIES = {
       {
         title: 'Sharing with horses',
         text: 'Pronghorn chose much the same ground as feral horses, flatter slopes with shorter shrubs, but also avoided oil and gas well pads all year. Horses and pronghorn overlapped strongly in where they spent their time, in every season.',
-        view: 'species', at: '09-01', speed: 4,
+        view: 'species', at: '09-01', speed: 4, overlay: 'footprint',
       },
       {
         title: 'The wanderer',

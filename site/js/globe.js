@@ -47,6 +47,8 @@ export const map = new maplibregl.Map({
   attributionControl: { compact: true },
   maxPitch: 78,
   fadeDuration: 200,
+  // Keep the last frame readable so "Record video" can copy it.
+  canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
 });
 map.on('styledata', () => {
   if (isPhone()) {
@@ -115,7 +117,7 @@ function installLayers() {
     paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 2, 1, 4.5, 0.55, 6.5, 0], 'raster-fade-duration': 0 },
   });
 
-  for (const id of ['routes', 'sites', 'trails', 'heads', 'focus']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
+  for (const id of ['routes', 'sites', 'trails', 'heads', 'focus', 'guess']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
 
   map.addLayer({
     id: 'routes', type: 'line', source: 'routes',
@@ -210,6 +212,21 @@ function installLayers() {
       'circle-pitch-alignment': 'map',
     },
   });
+  // The guessing game: your guess, the real spot, and the miss between them.
+  map.addLayer({
+    id: 'guess-line', type: 'line', source: 'guess', filter: ['==', ['geometry-type'], 'LineString'],
+    paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': 0.9 },
+  });
+  map.addLayer({
+    id: 'guess-pts', type: 'circle', source: 'guess', filter: ['==', ['geometry-type'], 'Point'],
+    paint: {
+      'circle-radius': 8,
+      'circle-color': ['match', ['get', 'kind'], 'guess', '#ffffff', ['get', 'color']],
+      'circle-stroke-color': ['match', ['get', 'kind'], 'guess', '#0b1220', '#ffffff'],
+      'circle-stroke-width': 3,
+      'circle-pitch-alignment': 'map',
+    },
+  });
   overlayKey = null;
   applyOverlay();
   nightStamp = '';
@@ -275,11 +292,23 @@ export function refreshRoutes() {
   if (!src || !state.index) return;
   const mode = colorMode();
   const features = [];
+  if (state.race) {
+    for (const r of state.race.racers) {
+      features.push({
+        type: 'Feature',
+        properties: { color: r.color, species: r.species, animal: r.animal.id, key: keyOf(r.species, r.animal), dim: false },
+        geometry: { type: 'LineString', coordinates: r.animal.pts.map((p) => [p[0], p[1]]) },
+      });
+    }
+    src.setData({ type: 'FeatureCollection', features });
+    return;
+  }
   for (const sp of visibleSpecies()) {
     const d = state.data.get(sp.id);
     if (!d) continue;
     for (const a of d.animals) {
       if (!isVisible(a)) continue;
+      if (state.only) continue; // the guessing game: a full route would give the answer away
       const key = keyOf(sp.id, a);
       features.push({
         type: 'Feature',
@@ -308,8 +337,8 @@ export function renderFrame() {
     if (!head) continue;
     speciesMoving.add(inst.species);
     const key = keyOf(inst.species, inst.animal);
-    const cb = !!state.colorBy && state.selected === inst.species;
-    const props = { color: animalColor(inst.species, inst.animal, mode), cb, species: inst.species, animal: inst.animal.id, key, year: inst.year ?? '', dim: isDim(key) };
+    const cb = !!inst.color || (!!state.colorBy && state.selected === inst.species);
+    const props = { color: inst.color || animalColor(inst.species, inst.animal, mode), cb, species: inst.species, animal: inst.animal.id, key, year: inst.year ?? '', dim: isDim(key) };
     headF.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: head } });
     if (key === focusKey) focus = head;
     const trail = trailAt(inst.pts, t, trailHours, inst.gap);
@@ -323,7 +352,7 @@ export function renderFrame() {
   updateNight();
   updateOverlayDate();
   const month = new Date(currentHours() * 3.6e6).getUTCMonth();
-  if (month !== siteMonth) refreshSites(month);
+  if (month !== siteMonth && !state.race) refreshSites(month);
   return { moving: headF.length, species: speciesMoving.size, focus };
 }
 
@@ -335,6 +364,7 @@ let siteMonth = -1;
 export function refreshSites(month = new Date(currentHours() * 3.6e6).getUTCMonth()) {
   const src = map.getSource('sites');
   if (!src || !state.index) return;
+  if (state.race || state.only) { src.setData(EMPTY); return; }
   siteMonth = month;
   const mode = colorMode();
   const features = [];
@@ -439,6 +469,10 @@ function updateOverlayDate() {
 }
 
 // ---------- camera ----------
+
+export function setGuess(features) {
+  map.getSource('guess')?.setData({ type: 'FeatureCollection', features });
+}
 
 export function viewPadding() {
   if (isPhone()) return { top: 150, bottom: Math.round(window.innerHeight * 0.46) + 10, left: 16, right: 16 };

@@ -94,10 +94,13 @@ const binLabel = (b, bins) => {
   return `${b % 2 === 0 ? 'early' : 'late'} ${MONTHS_LONG[m]}`;
 };
 
+// Month names under a year axis: three letters when there's room, else one.
 function monthAxis(svg, x, y, ticks = 12) {
   const g = svg.append('g').attr('class', 'axis x');
+  const slot = Math.abs(x(1 / 12) - x(0));
   for (let i = 0; i < ticks; i++) {
-    g.append('text').attr('x', x((i + 0.5) / 12)).attr('y', y).attr('text-anchor', 'middle').text(MONTHS[i][0] + MONTHS[i].slice(1, 3));
+    g.append('text').attr('x', x((i + 0.5) / 12)).attr('y', y).attr('text-anchor', 'middle')
+      .text(slot >= 24 ? MONTHS[i] : MONTHS[i][0]);
   }
 }
 
@@ -200,6 +203,58 @@ function speciesCharts(body, sp) {
   monthColumns(b, sp, d);
   distanceColumns(c, sp, d);
   if (d.sites?.length) siteBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
+  if (d.animals.some((a) => a.hf)) footprintBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
+}
+
+// Share of time spent at each level of human footprint, per group (the
+// colour-by facet, else where they were tagged, else everyone).
+const HF_BANDS = [[0, 9, 'wild 0–9'], [10, 24, 'light 10–24'], [25, 49, 'moderate 25–49'], [50, 100, 'heavy 50+']];
+const HF_COLORS = ['#3f8f3a', '#b9c94a', '#e6923a', '#c8402f']; // ordinal: footprint low → high
+function footprintBars(fig, sp, d) {
+  fig.append('figcaption').text('Human footprint where they went').append('small').text(' · share of fixes');
+  const key = state.colorBy || (facetsOf(sp.id).some((f) => f.key === 'site') ? 'site' : null);
+  const groups = new Map();
+  for (const a of d.animals) {
+    if (!a.hf) continue;
+    const g = key ? (a.attrs?.[key] || 'unknown') : 'All animals';
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(...a.hf.filter((v) => v >= 0));
+  }
+  const rows = [...groups].filter(([, v]) => v.length).map(([g, v]) => {
+    v.sort((a, b) => a - b);
+    return { g, median: v[Math.floor(v.length / 2)], shares: HF_BANDS.map(([lo, hi]) => v.filter((x) => x >= lo && x <= hi).length / v.length) };
+  }).sort((a, b) => a.median - b.median);
+  const node = fig.node();
+  const W = node.clientWidth || 260;
+  const rowH = 24;
+  const m = { l: key ? 96 : 8, r: 64, t: 4 };
+  const H = m.t + rows.length * rowH + 30;
+  const x = d3.scaleLinear().domain([0, 1]).range([m.l, W - m.r]);
+  const svg = fig.append('svg').attr('class', 'chart').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
+    .attr('role', 'img').attr('aria-label', `${sp.name}: share of time at each level of human footprint`);
+  rows.forEach((r, k) => {
+    const y = m.t + k * rowH;
+    if (key) svg.append('text').attr('class', 'row-name').attr('x', 0).attr('y', y + 14).text(r.g.charAt(0).toUpperCase() + r.g.slice(1));
+    let acc = 0;
+    r.shares.forEach((share, b) => {
+      if (share > 0) {
+        svg.append('rect').attr('x', x(acc) + 1).attr('y', y + 3).attr('width', Math.max(0, x(acc + share) - x(acc) - 2)).attr('height', rowH - 8).attr('rx', 3)
+          .attr('fill', HF_COLORS[b])
+          .on('pointermove', (event) => showTip(event, [[null, r.g === 'All animals' ? sp.name : r.g, 'tip-date'], [`${Math.round(share * 100)}%`, `of fixes ${HF_BANDS[b][2]}`]]))
+          .on('pointerleave', hideTip);
+      }
+      acc += share;
+    });
+    svg.append('text').attr('class', 'axis-note').attr('x', W - m.r + 6).attr('y', y + 14).text(`median ${r.median}`);
+  });
+  // Legend (ordinal bands)
+  const lg = svg.append('g').attr('transform', `translate(${m.l},${H - 12})`);
+  let lx = 0;
+  HF_BANDS.forEach(([, , label], b) => {
+    lg.append('rect').attr('x', lx).attr('y', -7).attr('width', 9).attr('height', 9).attr('rx', 2).attr('fill', HF_COLORS[b]);
+    lg.append('text').attr('class', 'axis-note').attr('x', lx + 12).attr('y', 1).text(label.split(' ')[0]);
+    lx += 14 + label.split(' ')[0].length * 6 + 8;
+  });
 }
 
 // Legend for the colour-by facet (two or more groups), shown above a chart.
@@ -247,7 +302,7 @@ function yearLines(fig, sp, d) {
   const yg = svg.append('g').attr('class', 'axis');
   yg.selectAll('line').data(y.ticks(4)).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
   yg.selectAll('text').data(y.ticks(4)).join('text').attr('x', m.l - 6).attr('y', (v) => y(v) + 3).attr('text-anchor', 'end')
-    .text((v) => fmtDeg(v, axis, 0));
+    .text((v) => fmtDeg(v, axis, y.ticks(4).some((t) => !Number.isInteger(t)) ? 1 : 0));
   monthAxis(svg, x, H - 5);
 
   const line = d3.line().defined((p) => !p.gap).x((p) => x(p.f)).y((p) => y(p.v)).curve(d3.curveMonotoneX);
@@ -417,7 +472,7 @@ function siteBars(fig, sp, d) {
   const node = fig.node();
   const W = node.clientWidth || 260;
   const rowH = 21;
-  const m = { l: 96, r: 70, t: 4 };
+  const m = { l: 96, r: 54, t: 4 };
   const H = m.t + sites.length * rowH + 4;
   const x = d3.scaleLinear().domain([0, d3.max(sites, (s) => s.days) || 1]).range([m.l, W - m.r]);
   const color = colorFor(sp.id, uiMode());
@@ -439,7 +494,7 @@ function siteBars(fig, sp, d) {
   row.append('path').attr('class', 'bar').attr('fill', color)
     .attr('d', (s) => roundedRight(m.l, 5, x(s.days) - m.l, rowH - 10, 4));
   row.append('text').attr('class', 'axis-note').attr('x', (s) => x(s.days) + 5).attr('y', rowH / 2 + 3)
-    .text((s) => `${s.days.toLocaleString()} d · ${busiestMonths(s.months)}`);
+    .text((s) => `${s.days.toLocaleString()} d`);
 }
 
 const place = (s) => `${Math.abs(s.lat).toFixed(1)}°${s.lat >= 0 ? 'N' : 'S'} ${Math.abs(s.lon).toFixed(1)}°${s.lon >= 0 ? 'E' : 'W'}`;

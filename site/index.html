@@ -78,7 +78,7 @@
     <div id="legend-ramp" class="legend-ramp"></div>
     <div class="legend-scale"><span id="legend-min"></span><span id="legend-max"></span></div>
     <p id="legend-why" class="legend-why"></p>
-    <p id="legend-shift" class="legend-shift" hidden>No NASA data for the animals' own year, so this shows the same season in the nearest year that has it.</p>
+    <p id="legend-shift" class="legend-shift" hidden>No data for the animals' own year, so this shows the nearest year that has it.</p>
   </div>
 
   <!-- Follow-an-animal readout -->
@@ -87,6 +87,7 @@
       <span id="hud-icon" class="hud-icon"></span>
       <div class="hud-names"><b id="hud-title"></b><span id="hud-sub"></span></div>
       <button id="hud-recenter" class="chip" hidden>Recentre</button>
+      <button id="hud-compare" class="chip" aria-pressed="false" title="Add this animal to a race">+ Race</button>
       <button id="hud-close" class="icon-btn" aria-label="Stop following (Esc)" title="Stop following (Esc)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
@@ -97,6 +98,11 @@
       <div><b id="hud-dist"></b><span id="hud-dist-note"></span></div>
       <div><b id="hud-day"></b><span id="hud-day-note"></span></div>
       <div><b id="hud-place"></b><span id="hud-place-note"></span></div>
+    </div>
+    <div id="hud-hf" class="hud-hf" hidden>
+      <span>Human footprint here</span>
+      <div class="hf-bar"><i id="hud-hf-mark"></i></div>
+      <b id="hud-hf-val"></b>
     </div>
     <div class="hud-profile-wrap">
       <div id="hud-profile" class="hud-profile"></div>
@@ -122,6 +128,62 @@
       <button id="story-next" class="btn primary">Next</button>
     </div>
   </section>
+
+  <!-- Compare tray: animals picked for a race -->
+  <section id="compare-tray" class="compare-tray glass" hidden aria-label="Animals to race">
+    <div id="compare-list" class="compare-list"></div>
+    <span id="race-hint" class="muted small"></span>
+    <button id="race-clear" class="btn ghost">Clear</button>
+    <button id="race-start" class="btn primary" disabled>Race ▶</button>
+  </section>
+
+  <!-- The race -->
+  <section id="race" class="race glass" hidden aria-label="Race">
+    <header class="charts-head">
+      <div><h2>The race · <span id="race-day">Day 1</span></h2>
+        <p class="muted">Every racer starts on day 1, the day its tracking began. Drag on the chart to scrub.</p></div>
+      <div class="charts-actions">
+        <button id="race-length" class="chip" aria-pressed="false" hidden></button>
+        <div class="seg" role="radiogroup" aria-label="Race view">
+          <button id="race-together" role="radio" aria-checked="true">Together</button>
+          <button id="race-split" role="radio" aria-checked="false">Split screen</button>
+        </div>
+        <button id="race-close" class="icon-btn" aria-label="End the race">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="race-body">
+      <ol id="race-board" class="race-board"></ol>
+      <div class="race-chart-wrap"><div id="race-chart" class="race-chart"></div><div id="race-tip" class="chart-tip"></div></div>
+    </div>
+  </section>
+  <div id="split" class="split" hidden></div>
+
+  <!-- Guess where -->
+  <section id="game" class="game glass" hidden aria-label="Guess where" aria-live="polite">
+    <div class="story-top">
+      <span id="game-icon" class="story-icon"></span>
+      <span id="game-round" class="kicker"></span>
+      <button id="game-exit" class="icon-btn" aria-label="Leave the game">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <h2 id="game-title" class="story-title"></h2>
+    <p id="game-text" class="story-text"></p>
+    <div class="story-nav">
+      <span class="muted small game-key"><i class="key-guess"></i> your guess · <i class="key-real"></i> where it went</span>
+      <button id="game-copy" class="btn ghost" hidden>Copy my score</button>
+      <button id="game-go" class="btn primary" disabled>Lock in my guess</button>
+      <button id="game-next" class="btn primary" hidden>Next round</button>
+    </div>
+  </section>
+
+  <!-- Recording -->
+  <div id="rec" class="rec glass" hidden role="status"><i class="rec-dot"></i> Recording <span id="rec-left"></span>
+    <button id="rec-stop" class="chip">Stop</button></div>
+
+  <a id="embed-link" class="embed-link glass" target="_blank" rel="noopener" hidden>Track the Migration ↗</a>
 
   <!-- Charts drawer -->
   <section id="charts" class="charts glass" hidden aria-label="Charts">
@@ -179,7 +241,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
           <span class="lbl">Charts</span>
         </button>
-        <button id="share-btn" class="chip" title="Copy a link to this exact view" aria-label="Share this view">
+        <button id="share-btn" class="chip" title="Share this exact view" aria-label="Share this view" aria-haspopup="true" aria-expanded="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
           <span class="lbl">Share</span>
         </button>
@@ -189,6 +251,11 @@
 
   <div id="loading" class="loading glass" role="status">Loading tracks…</div>
   <div id="toast" class="toast glass" role="status" hidden></div>
+  <div id="share-pop" class="share-pop glass" hidden>
+    <button id="share-link" class="menu-item"><b>Copy link</b><small>Opens at this exact moment</small></button>
+    <button id="share-embed" class="menu-item"><b>Copy embed code</b><small>Put the globe in a blog post or slide</small></button>
+    <button id="share-record" class="menu-item"><b>Record a 12-second video</b><small>Saves a video file of the globe, with captions</small></button>
+  </div>
 
   <!-- Feedback tab -->
   <button id="feedback-tab" class="feedback-tab" aria-haspopup="dialog">Feedback</button>
@@ -218,7 +285,7 @@
         <label class="field row"><span>Map</span>
           <select name="basemap"><option value="satellite">Satellite</option><option value="theme">Street map (follows theme)</option></select></label>
         <label class="field row"><span>NASA overlay</span>
-          <select name="overlay"><option value="none">None</option><option value="vegetation">Vegetation greenness</option><option value="sst">Sea surface temperature</option><option value="snow">Snow cover</option></select></label>
+          <select name="overlay"><option value="none">None</option><option value="vegetation">Vegetation greenness</option><option value="sst">Sea surface temperature</option><option value="snow">Snow cover</option><option value="footprint">Human footprint</option><option value="population">Population density</option><option value="lights">Night lights</option></select></label>
         <label class="field row check"><span>3D terrain</span><input type="checkbox" name="terrain"></label>
         <label class="field row"><span>Terrain height</span>
           <input type="range" name="exaggeration" min="1" max="3" step="0.5"><output data-for="exaggeration"></output></label>

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-11T21:11:07.422Z",
+  "generated": "2026-10-11T21:53:09.999Z",
   "groups": {
     "land": "Land mammals",
     "marine": "Marine animals",
@@ -62,7 +62,17 @@
           37.685,
           -1.119
         ],
-        "sites": 23
+        "sites": 23,
+        "footprint": {
+          "median": 21,
+          "bands": [
+            0,
+            74,
+            26,
+            0
+          ],
+          "n": 32206
+        }
       },
       "processing": {
         "maxKmh": 20,
@@ -119,7 +129,17 @@
           25.353,
           -19.213
         ],
-        "sites": 5
+        "sites": 5,
+        "footprint": {
+          "median": 8,
+          "bands": [
+            75,
+            25,
+            0,
+            0
+          ],
+          "n": 5954
+        }
       },
       "processing": {
         "maxKmh": 20,
@@ -177,7 +197,17 @@
           -108.382,
           44.365
         ],
-        "sites": 26
+        "sites": 26,
+        "footprint": {
+          "median": 11,
+          "bands": [
+            50,
+            41,
+            9,
+            0
+          ],
+          "n": 40249
+        }
       },
       "processing": {
         "maxKmh": 20,
@@ -235,7 +265,17 @@
           -107.744,
           41.694
         ],
-        "sites": 14
+        "sites": 14,
+        "footprint": {
+          "median": 7,
+          "bands": [
+            83,
+            17,
+            0,
+            0
+          ],
+          "n": 32876
+        }
       },
       "processing": {
         "maxKmh": 25,
@@ -296,7 +336,17 @@
           -114.844,
           51.917
         ],
-        "sites": 8
+        "sites": 8,
+        "footprint": {
+          "median": 15,
+          "bands": [
+            13,
+            76,
+            10,
+            0
+          ],
+          "n": 41024
+        }
       },
       "processing": {
         "maxKmh": 20,
@@ -364,7 +414,8 @@
           -89.941,
           53.118
         ],
-        "sites": 36
+        "sites": 36,
+        "footprint": null
       },
       "processing": {
         "maxKmh": 15,
@@ -434,7 +485,8 @@
           183.786,
           -15.825
         ],
-        "sites": 19
+        "sites": 19,
+        "footprint": null
       },
       "processing": {
         "maxKmh": 15,
@@ -506,7 +558,8 @@
           189.556,
           41.719
         ],
-        "sites": 27
+        "sites": 27,
+        "footprint": null
       },
       "processing": {
         "maxKmh": 10,
@@ -582,7 +635,17 @@
           45.119,
           54.973
         ],
-        "sites": 40
+        "sites": 40,
+        "footprint": {
+          "median": 31,
+          "bands": [
+            6,
+            30,
+            54,
+            11
+          ],
+          "n": 14705
+        }
       },
       "processing": {
         "maxKmh": 80,
@@ -641,7 +704,17 @@
           87.633,
           73.575
         ],
-        "sites": 40
+        "sites": 40,
+        "footprint": {
+          "median": 7,
+          "bands": [
+            61,
+            9,
+            23,
+            7
+          ],
+          "n": 4558
+        }
       },
       "processing": {
         "maxKmh": 100,
@@ -711,7 +784,17 @@
           -49.594,
           53.006
         ],
-        "sites": 40
+        "sites": 40,
+        "footprint": {
+          "median": 40,
+          "bands": [
+            6,
+            19,
+            43,
+            32
+          ],
+          "n": 6015
+        }
       },
       "processing": {
         "maxKmh": 80,
@@ -774,7 +857,17 @@
           207,
           69.109
         ],
-        "sites": 12
+        "sites": 12,
+        "footprint": {
+          "median": 22,
+          "bands": [
+            33,
+            54,
+            13,
+            0
+          ],
+          "n": 157
+        }
       },
       "processing": {
         "maxKmh": 120,
@@ -843,7 +936,17 @@
           -56.796,
           29.934
         ],
-        "sites": 15
+        "sites": 15,
+        "footprint": {
+          "median": 30,
+          "bands": [
+            0,
+            19,
+            73,
+            7
+          ],
+          "n": 485
+        }
       },
       "processing": {
         "maxKmh": 120,

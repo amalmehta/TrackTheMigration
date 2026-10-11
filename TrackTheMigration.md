@@ -115,6 +115,22 @@ Decided without asking (v3):
 - Share links live in the URL hash and update automatically. A shared link opens paused. A shared overlay becomes the viewer's overlay setting.
 - The elk silhouette is a cow, because every collared elk is female.
 
+Asked and answered (2026-10-11, second "keep going"):
+- Build all four: compare & race, human impact layers, the guess-where game, and embed & video.
+
+Decided without asking (v4):
+- People overlays are the key-free GIBS layers:
+  - Human Footprint 1995–2004
+  - GPW population density (nearest of 2000–2020)
+  - Black Marble night lights (2012 or 2016)
+  - Protected areas aren't available that way, so they're left out.
+- Footprint per fix is sampled at build time (zoom-7 tiles, no new dependencies), for land animals and birds only. It is shown as a live readout value, a per-species chart split by group, and footprint overlays in the wildebeest and pronghorn stories.
+- Races start each animal on its own day 1, hold up to four racers, and size the race to the field when one track is far longer (with a "Show all days" toggle). Shift-click adds a racer.
+- The game has 10 rounds of 30 days each, a minimum move per group so rounds are meaningful, and scoring relative to the move.
+- Video is a 12-second clip recorded in the browser: WebM, or MP4 in Safari.
+- Embeds use `?embed=1` and autoplay.
+- Animal data updates at most 30 times a second.
+
 CHANGELOG:
 
 - 2026-10-09 — created
@@ -138,3 +154,4 @@ CHANGELOG:
 - 2026-10-09 — built v1: data pipeline from the Movebank Data Repository (9 migrations), a 3D globe site with Season/Dates playback, Settings (⌘,), a feedback tab, tests, docs, and GitHub Pages deploy
 - 2026-10-09 — v2: cinematic redesign (glowing trails, starfield, seasonal day/night, silhouettes, dark glass UI); follow-an-animal mode with live readout and journey profile; linked charts (migration calendar, brushable latitude chart, monthly and per-animal distance); live NASA GIBS layers (vegetation, sea temperature, snow); guided stories for all nine species; 40 tests; docs updated
 - 2026-10-11 — v3: shareable links (URL hash, Share button); who-they-are filters and colour-by from study reference data; stopover detection, stopover rings, a 'Places they stayed' chart and 'staying put' in the readout; four more migrations (pronghorn, elk, white-fronted goose, Hudsonian godwit) with stories and silhouettes; palette re-optimised for 13 species; 56 tests
+- 2026-10-11 — v4: compare & race (split screen, leaderboard, distance chart); human impact layers (footprint, population, night lights) plus footprint per fix in the readout and charts; guess-where game; embed mode and 12-second video export from the Share menu; 61 tests

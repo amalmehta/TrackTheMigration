@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-11T20:50:58.633Z",
+  "generated": "2026-10-11T21:46:17.170Z",
   "icons": {
     "wildebeest": {
       "file": "icons/wildebeest.svg",
@@ -186,6 +186,81 @@
       "min": "0%",
       "max": "100%",
       "units": "of days"
+    },
+    "footprint": {
+      "stops": [
+        "#38a800",
+        "#46d300",
+        "#55ff00",
+        "#99ff00",
+        "#ddff00",
+        "#ffe500",
+        "#ffc300",
+        "#ffac13",
+        "#ffb45f",
+        "#ffbebe",
+        "#ff9898",
+        "#ff7272",
+        "#ff4242",
+        "#ff1c1c",
+        "#fa0006",
+        "#e40027",
+        "#d30042",
+        "#c2005c",
+        "#b00076",
+        "#8e0070",
+        "#6d0055",
+        "#4b003b",
+        "#21001a",
+        "#040003"
+      ],
+      "min": "0 wild",
+      "max": "100",
+      "units": ""
+    },
+    "population": {
+      "stops": [
+        "#fff2d1",
+        "#ffecc6",
+        "#ffe9c0",
+        "#ffe3b6",
+        "#ffe0b0",
+        "#ffdaa6",
+        "#fed59a",
+        "#fccb83",
+        "#fbc16c",
+        "#fabc60",
+        "#fab151",
+        "#faab4d",
+        "#fb9f46",
+        "#fc9943",
+        "#fd8d3c",
+        "#fb8138",
+        "#f76930",
+        "#f35228",
+        "#f14624",
+        "#e83220",
+        "#e12a21",
+        "#d21923",
+        "#cb1024",
+        "#bd0026"
+      ],
+      "min": "< 1",
+      "max": "≥ 1,000",
+      "units": "per km²"
+    },
+    "lights": {
+      "stops": [
+        "#000000",
+        "#1a1408",
+        "#5c4413",
+        "#c99a3a",
+        "#ffe9a8",
+        "#ffffff"
+      ],
+      "min": "dark",
+      "max": "bright",
+      "units": ""
     }
   }
 }

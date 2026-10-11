@@ -20,6 +20,9 @@ import {
   speedFilter, thinByTime, capPoints, unwrapLongitudes, trackLengthKm, findStops, clusterStops,
 } from '../site/js/tracks.js';
 import { buildFacets } from './reference.mjs';
+import { footprintSampler, footprintSummary } from './footprint.mjs';
+
+let sampleFootprint = null; // created on first use (fetches NASA's palette)
 
 // Where an animal counts as having "stopped": within km for at least days.
 const STOP_DEFAULTS = { land: { km: 6, days: 10 }, marine: { km: 40, days: 7 }, birds: { km: 30, days: 3 } };
@@ -197,10 +200,22 @@ async function build(ds) {
       lon: round(x.lon, 3), lat: round(x.lat, 3), days: Math.round(x.days), visits: x.visits,
       animals: x.animals, months: x.months.map((m) => Math.round(m)),
     }));
+  // Human footprint under every displayed fix (land animals and birds; the sea has no data).
+  let hfAll = [];
+  const hfByAnimal = new Map();
+  if (ds.group !== 'marine') {
+    sampleFootprint ??= await footprintSampler(RAW);
+    for (const t of chosen) {
+      const v = await sampleFootprint(t.pts);
+      hfByAnimal.set(t.id, v);
+      hfAll = hfAll.concat(v);
+    }
+  }
   const animalsOut = chosen.map(({ stops, ...t }) => ({
     ...t,
     attrs: attrs.get(t.id) || {},
     stops: stops.map((st) => [round(st.lon, 3), round(st.lat, 3), round(st.start, 1), round(st.end, 1)]),
+    ...(hfByAnimal.has(t.id) ? { hf: hfByAnimal.get(t.id), hfSummary: footprintSummary(hfByAnimal.get(t.id)) } : {}),
   }));
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -241,6 +256,7 @@ async function build(ds) {
       longestKm: kms[kms.length - 1],
       bbox: [minLon, minLat, maxLon, maxLat].map((v) => round(v, 3)),
       sites: sites.length,
+      footprint: ds.group === 'marine' ? null : footprintSummary(hfAll),
     },
     processing: { maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, stop },
     _abstract: meta.abstract,
@@ -266,7 +282,8 @@ async function main() {
       `  ${s.animalsShown}/${s.animalsInStudy} animals, ${s.pointsShown} points, ` +
       `${s.start.slice(0, 10)} → ${s.end.slice(0, 10)}, median ${s.medianKm} km, longest ${s.longestKm} km`,
     );
-    console.log(`  facets: ${clean.facets.map((f) => f.key).join(', ') || '—'} · stopover sites: ${clean.stats.sites}`);
+    console.log(`  facets: ${clean.facets.map((f) => f.key).join(', ') || '—'} · stopover sites: ${clean.stats.sites}` +
+      (s.footprint ? ` · footprint median ${s.footprint.median}, bands ${s.footprint.bands.join('/')}%` : ''));
     if (process.env.SHOW_ABSTRACTS) console.log(`  abstract: ${_abstract}\n`);
     species.push(clean);
   }

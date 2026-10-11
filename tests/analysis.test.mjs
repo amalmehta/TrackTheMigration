@@ -77,8 +77,17 @@ test('overlay dates outside the archive move to the nearest covered year', () =>
   assert.deepEqual(overlayDate('vegetation', H('1999-01-20T00:00:00Z')), { date: '2001-01-01', shifted: true });
 });
 
+test('static and yearly layers pick the nearest archive year', () => {
+  assert.deepEqual(overlayDate('population', H('2008-06-01T00:00:00Z')), { date: '2010-01-01', year: 2010, shifted: true, fixed: false });
+  assert.deepEqual(overlayDate('population', H('2015-03-01T00:00:00Z')), { date: '2015-01-01', year: 2015, shifted: false, fixed: false });
+  assert.equal(overlayDate('footprint', H('2019-01-01T00:00:00Z')).fixed, true);
+  assert.equal(overlayDate('lights', H('2003-01-01T00:00:00Z')).date, '2012-01-01');
+  assert.match(tileUrl('population', '2005-01-01'), /GPW_Population_Density_2005\/default\/GoogleMapsCompatible_Level7\//);
+  assert.match(tileUrl('footprint', '1995-01-01'), /Human_Footprint_1995-2004\/default\/GoogleMapsCompatible_Level7\//);
+});
+
 test('tile URLs carry the layer, date and matrix set', () => {
-  for (const key of Object.keys(ENV_LAYERS)) {
+  for (const key of Object.keys(ENV_LAYERS).filter((k) => ENV_LAYERS[k].period !== 'static')) {
     const u = tileUrl(key, '2010-03-01');
     assert.match(u, /^https:\/\/gibs\.earthdata\.nasa\.gov\/wmts\/epsg3857\/best\/.+\/default\/2010-03-01\/GoogleMapsCompatible_Level\d\/\{z\}\/\{y\}\/\{x\}\.png$/);
   }

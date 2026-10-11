@@ -73,6 +73,10 @@ async function silhouettes() {
 async function legends() {
   const out = {};
   for (const [key, layer] of Object.entries(ENV_LAYERS)) {
+    if (layer.stops) { // a true-colour layer with no NASA palette: use the hand-picked ramp
+      out[key] = { stops: layer.stops, min: layer.legendMin, max: layer.legendMax, units: layer.units };
+      continue;
+    }
     const p = await json(`https://worldview.earthdata.nasa.gov/config/palettes/${layer.palette}.json`);
     const legend = p.maps[0].legend;
     const colors = legend.colors.filter((c) => !c.endsWith('00')); // drop fully transparent

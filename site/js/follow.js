@@ -1,7 +1,7 @@
 // Follow one animal: the camera rides along, a readout shows where it is and
 // how fast it's going, and a profile of the whole journey can be scrubbed.
 
-import { positionAt, distanceAt, speedAt, mainAxis, haversineKm } from './tracks.js';
+import { positionAt, distanceAt, speedAt, mainAxis, haversineKm, indexAtOrBefore } from './tracks.js';
 import { colorFor } from './palette.js';
 import { settings } from './settings.js';
 import { map, colorMode, refreshRoutes, viewPadding } from './globe.js';
@@ -178,6 +178,14 @@ function updateHud(head) {
   }
   $('#hud-place').textContent = place;
   $('#hud-place-note').textContent = note;
+  // Human footprint under the nearest fix (land animals and birds; none at sea).
+  const hi = animal.hf ? indexAtOrBefore(pts, t) : -1;
+  const hfv = hi >= 0 ? animal.hf[hi] : -1;
+  $('#hud-hf').hidden = hfv < 0;
+  if (hfv >= 0) {
+    $('#hud-hf-mark').style.left = `${hfv}%`;
+    $('#hud-hf-val').textContent = `${hfv} / 100${animal.hfSummary ? ` · its median ${animal.hfSummary.median}` : ''}`;
+  }
   profile?.move(t);
 }
 

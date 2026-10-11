@@ -21,6 +21,9 @@ TrackTheMigration/
 │   │   ├── follow.js          Ride-along camera, readout, journey profile
 │   │   ├── charts.js          Migration calendar, linked species charts, brush, tables
 │   │   ├── share.js           Share links: view ↔ URL hash
+│   │   ├── race.js            Compare tray, races, leaderboard, split screen
+│   │   ├── game.js            Guess where
+│   │   ├── record.js          Record a short video of the globe
 │   │   ├── story.js           Story player
 │   │   ├── stories.js         Story content (scenes per species)
 │   │   ├── tracks.js          Track maths and analysis (shared with the scripts)
@@ -38,6 +41,8 @@ TrackTheMigration/
 │   ├── fetch-data.mjs         Download, clean, thin and write site/data/
 │   ├── fetch-assets.mjs       Silhouettes (PhyloPic) and overlay legends (NASA Worldview)
 │   ├── reference.mjs          Who each animal is: reference data → filter facets
+│   ├── footprint.mjs          Human Footprint under every fix (NASA GIBS tiles)
+│   ├── png.mjs                Small PNG decoder for those tiles
 │   └── serve.mjs              Local static server
 │
 ├── tests/
@@ -46,7 +51,8 @@ TrackTheMigration/
 │   ├── palette.test.mjs       Colour families and distinctness
 │   ├── stories.test.mjs       Story structure and coverage
 │   ├── reference.test.mjs     Facets from reference data
-│   └── share.test.mjs         Share-link decoding, month ranges
+│   ├── share.test.mjs         Share-link decoding, month ranges
+│   └── png.test.mjs           PNG decoding, footprint pixel maths
 │
 ├── docs/
 │   ├── INSTRUCTIONS.md        Use, run, refresh data, add a species, deploy
@@ -54,5 +60,5 @@ TrackTheMigration/
 │   ├── FILE-STRUCTURE.md      This file
 │   └── images/                README screenshots
 │
-└── data/raw/                  (git-ignored) Downloaded CSVs and metadata cache
+└── data/raw/                  (git-ignored) Downloaded CSVs, metadata and footprint tiles
 ```

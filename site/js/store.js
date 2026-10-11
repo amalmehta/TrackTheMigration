@@ -20,7 +20,12 @@ export const state = {
   story: null,          // { species, index } while a story is playing
   hidden: new Set(),    // "facet=value" groups switched off in the Who filter
   colorBy: null,        // facet key the selected species is coloured by, or null
+  compare: [],          // [{ species, animal }] picked for a race (up to 4)
+  race: null,           // { racers, day, maxDay, split } while racing
+  only: null,           // "species/animal" key: show just this animal (the guessing game)
 };
+
+export const MAX_RACERS = 4;
 
 // ---------- who-is-this-animal filters ----------
 
@@ -86,7 +91,10 @@ export async function loadSpecies(id) {
 }
 
 // Time for one animated instance: in Season view each animal-year runs on its own year.
-export const instanceTime = (inst) => (state.mode === 'dates' ? state.t : seasonToHours(inst.year, state.frac));
+export const instanceTime = (inst) => {
+  if (state.race) return inst.start + state.race.day * 24; // every racer from its own start
+  return state.mode === 'dates' ? state.t : seasonToHours(inst.year, state.frac);
+};
 
 // The calendar year the environment overlay shows in Season view.
 export function referenceYear() {
@@ -94,7 +102,10 @@ export function referenceYear() {
   const s = speciesById(state.selected).stats;
   return Math.round((Number(s.start.slice(0, 4)) + Number(s.end.slice(0, 4))) / 2);
 }
-export const currentHours = () => (state.mode === 'dates' ? state.t : seasonToHours(referenceYear(), state.frac));
+export const currentHours = () => {
+  if (state.race) return state.race.racers[0].start + state.race.day * 24; // overlays follow the first racer
+  return state.mode === 'dates' ? state.t : seasonToHours(referenceYear(), state.frac);
+};
 
 // ---------- formatting ----------
 

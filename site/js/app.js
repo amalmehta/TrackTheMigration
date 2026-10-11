@@ -11,6 +11,9 @@ import {
   applyOverlay, refreshRoutes, refreshSites, setStopsVisible, renderFrame, pulse, frameSpecies, viewPadding,
 } from './globe.js';
 import { encodeView, decodeView, cameraString } from './share.js';
+import { initRace, toggleCompare, inCompare, renderTray, startRace, stopRace, raceFrame, raceLabel } from './race.js';
+import { initGame, startGame, stopGame, inGame } from './game.js';
+import { record, canRecord } from './record.js';
 import { initFollow, startFollow, stopFollow, followFrame, recenterFollow } from './follow.js';
 import { initCharts, renderCharts, chartsTime, setOpen as setChartsOpen } from './charts.js';
 import { initStory, startStory, stopStory, hasStory } from './story.js';
@@ -25,12 +28,14 @@ const $ = (s) => document.querySelector(s);
 // ---------- what's animated ----------
 
 function buildInstances() {
+  if (state.race) return; // racers are set up by the race
   state.instances = [];
   for (const sp of visibleSpecies()) {
     const d = state.data.get(sp.id);
     if (!d) continue;
     for (const a of d.animals) {
       if (!isVisible(a)) continue;
+      if (state.only && state.only !== keyOf(sp.id, a)) continue;
       if (state.mode === 'dates') {
         state.instances.push({ species: sp.id, animal: a, pts: a.pts, gap: d.maxGapHours });
       } else {
@@ -67,6 +72,15 @@ function setMode(mode) {
 
 function frame() {
   const r = renderFrame();
+  if (state.race) {
+    const { label, sub } = raceLabel();
+    $('#time-label').textContent = label;
+    $('#time-year').textContent = sub;
+    $('#time-slider').value = Math.round((state.race.day / (state.race.maxDay || 1)) * 1000);
+    $('#time-active').textContent = `${r.moving} of ${state.race.racers.length} racers tracked`;
+    raceFrame();
+    return;
+  }
   if (state.mode === 'season') {
     $('#time-label').textContent = fmtSeason(state.frac);
     $('#time-year').textContent = 'every year';
@@ -87,19 +101,24 @@ function frame() {
 
 let last = 0;
 let lastHashWrite = 0;
+let lastDataFrame = 0;
 function tick(now) {
   if (!state.playing) return;
   const dt = Math.min(0.1, (now - (last || now)) / 1000);
   last = now;
   const days = Number($('#speed-select').value) * dt;
-  if (state.mode === 'season') {
+  if (state.race) {
+    state.race.day += days;
+    if (state.race.day > state.race.maxDay) state.race.day = 0;
+  } else if (state.mode === 'season') {
     state.frac = (state.frac + days / 365.2425) % 1;
   } else {
     state.t += days * 24;
     if (state.t > state.range[1]) state.t = state.range[0];
   }
   pulse(now);
-  frame();
+  // Animal positions update at most 30 times a second; the camera still renders every frame.
+  if (now - lastDataFrame >= 32) { lastDataFrame = now; frame(); }
   if (now - lastHashWrite > 2000) { lastHashWrite = now; writeHash(); }
   requestAnimationFrame(tick);
 }
@@ -202,14 +221,17 @@ function renderInfo() {
       In <b>Season</b> view every year an animal was tracked plays over one calendar year, so you can see who moves when.</p>
       <div class="actions-row">
         <button class="btn primary" data-act="calendar">${chartIcon} Migration calendar</button>
+        <button class="btn" data-act="game">${gameIcon} Guess where</button>
       </div>
-      <p class="hint">Pick a migration for its story, or click any dot to ride along with that animal.</p>
+      <p class="hint">Pick a migration for its story, or click any dot to ride along with that animal.
+      <b>Shift-click</b> dots from any species to race them against each other.</p>
       <details class="credits"><summary>About the data</summary>
         <p>All tracks are real GPS, Argos satellite or geolocator fixes from published, openly licensed data packages in the
         <a href="https://datarepository.movebank.org" target="_blank" rel="noopener">Movebank Data Repository</a>.
         Each migration lists its citation. Silhouettes from <a href="https://www.phylopic.org" target="_blank" rel="noopener">PhyloPic</a>;
         overlays from <a href="https://earthdata.nasa.gov/gibs" target="_blank" rel="noopener">NASA GIBS</a>.</p></details>`;
     info.querySelector('[data-act="calendar"]').addEventListener('click', () => setChartsOpen(true));
+    info.querySelector('[data-act="game"]').addEventListener('click', () => startGame());
     return;
   }
   const s = speciesById(state.selected);
@@ -328,11 +350,23 @@ function setColorBy(k) {
 
 const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 const followIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+const gameIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3"/></svg>';
 const chartIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
 
 function renderTicks() {
   const ticks = $('#month-ticks');
   ticks.innerHTML = '';
+  if (state.race) {
+    const max = state.race.maxDay;
+    const step = [7, 30, 60, 100, 200, 365, 500, 1000].find((k) => max / k <= 7) || 1000;
+    for (let d = step; d < max; d += step) {
+      const s = document.createElement('span');
+      s.style.left = `${(d / max) * 100}%`;
+      s.textContent = `day ${d}`;
+      ticks.append(s);
+    }
+    return;
+  }
   if (state.mode === 'season') {
     MONTHS.forEach((m, i) => {
       const s = document.createElement('span');
@@ -365,6 +399,12 @@ function renderLayers() {
   list.innerHTML = '';
   for (const [key, label] of [['none', 'None'], ...Object.entries(ENV_LAYERS).map(([k, L]) => [k, L.title])]) {
     const L = ENV_LAYERS[key];
+    if (key === 'vegetation' || key === 'footprint') {
+      const h = document.createElement('div');
+      h.className = 'legend-group';
+      h.textContent = key === 'vegetation' ? 'Nature, by date' : 'People';
+      list.append(h);
+    }
     const id = `ov-${key}`;
     const row = document.createElement('label');
     row.className = 'radio-row';
@@ -409,7 +449,9 @@ function renderLegend(shown) {
   if (!L || !lg || !shown) { box.hidden = true; return; }
   box.hidden = false;
   $('#legend-title').textContent = L.title;
-  $('#legend-date').textContent = (L.period === 'week' ? `${Number(shown.date.slice(8))} ` : '') + fmtMonthYear(shown.date);
+  $('#legend-date').textContent = shown.fixed ? '1995–2004'
+    : L.period === 'static' || L.period === 'year' ? String(shown.year)
+      : (L.period === 'week' ? `${Number(shown.date.slice(8))} ` : '') + fmtMonthYear(shown.date);
   $('#legend-shift').hidden = !shown.shifted;
   $('#legend-ramp').style.background = `linear-gradient(90deg, ${lg.stops.join(',')})`;
   $('#legend-min').textContent = lg.min;
@@ -455,13 +497,14 @@ function wireControls() {
   $('#play-btn').addEventListener('click', () => setPlaying(!state.playing));
   $('#time-slider').addEventListener('input', (e) => {
     const v = Number(e.target.value) / 1000;
-    if (state.mode === 'season') state.frac = Math.min(v, 0.9999);
+    if (state.race) state.race.day = v * state.race.maxDay;
+    else if (state.mode === 'season') state.frac = Math.min(v, 0.9999);
     else state.t = state.range[0] + v * (state.range[1] - state.range[0]);
     frame();
     writeHash();
   });
-  $('#mode-season').addEventListener('click', () => { if (state.follow) stopFollow(); setMode('season'); });
-  $('#mode-dates').addEventListener('click', () => setMode('dates'));
+  $('#mode-season').addEventListener('click', () => { if (state.race) stopRace(); if (state.follow) stopFollow(); setMode('season'); });
+  $('#mode-dates').addEventListener('click', () => { if (state.race) stopRace(); setMode('dates'); });
   $('#speed-select').value = String(settings.speed);
   $('#all-btn').addEventListener('click', () => select('all'));
 
@@ -482,9 +525,15 @@ function wireControls() {
   const animalFrom = (f) => state.data.get(f.properties.species)?.animals.find((a) => String(a.id) === String(f.properties.animal));
   for (const layer of ['heads', 'routes']) {
     map.on('click', layer, (e) => {
+      if (inGame() || state.race) return;
       const f = e.features[0];
       const animal = animalFrom(f);
       if (!animal) return;
+      if (e.originalEvent.shiftKey) {
+        toggleCompare(f.properties.species, animal);
+        toast(inCompare(f.properties.species, animal) ? 'Added to the race. Pick another, then press Race.' : 'Removed from the race.');
+        return;
+      }
       startFollow(f.properties.species, animal);
       setPlaying(true);
     });
@@ -497,7 +546,7 @@ function wireControls() {
     const a = animalFrom(e.features[0]);
     popup.setLngLat(e.lngLat)
       .setHTML(`<div class="tip-date">${esc(sp.name)} · ${esc(p.animal)}${p.year ? ` · ${p.year}` : ''}</div>
-        ${a ? `<div><b>${esc(fmtDist(a.km))}</b> tracked</div>` : ''}<div class="tip-hint">Click to follow</div>`)
+        ${a ? `<div><b>${esc(fmtDist(a.km))}</b> tracked</div>` : ''}<div class="tip-hint">${inGame() || state.race ? '' : 'Click to follow · Shift-click to race'}</div>`)
       .addTo(map);
   });
 
@@ -527,13 +576,36 @@ function wireControls() {
     if (site) pickSite(f.properties.species, site);
   });
 
-  // Share this view
-  $('#share-btn').addEventListener('click', async () => {
+  // Share this view: a link, an embed snippet, or a short video.
+  const sharePop = $('#share-pop');
+  $('#share-btn').addEventListener('click', () => {
     writeHash(true);
-    const url = location.href;
-    let copied = false;
-    try { await navigator.clipboard.writeText(url); copied = true; } catch { /* clipboard blocked */ }
-    toast(copied ? 'Link copied. It opens at this exact moment.' : `Copy this link: ${url}`);
+    sharePop.hidden = !sharePop.hidden;
+    $('#share-btn').setAttribute('aria-expanded', String(!sharePop.hidden));
+    $('#share-record').disabled = !canRecord();
+    if (!canRecord()) $('#share-record').title = 'This browser can\u2019t record video';
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (!sharePop.hidden && !sharePop.contains(e.target) && !$('#share-btn').contains(e.target)) sharePop.hidden = true;
+  });
+  const copy = async (text, ok) => {
+    try { await navigator.clipboard.writeText(text); toast(ok); } catch { toast(`Copy this: ${text}`); }
+    sharePop.hidden = true;
+  };
+  $('#share-link').addEventListener('click', () => { writeHash(true); copy(fullUrl(), 'Link copied. It opens at this exact moment.'); });
+  $('#share-embed').addEventListener('click', () => {
+    writeHash(true);
+    const src = fullUrl().replace(/(#|$)/, (m) => `${location.search ? '&' : '?'}embed=1${m}`);
+    copy(`<iframe src="${src}" width="960" height="560" style="border:0;border-radius:12px" title="Track the Migration" allow="fullscreen" loading="lazy"></iframe>`,
+      'Embed code copied. Paste it into any web page.');
+  });
+  $('#share-record').addEventListener('click', () => { sharePop.hidden = true; startRecording(); });
+
+  // Compare & race from the follow readout
+  $('#hud-compare').addEventListener('click', () => {
+    if (!state.follow) return;
+    toggleCompare(state.follow.species, state.follow.animal);
+    syncHudCompare();
   });
 
   // Feedback
@@ -584,6 +656,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
 });
 
 on('overlay', renderLegend);
+on('race', () => renderTicks());
 // Keep the animals clear of the charts drawer when it opens or closes.
 on('charts', () => {
   if (!state.follow && !state.story) frameSpecies(state.selected === 'all' ? null : speciesById(state.selected));
@@ -598,6 +671,49 @@ on('style-ready', () => {
 });
 
 // ---------- start ----------
+
+const fullUrl = () => location.href.replace(/[?&]embed=1/, '');
+
+function syncHudCompare() {
+  const on = !!state.follow && inCompare(state.follow.species, state.follow.animal);
+  $('#hud-compare').textContent = on ? '✓ In the race' : '+ Race';
+  $('#hud-compare').setAttribute('aria-pressed', String(on));
+}
+on('follow', syncHudCompare);
+on('compare', syncHudCompare);
+
+// ---------- record a short video ----------
+
+let recording = null;
+function startRecording() {
+  if (recording) return;
+  setPlaying(true);
+  const btn = $('#rec-stop');
+  $('#rec').hidden = false;
+  recording = record({
+    seconds: 12,
+    getText: () => {
+      const sp = state.follow ? speciesById(state.follow.species) : state.selected !== 'all' ? speciesById(state.selected) : null;
+      const title = state.race ? 'The race' : sp ? `${sp.name}${state.follow ? ` · ${state.follow.animal.id}` : ''}` : 'Every migration';
+      const subtitle = state.story ? $('#story-title').textContent : sp ? sp.region : `${state.index.species.length} species, real tracking data`;
+      return { title, subtitle, date: $('#time-label').textContent, year: $('#time-year').textContent };
+    },
+    onTick: (left) => { $('#rec-left').textContent = `${Math.ceil(left)} s`; },
+    onDone: (blob, ext) => {
+      recording = null;
+      $('#rec').hidden = true;
+      const name = `track-the-migration-${state.selected}-${new Date().toISOString().slice(0, 10)}.${ext}`;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.append(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+      toast(`Saved ${name}`);
+    },
+  });
+  btn.onclick = () => recording?.stop();
+}
 
 // Pick the animals that used a stopover site, and fly there.
 async function pickSite(speciesId, site) {
@@ -672,7 +788,7 @@ async function applySharedView(view) {
 }
 
 const controller = {
-  select, setMode, setPlaying, setSpeed, frame, setHighlight, pickSite,
+  select, setMode, setPlaying, setSpeed, frame, setHighlight, pickSite, toggleCompare, stopRace,
   follow: (id, animal, opts) => { const p = startFollow(id, animal, opts); setPlaying(true); return p; },
   stopFollow, stopStory,
 };
@@ -694,18 +810,34 @@ async function main() {
   initFollow(controller);
   initCharts(controller);
   initStory(controller);
+  initRace(controller);
+  initGame(controller);
+  setupEmbed();
   setMode(settings.mode);
   renderSpeciesList();
   // A shared link opens paused at its moment; otherwise start as usual.
   const shared = decodeView(location.hash);
   if (shared) {
     await applySharedView(shared);
-    if (shared.story != null) setPlaying(true);
+    // Stories and embedded globes play; a plain shared link opens paused at its moment.
+    if (shared.story != null || document.body.classList.contains('embed')) setPlaying(true);
   } else {
     applyingHash = false;
     await select('all');
     if (settings.autoplay && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPlaying(true);
   }
+}
+
+// Embed mode (?embed=1): just the globe, the clock and a link to the full site.
+function setupEmbed() {
+  if (!new URLSearchParams(location.search).has('embed')) return;
+  document.body.classList.add('embed');
+  const link = $('#embed-link');
+  link.hidden = false;
+  const sync = () => { link.href = fullUrl(); };
+  sync();
+  window.addEventListener('hashchange', sync);
+  setInterval(sync, 2000);
 }
 
 main().catch((err) => {

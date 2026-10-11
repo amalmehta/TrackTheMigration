@@ -10,7 +10,9 @@ flowchart TB
     REG[datasets.mjs<br>which packages, how to clean]
     FETCH[fetch-data.mjs]
     REF[reference.mjs<br>who each animal is]
+    FP[footprint.mjs + png.mjs<br>human footprint per fix]
     REF --> FETCH
+    FP --> FETCH
     ASSETS[fetch-assets.mjs]
     RAW[(data/raw/<br>CSV cache, git-ignored)]
     REG --> FETCH
@@ -31,9 +33,12 @@ flowchart TB
     CHARTS[charts.js<br>calendar · linked charts · brush]
     STORY[story.js + stories.js<br>guided scenes]
     SHARE[share.js<br>view ↔ URL hash]
+    RACE[race.js<br>compare · race · split screen]
+    GAME[game.js<br>guess where]
+    REC[record.js<br>video export]
     PURE[tracks.js · solar.js · environment.js · palette.js<br>pure, unit-tested]
     SET[settings.js]
-    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & SHARE
+    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & SHARE & RACE & GAME & REC
     GLOBE & FOLLOW & CHARTS & STORY --> STORE
     GLOBE & FOLLOW & CHARTS --> PURE
   end
@@ -52,6 +57,11 @@ flowchart TB
 | `scripts/datasets.mjs` | The registry of migrations: repository IDs, a one-line description, and cleaning settings (speed limit, thinning, caps, accepted Argos classes, geolocator stopovers). |
 | `scripts/fetch-data.mjs` | Downloads each CSV (cached; several files per study allowed) and reads the package metadata. Then: <ul><li>filters bad fixes</li><li>finds each animal's stopovers on the full-resolution cleaned track</li><li>clusters them into shared sites</li><li>simplifies and caps tracks for display</li><li>attaches who-each-animal-is attributes</li></ul> Writes `site/data/<id>.json` and `index.json`. |
 | `scripts/reference.mjs` | Turns a study's reference data (one row per deployment) into normalised attributes: sex, age when tagged, tagging site, handling. Keeps only *facets* that split the shown animals into at least two groups of two or more. Tagging sites use the coarsest useful grouping: the site name, then a region in brackets, then the country. |
+| `scripts/footprint.mjs` | Samples the Human Footprint index (SEDAC 1995–2004, via NASA GIBS tiles at zoom 7, ~1.2 km) under every displayed fix of land animals and birds. Each palette pixel is matched to NASA Worldview's colour map to recover its value. Produces per-fix values, per-animal summaries and a species summary. Tiles are cached. |
+| `scripts/png.mjs` | A dependency-free PNG decoder (8-bit, non-interlaced: palette, grey, RGB, RGBA), using Node's zlib plus the five row filters. |
+| `site/js/race.js` | The compare tray and races. <ul><li>Racers replay from their own day 1 (`instanceTime` = start + day).</li><li>The leaderboard has statuses (moving, staying put, untracked, tag ended), and there's a distance-over-time chart with a scrubbing crosshair.</li><li>The race is sized to the field when one track is much longer.</li><li>Split screen creates one lightweight MapLibre globe per racer.</li></ul> |
+| `site/js/game.js` | Guess where. <ul><li>Picks random real moments with a meaningful 30-day move (land ≥ 12 km, marine ≥ 150 km, birds ≥ 250 km).</li><li>Hides routes, stopovers and the time bar so nothing gives the answer away.</li><li>Plays the answer forward and scores `1000·exp(−miss / max(25 km, move/2))`.</li></ul> |
+| `site/js/record.js` | Video export. Each frame it composites the map canvas (kept readable with `preserveDrawingBuffer`) with captions onto a 2D canvas. `MediaRecorder` turns that into WebM (or MP4 in Safari), stopped by a wall-clock timer. |
 | `site/js/share.js` | Encodes the current view into the URL hash, and decodes it defensively (bad values ignored). Covers species, Season day or real date, followed animal, story scene, overlay, colour-by, hidden groups and camera. |
 | `scripts/fetch-assets.mjs` | Downloads the chosen PhyloPic silhouettes and records their credits and licences. Turns NASA Worldview's palettes into 24-stop legends for the overlays. Writes `assets.json` and `site/icons/`. |
 | `site/js/store.js` | Shared state (selection, clock, follow, story, chart selection, hidden groups, colour-by), a tiny event bus, data loading, and formatting helpers. Also holds the who-filter helpers: visibility, and facet shades (dark → light steps of the species hue, grey for unknown). |
@@ -109,6 +119,23 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
   3. open the story scene, or follow the animal, or set the mode, time and camera
 - The view opens paused. A late style load re-frames a followed animal.
 
+**Races**
+
+- Racers come from the compare tray, which is filled by shift-clicking or "+ Race". Starting a race replaces the normal instances with one per racer, coloured by species, or by shades of a species when it races itself.
+- The clock is `race.day`, and each racer's time is its start + day.
+- Routes show only the racers; stopovers and Season logic are off. Ending the race restores the normal view.
+
+**Guess where**
+
+- `state.only` limits the globe to one animal and turns off its route.
+- The camera frames a window sized to how far that animal moved in the month.
+- A guess is a map click. Locking it in animates 30 days of real time, then draws the guess, the real position and the miss between them.
+
+**Embed and video**
+
+- `?embed=1` adds a body class that hides everything but the globe and clock, and shows a link back to the full site at the same hash. Embedded globes autoplay.
+- The share menu builds the `<iframe>` snippet from the live hash.
+
 **Charts ↔ globe**
 
 - Brushing the latitude chart builds a set of animal keys. `state.highlight` dims everything else on the globe and in the other charts.
@@ -134,9 +161,10 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 | Data | Where | Committed? |
 |---|---|---|
 | Raw CSVs, reference data and metadata | `data/raw/` | No (about 600 MB; `npm run fetch`) |
-| Processed tracks, per-animal attributes and stops, stopover sites, facets | `site/data/<species>.json` (about 5 MB total for 13 species) | Yes |
+| Processed tracks, per-animal attributes and stops, stopover sites, facets | `site/data/<species>.json` (about 5.5 MB total for 13 species) | Yes |
 | Species list, stats, citations | `site/data/index.json` | Yes |
 | Silhouette credits, overlay legends | `site/data/assets.json`, `site/icons/*.svg` | Yes |
+| Human Footprint per fix (land and birds) | `hf` arrays in `site/data/<species>.json`; tile cache in `data/raw/hf/` | Data yes, tiles no |
 | Story text | `site/js/stories.js` | Yes |
 | Viewer preferences | Browser `localStorage` key `ttm.settings` | n/a |
 | Imagery, maps, terrain, NASA overlays | Third-party tile servers, fetched at runtime | n/a |
@@ -148,6 +176,12 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Stopovers computed at build time on unthinned tracks.** Thinning to 12–24 h fixes would hide shorter stops. Thresholds are simple distance-and-duration rules per group, which are easy to explain and tune, rather than a behavioural model.
 - **Facets only when they split the animals.** A filter that hides nothing, such as "female" when every elk is female, is noise, so it's dropped automatically.
 - **Colour-by uses shades of one hue.** Groups within a species stay in that species' colour family, following the colour rule, and are spaced in lightness so they stay distinguishable. "Unknown" is grey.
+- **Footprint sampled at build time, not in the browser.** Each fix gets one integer, so the readout and charts need no tile reads at runtime. The cost is about 0.5 MB more data, and a snapshot from 1995–2004 rather than the animals' own year.
+- **People overlays are the ones GIBS serves without a key**: Human Footprint, GPW population density and Black Marble night lights. Protected-area boundaries (WDPA) aren't available that way, so they're not included.
+- **Races align journeys by their own start.** That's what makes animals tracked decades apart comparable. Split screen uses separate small maps rather than one map with several cameras, which MapLibre doesn't support; each is light (no terrain or overlays).
+- **The game scores relative to the move**, so species with very different scales are equally fair. Rounds are random, with repeats avoided within a game.
+- **Video is recorded in the browser** with `MediaRecorder` on a composited canvas, so captions are burned in and nothing is uploaded. WebM is preferred because Chrome's MP4 recorder produced empty files in testing.
+- **Animal data updates at most 30 times a second** while the camera renders every frame, which halves the per-frame data work.
 - **Share state in the hash, not a server.** It works on static hosting, and links stay human-readable. The cost: the overlay in a link becomes the viewer's saved overlay setting.
 - **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
 - **NASA GIBS for live layers.** These are key-free and time-enabled.
@@ -163,7 +197,7 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 ## Testing
 
-`npm test` runs 56 `node:test` unit tests, and CI runs the same tests before every deploy.
+`npm test` runs 61 `node:test` unit tests, and CI runs the same tests before every deploy.
 
 - **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping.
 - **Analysis** (`analysis.test.mjs`):
@@ -173,10 +207,21 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Stopovers** (in `analysis.test.mjs`): finding a stay, not bridging tracking gaps, merging nearby stops into sites across the antimeridian.
 - **Reference** (`reference.test.mjs`): sex, age and handling normalisation; site grouping (osprey regions, stork countries); facets kept only when they split the animals.
 - **Share** (`share.test.mjs`): decoding dates, Season days, camera, colour-by and hidden groups; rejecting bad values; busiest-month ranges wrapping the new year.
+- **PNG and footprint** (`png.test.mjs`): paletted and RGB decoding with sub, up and Paeth filters; rejecting non-PNGs; Web-Mercator pixel maths; footprint summaries and bands.
+- **People overlays** (in `analysis.test.mjs`): nearest census or lights year, the fixed footprint snapshot, URLs without a time dimension.
 - **Palette** (`palette.test.mjs`): all 13 species. Covers hue families, pairwise ΔE ≥ 20 (the shades were found by search; the smallest pair is 21.9) and contrast against the background, in light and dark.
 - **Stories** (`stories.test.mjs`): one per species, 4–6 scenes, valid dates, views, overlays and placeholders, each ending in a ride-along.
 
-Checked by hand in a browser, at desktop, 800 px and 375 px phone sizes, with no console errors:
+Checked in a browser and with a headless Chrome driven over the DevTools protocol (a scratch script, not part of the repo):
+
+- Race: three species, leaderboard, chart, sizing, split screen.
+- Game: rounds, scoring, no spoilers.
+- Embed mode.
+- Video export: a 1200×780 WebM.
+- Footprint readout and chart: Athi-Kaputiei 29 > Mara 19 > Amboseli 15, matching the study.
+- Phone layouts for race and game, with no horizontal scroll.
+
+Earlier rounds, checked by hand at desktop, 800 px and 375 px phone sizes, with no console errors:
 
 - All View: the starfield, glow and night shading.
 - Species: fly-to framing with the panel, charts and readout open.
@@ -202,4 +247,8 @@ Checked by hand in a browser, at desktop, 800 px and 375 px phone sizes, with no
 - **Stopovers depend on thresholds.** A bird circling a lake for 2 days isn't a stop; a whale foraging within 40 km for a week is. The rings describe where animals lingered, not why.
 - **Facets are only as good as the reference data.** Many blue whales and storks have unknown sex. Stork "tagged at" has too many sites to group well, so it isn't shown.
 - **Share links carry the overlay into your settings.** Opening a link with an overlay switches that overlay on for you.
+- **The footprint is a 1995–2004 snapshot** at ~1 km. It describes the land, not the animal's year, and the sea has no data.
+- **Race distances use thinned tracks**, so they understate wiggly movement equally for every racer. Split screen opens one extra map per racer, which is heavier on phones.
+- **The game picks rounds at random,** so some are much easier than others.
+- **Video depends on the browser.** It's 12 seconds, at the size of the window, and a slow device records a choppier video.
 - **Heavier on low-end devices.** 3D terrain, glow and night shading can each be switched off.
