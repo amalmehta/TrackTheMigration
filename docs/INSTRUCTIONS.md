@@ -13,6 +13,32 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - **Pick a migration** in the left panel to fly there. **All migrations** shows every species at once.
 - **Move the globe:** drag to spin, right-drag (or two-finger drag) to tilt, and scroll to zoom. Land species open tilted, so you see the 3D terrain.
 
+### Who they are: filters and colour by
+- When a study recorded who each animal is, the species card shows **Who they are**:
+  - sex, age when tagged, and where it was tagged (for example the three wildebeest populations, or the ospreys' East, Midwest and West flyways)
+  - for white storks, whether a bird was part of an experiment
+- Click a group's chip to hide those animals, and click again to bring them back. The globe, charts and stopovers update together.
+- **Colour by** gives each group its own shade of the species colour, on the globe and in the charts, with a legend.
+- Zebra, mule deer, pronghorn, elk and geese don't show this section. Their reference data doesn't split the animals into groups: every collared elk and mule deer, for example, is an adult female.
+
+### Stopovers: places they stayed
+- Rings on the globe mark places where an animal stayed put. A place counts if the animal stayed within a set distance for a set time:
+  - birds: within 30 km for 3 days
+  - marine animals: within 40 km for 7 days
+  - land animals: within 6 km for 10 days
+  - bar-tailed godwits: within 150 km, because their geolocators are coarse
+- Bigger rings mean more animal-days. A ring is brighter when animals use it at the current time of year.
+- Hover a ring to see who used it and in which months. Click it to pick those animals.
+- The **Places they stayed** chart lists the busiest sites.
+- While you follow an animal, the readout says when it is *staying put*, and for how long.
+- Switch stopovers off in **Layers** or Settings.
+
+### Share a moment
+- **Share** (in the time bar) copies a link to exactly what you're looking at:
+  - species, date and the animal you're following
+  - story scene, NASA overlay, filters and camera
+- The address bar keeps that link up to date as you explore. A shared link opens paused at its moment; a link to a story scene plays from that scene.
+
 ### Ride along with an animal
 - Click any dot or route, or **Follow the farthest** on a species card. The camera follows that animal.
 - A readout shows:
@@ -95,6 +121,9 @@ This re-downloads the PhyloPic silhouettes with their credits, and rebuilds the 
    ```
 
 3. Add an entry to `scripts/datasets.mjs`. Copy a similar species and adjust the speed limit, thinning and caps.
+   - Add `ref:` (the reference-data CSV's UUID) to get the Who-they-are filters.
+   - Use `files:` instead of `file:` when a study has several tracking CSVs (for example GPS plus Argos).
+   - Use `stop:` to change what counts as a stopover.
 4. Add its colour to `site/js/palette.js`, in its group's hue family.
 5. Pick a silhouette on [PhyloPic](https://www.phylopic.org) (CC0, public domain or CC BY) and add its UUID to `SILHOUETTES` in `scripts/fetch-assets.mjs`.
 6. Write its story in `site/js/stories.js`. Use only facts from the study's abstract (`SHOW_ABSTRACTS=1 npm run fetch -- <id>`) or `{placeholders}` computed from the data.
@@ -108,10 +137,12 @@ This re-downloads the PhyloPic silhouettes with their credits, and rebuilds the 
 npm test
 ```
 
-This runs 40 unit tests:
+This runs 56 unit tests:
 - the track maths, analysis helpers and sun position
+- stopover detection and clustering
 - the night shading and the NASA date handling
-- the colour rules and the story content
+- reference-data facets and share-link parsing
+- the colour rules for all 13 species and the story content
 
 See [System design → Testing](SYSTEM-DESIGN.md#testing) for what's checked by hand.
 

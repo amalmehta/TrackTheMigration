@@ -90,6 +90,14 @@ function headNow() {
   return positionAt(f.animal.pts, state.t, Infinity);
 }
 
+// Re-centre on the followed animal (e.g. once the map has finished loading).
+export function recenterFollow() {
+  if (!state.follow) return;
+  userMoved = false;
+  $('#hud-recenter').hidden = true;
+  flyToAnimal(1600);
+}
+
 function flyToAnimal(duration) {
   const p = headNow();
   if (!p) return;
@@ -144,7 +152,10 @@ function updateHud(head) {
   const v = speedAt(pts, animal.cum, t, 24, gap);
   const moving = !!positionAt(pts, t, gap);
   $('#hud-speed').textContent = v == null ? '—' : fmtSpeed(v);
-  $('#hud-speed-note').textContent = moving ? 'over the last day' : 'not tracked right now';
+  const stop = animal.stops?.find(([, , a, b]) => t >= a && t <= b);
+  $('#hud-speed-note').textContent = !moving ? 'not tracked right now'
+    : stop ? `staying put · day ${Math.floor((t - stop[2]) / 24) + 1} of ${Math.max(1, Math.round((stop[3] - stop[2]) / 24))} here`
+      : 'over the last day';
   $('#hud-dist').textContent = fmtDist(distanceAt(pts, animal.cum, t));
   $('#hud-dist-note').textContent = `of ${fmtDist(animal.km)}`;
   const day = Math.max(0, Math.floor((t - pts[0][2]) / 24)) + 1;

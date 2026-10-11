@@ -23,7 +23,7 @@ const contrast = (hex, bg) => {
 };
 
 // Lab hue ranges for each family (degrees).
-const FAMILY = { land: [20, 100], marine: [200, 310], birds: [110, 175] };
+const FAMILY = { land: [0, 95], marine: [200, 310], birds: [100, 190] };
 
 test('every species has a colour in both modes', () => {
   for (const ds of DATASETS) {

@@ -20,6 +20,7 @@ TrackTheMigration/
 │   │   ├── globe.js           Map, terrain, night, NASA overlays, trails/heads, camera
 │   │   ├── follow.js          Ride-along camera, readout, journey profile
 │   │   ├── charts.js          Migration calendar, linked species charts, brush, tables
+│   │   ├── share.js           Share links: view ↔ URL hash
 │   │   ├── story.js           Story player
 │   │   ├── stories.js         Story content (scenes per species)
 │   │   ├── tracks.js          Track maths and analysis (shared with the scripts)
@@ -30,19 +31,22 @@ TrackTheMigration/
 │   └── data/
 │       ├── index.json         Species list, stats, citations, licences
 │       ├── assets.json        Silhouette credits, overlay legend colours
-│       └── <species>.json     Processed tracks, one file per migration
+│       └── <species>.json     Tracks, who-each-animal-is, stops and stopover sites per migration
 │
 ├── scripts/
 │   ├── datasets.mjs           Which data packages to use and how to clean each
 │   ├── fetch-data.mjs         Download, clean, thin and write site/data/
 │   ├── fetch-assets.mjs       Silhouettes (PhyloPic) and overlay legends (NASA Worldview)
+│   ├── reference.mjs          Who each animal is: reference data → filter facets
 │   └── serve.mjs              Local static server
 │
 ├── tests/
 │   ├── tracks.test.mjs        Track maths
-│   ├── analysis.test.mjs      Analysis helpers, sun and night, NASA dates
+│   ├── analysis.test.mjs      Analysis helpers, stopovers, sun and night, NASA dates
 │   ├── palette.test.mjs       Colour families and distinctness
-│   └── stories.test.mjs       Story structure and coverage
+│   ├── stories.test.mjs       Story structure and coverage
+│   ├── reference.test.mjs     Facets from reference data
+│   └── share.test.mjs         Share-link decoding, month ranges
 │
 ├── docs/
 │   ├── INSTRUCTIONS.md        Use, run, refresh data, add a species, deploy

@@ -26,7 +26,7 @@ export function initStory(controller) {
   });
 }
 
-export async function startStory(id) {
+export async function startStory(id, scene = 0) {
   if (state.follow) ctl.stopFollow();
   if (state.selected !== id) await ctl.select(id, { frame: false });
   saved = { overlay: settings.overlay, speed: $('#speed-select').value, mode: state.mode };
@@ -48,7 +48,7 @@ export async function startStory(id) {
   });
   card.hidden = false;
   emit('story', state.story);
-  go(0);
+  await go(Math.min(scene, STORIES[id].scenes.length - 1));
 }
 
 export function stopStory() {
@@ -90,6 +90,7 @@ async function go(i) {
   st.index = i;
   const sc = scenes[i];
   const id = st.species;
+  emit('story-scene', i);
 
   // Text
   $('#story-title').textContent = sc.title;

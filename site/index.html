@@ -69,6 +69,7 @@
     <label class="switch-row"><span>Day &amp; night by season</span><input type="checkbox" name="nightShade" role="switch"></label>
     <label class="switch-row"><span>Glow and stars</span><input type="checkbox" name="effects" role="switch"></label>
     <label class="switch-row"><span>Full routes</span><input type="checkbox" name="showRoutes" role="switch"></label>
+    <label class="switch-row"><span>Stopovers</span><input type="checkbox" name="showStops" role="switch"></label>
   </div>
 
   <!-- Overlay legend -->
@@ -164,6 +165,7 @@
       <div class="time-row">
         <select id="speed-select" aria-label="Playback speed">
           <option value="1">1 day/s</option>
+          <option value="2">2 days/s</option>
           <option value="3">3 days/s</option>
           <option value="4">4 days/s</option>
           <option value="5">5 days/s</option>
@@ -173,15 +175,20 @@
           <option value="30">1 month/s</option>
           <option value="91">3 months/s</option>
         </select>
-        <button id="charts-btn" class="chip" aria-pressed="false" title="Charts">
+        <button id="charts-btn" class="chip" aria-pressed="false" title="Charts" aria-label="Charts">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
-          Charts
+          <span class="lbl">Charts</span>
+        </button>
+        <button id="share-btn" class="chip" title="Copy a link to this exact view" aria-label="Share this view">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          <span class="lbl">Share</span>
         </button>
       </div>
     </div>
   </div>
 
   <div id="loading" class="loading glass" role="status">Loading tracks…</div>
+  <div id="toast" class="toast glass" role="status" hidden></div>
 
   <!-- Feedback tab -->
   <button id="feedback-tab" class="feedback-tab" aria-haspopup="dialog">Feedback</button>
@@ -221,6 +228,7 @@
       <fieldset>
         <legend>Tracks</legend>
         <label class="field row check"><span>Show full routes</span><input type="checkbox" name="showRoutes"></label>
+        <label class="field row check"><span>Show stopovers</span><input type="checkbox" name="showStops"></label>
         <label class="field row"><span>Trail length</span>
           <select name="trailDays"><option value="7">1 week</option><option value="30">1 month</option><option value="90">3 months</option><option value="180">6 months</option></select></label>
         <label class="field row"><span>Distances in</span>
@@ -234,7 +242,7 @@
           <select name="speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7">1 week/s</option><option value="14">2 weeks/s</option><option value="30">1 month/s</option><option value="91">3 months/s</option></select></label>
         <label class="field row check"><span>Play on open</span><input type="checkbox" name="autoplay"></label>
       </fieldset>
-      <p class="muted small">Keys: Space play/pause · ← → story scenes · Esc stop following or exit a story · ⌘, settings</p>
+      <p class="muted small">Keys: Space play/pause · ← → story scenes · Esc stop following or exit a story · ⌘, settings. Share copies a link to exactly what you're looking at.</p>
       <div class="actions">
         <button type="button" id="settings-reset" class="btn ghost">Reset to defaults</button>
         <button value="close" class="btn primary">Done</button>

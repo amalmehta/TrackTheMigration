@@ -8,14 +8,15 @@ import {
 import { ENV_LAYERS } from './environment.js';
 import {
   map, colorMode, switchBasemap, applyTerrain, recolor, setEffects, setRoutesVisible, setNightVisible,
-  applyOverlay, refreshRoutes, renderFrame, pulse, frameSpecies,
+  applyOverlay, refreshRoutes, refreshSites, setStopsVisible, renderFrame, pulse, frameSpecies, viewPadding,
 } from './globe.js';
-import { initFollow, startFollow, stopFollow, followFrame } from './follow.js';
+import { encodeView, decodeView, cameraString } from './share.js';
+import { initFollow, startFollow, stopFollow, followFrame, recenterFollow } from './follow.js';
 import { initCharts, renderCharts, chartsTime, setOpen as setChartsOpen } from './charts.js';
 import { initStory, startStory, stopStory, hasStory } from './story.js';
 import {
-  state, on, emit, speciesById, visibleSpecies, loadSpecies, MONTHS, fmtDate, fmtSeason, fmtDist,
-  fmtMonthYear, esc, iconHtml, year, isPhone,
+  state, on, emit, speciesById, visibleSpecies, loadSpecies, MONTHS, MONTHS_LONG, fmtDate, fmtSeason, fmtDist,
+  fmtMonthYear, esc, iconHtml, year, isPhone, isVisible, facetsOf, facetShades, keyOf, busiestMonths,
 } from './store.js';
 
 const REPO = 'amalmehta/TrackTheMigration';
@@ -29,6 +30,7 @@ function buildInstances() {
     const d = state.data.get(sp.id);
     if (!d) continue;
     for (const a of d.animals) {
+      if (!isVisible(a)) continue;
       if (state.mode === 'dates') {
         state.instances.push({ species: sp.id, animal: a, pts: a.pts, gap: d.maxGapHours });
       } else {
@@ -84,6 +86,7 @@ function frame() {
 }
 
 let last = 0;
+let lastHashWrite = 0;
 function tick(now) {
   if (!state.playing) return;
   const dt = Math.min(0.1, (now - (last || now)) / 1000);
@@ -97,6 +100,7 @@ function tick(now) {
   }
   pulse(now);
   frame();
+  if (now - lastHashWrite > 2000) { lastHashWrite = now; writeHash(); }
   requestAnimationFrame(tick);
 }
 
@@ -124,6 +128,10 @@ function setHighlight(keys) {
 async function select(id, { frame: doFrame = true } = {}) {
   if (state.follow && state.follow.species !== id) stopFollow();
   if (state.story && state.story.species !== id) stopStory();
+  if (state.selected !== id) {
+    state.hidden.clear();
+    state.colorBy = null;
+  }
   state.selected = id;
   state.highlight = null;
   renderSpeciesList();
@@ -139,6 +147,7 @@ async function select(id, { frame: doFrame = true } = {}) {
   $('#loading').hidden = true;
   buildInstances();
   refreshRoutes();
+  refreshSites();
   renderInfo();
   $('.panel-body').scrollTo({ top: 0, behavior: 'smooth' });
   frame();
@@ -231,14 +240,17 @@ function renderInfo() {
       <div class="stat"><b>${fmtDist(st.medianKm)}</b><span>typical distance per animal</span></div>
       <div class="stat"><b>${fmtDist(st.longestKm)}</b><span>longest track</span></div>
     </div>
+    <section id="who" class="who"></section>
     <details class="credits"><summary>Data &amp; credits</summary>
       <p><b>Data:</b> ${esc(src.dataCitation)}
       ${src.doiUrl ? `<a href="${esc(src.doiUrl)}" target="_blank" rel="noopener">${esc(src.doi)}</a>` : ''}
       <span class="license">${src.licenseUrl ? `<a href="${esc(src.licenseUrl)}" target="_blank" rel="noopener">${esc(src.license)}</a>` : esc(src.license)}</span></p>
       ${src.paperCitation ? `<p><b>Study:</b> ${esc(src.paperCitation)}</p>` : ''}
       <p class="muted">Shown: the ${st.animalsShown} longest-tracked animals; ${thin}implausibly fast jumps removed; straight lines between fixes.</p>
+      ${s.facets?.length ? `<p class="muted">Sex, age, tagging site and handling come from the study's reference data.</p>` : ''}
       ${icon ? `<p class="muted">Silhouette: ${esc(icon.attribution)}, <a href="${esc(icon.sourceUrl)}" target="_blank" rel="noopener">PhyloPic</a> (${esc(icon.license)}).</p>` : ''}
     </details>`;
+  renderWho();
   info.querySelector('[data-act="story"]')?.addEventListener('click', () => startStory(s.id));
   info.querySelector('[data-act="charts"]').addEventListener('click', () => setChartsOpen(true));
   info.querySelector('[data-act="follow"]').addEventListener('click', () => {
@@ -246,6 +258,72 @@ function renderInfo() {
     startFollow(s.id, longest);
     setPlaying(true);
   });
+}
+
+// ---------- who they are: filters, colour-by and stopover summary ----------
+
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function renderWho() {
+  const el = document.getElementById('who');
+  if (!el || state.selected === 'all') return;
+  const id = state.selected;
+  const sp = speciesById(id);
+  const d = state.data.get(id);
+  const facets = facetsOf(id);
+  let html = '';
+  if (facets.length) {
+    html += `<div class="who-head"><span class="kicker">Who they are</span>
+      <label class="cb-select">Colour by <select id="color-by" aria-label="Colour animals by">
+        <option value="">species</option>
+        ${facets.map((f) => `<option value="${f.key}" ${state.colorBy === f.key ? 'selected' : ''}>${esc(f.label.toLowerCase())}</option>`).join('')}
+      </select></label></div>`;
+    for (const f of facets) {
+      const shades = state.colorBy === f.key ? facetShades(id, f.key, colorMode()) : null;
+      html += `<div class="facet"><span class="facet-label">${esc(f.label)}</span><div class="chips">${f.values.map((v) => {
+        const on = !state.hidden.has(`${f.key}=${v.value}`);
+        return `<button class="chip facet-chip" aria-pressed="${on}" data-k="${esc(f.key)}" data-v="${esc(v.value)}" title="${on ? 'Hide' : 'Show'} ${esc(v.value)}">${
+          shades ? `<i class="swatch-dot" style="background:${shades.get(v.value)}"></i>` : ''}${esc(cap(v.value))} <small>${v.count}</small></button>`;
+      }).join('')}</div></div>`;
+    }
+  }
+  if (d?.sites?.length) {
+    const stop = sp.processing.stop;
+    html += `<div class="facet"><span class="facet-label">Places they stayed</span>
+      <p class="small muted">${d.sites.length} places where an animal stayed at least ${stop.days} days within ${stop.km} km.
+      ${settings.showStops ? 'Rings on the globe; brighter when in use at this time of year. Click one to see who used it.' : 'Switch on <b>Stopovers</b> in Layers to see them.'}</p></div>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.facet-chip').forEach((b) => b.addEventListener('click', () => toggleFacet(b.dataset.k, b.dataset.v)));
+  el.querySelector('#color-by')?.addEventListener('change', (e) => setColorBy(e.target.value || null));
+}
+
+function applyFilter() {
+  if (state.follow && !isVisible(state.follow.animal)) stopFollow();
+  state.highlight = null;
+  buildInstances();
+  refreshRoutes();
+  refreshSites();
+  frame();
+  renderWho();
+  renderCharts();
+  emit('filter');
+}
+
+function toggleFacet(k, v) {
+  const key = `${k}=${v}`;
+  if (state.hidden.has(key)) state.hidden.delete(key);
+  else state.hidden.add(key);
+  applyFilter();
+}
+
+function setColorBy(k) {
+  state.colorBy = k;
+  refreshRoutes();
+  frame();
+  renderWho();
+  renderCharts();
+  emit('filter');
 }
 
 const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
@@ -297,7 +375,7 @@ function renderLayers() {
     row.querySelector('input').addEventListener('change', () => updateSettings({ overlay: key }));
     list.append(row);
   }
-  for (const name of ['terrain', 'nightShade', 'effects', 'showRoutes']) {
+  for (const name of ['terrain', 'nightShade', 'effects', 'showRoutes', 'showStops']) {
     pop.querySelector(`input[name="${name}"]`).checked = settings[name];
   }
 }
@@ -318,7 +396,7 @@ function wireLayers() {
     }
   });
   pop.querySelectorAll('input[name="basemap"]').forEach((r) => r.addEventListener('change', () => updateSettings({ basemap: r.value })));
-  for (const name of ['terrain', 'nightShade', 'effects', 'showRoutes']) {
+  for (const name of ['terrain', 'nightShade', 'effects', 'showRoutes', 'showStops']) {
     pop.querySelector(`input[name="${name}"]`).addEventListener('change', (e) => updateSettings({ [name]: e.target.checked }));
   }
 }
@@ -380,6 +458,7 @@ function wireControls() {
     if (state.mode === 'season') state.frac = Math.min(v, 0.9999);
     else state.t = state.range[0] + v * (state.range[1] - state.range[0]);
     frame();
+    writeHash();
   });
   $('#mode-season').addEventListener('click', () => { if (state.follow) stopFollow(); setMode('season'); });
   $('#mode-dates').addEventListener('click', () => setMode('dates'));
@@ -422,6 +501,41 @@ function wireControls() {
       .addTo(map);
   });
 
+  // Stopover sites: hover for who used them and when; click to pick those animals.
+  const siteOf = (f) => state.data.get(f.properties.species)?.sites?.[f.properties.idx];
+  map.on('mousemove', 'sites', (e) => {
+    const f = e.features[0];
+    const site = siteOf(f);
+    if (!site) return;
+    const sp = speciesById(f.properties.species);
+    const peak = Math.max(...site.months) || 1;
+    const bars = site.months.map((m, i) => `<rect x="${i * 9}" y="${22 - (m / peak) * 20}" width="7" height="${Math.max(1, (m / peak) * 20)}" rx="1.5"/>`).join('');
+    popup.setLngLat(e.lngLat)
+      .setHTML(`<div class="tip-date">${esc(sp.name)} · a place they stayed</div>
+        <div><b>${site.animals.length}</b> ${site.animals.length === 1 ? 'animal' : 'animals'} · <b>${site.days.toLocaleString()}</b> animal-days</div>
+        <div class="tip-months"><svg viewBox="0 0 108 22" width="108" height="22" fill="${f.properties.color}" aria-hidden="true">${bars}</svg>
+        <span>busiest: ${esc(busiestMonths(site.months))}</span></div>
+        <div class="tip-hint">Click to pick these animals</div>`)
+      .addTo(map);
+  });
+  map.on('mouseenter', 'sites', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'sites', () => { map.getCanvas().style.cursor = ''; popup.remove(); });
+  map.on('click', 'sites', (e) => {
+    if (map.queryRenderedFeatures(e.point, { layers: ['heads'] }).length) return; // a dot click wins
+    const f = e.features[0];
+    const site = siteOf(f);
+    if (site) pickSite(f.properties.species, site);
+  });
+
+  // Share this view
+  $('#share-btn').addEventListener('click', async () => {
+    writeHash(true);
+    const url = location.href;
+    let copied = false;
+    try { await navigator.clipboard.writeText(url); copied = true; } catch { /* clipboard blocked */ }
+    toast(copied ? 'Link copied. It opens at this exact moment.' : `Copy this link: ${url}`);
+  });
+
   // Feedback
   const fb = $('#feedback-dialog');
   $('#feedback-tab').addEventListener('click', () => fb.showModal());
@@ -449,6 +563,7 @@ onSettingsChange((changed) => {
   if (changed.includes('theme')) { renderInfo(); renderCharts(); }
   if (changed.includes('terrain') || changed.includes('exaggeration')) applyTerrain();
   if (changed.includes('showRoutes')) setRoutesVisible();
+  if (changed.includes('showStops')) { setStopsVisible(); renderWho(); }
   if (changed.includes('effects')) setEffects();
   if (changed.includes('nightShade')) setNightVisible();
   if (changed.includes('overlay')) applyOverlay();
@@ -474,12 +589,90 @@ on('charts', () => {
   if (!state.follow && !state.story) frameSpecies(state.selected === 'all' ? null : speciesById(state.selected));
 });
 on('selection', () => { if (!$('#layers-pop').hidden) renderLayers(); });
-on('style-ready', () => { renderLegend(null); applyOverlay(); });
+// The style can finish loading after a shared link was applied: redraw, and re-find a followed animal.
+on('style-ready', () => {
+  applyOverlay();
+  if (!state.index) return;
+  frame();
+  if (state.follow) recenterFollow();
+});
 
 // ---------- start ----------
 
+// Pick the animals that used a stopover site, and fly there.
+async function pickSite(speciesId, site) {
+  if (state.follow) stopFollow();
+  if (state.selected !== speciesId) await select(speciesId, { frame: false });
+  setHighlight(new Set(site.animals.map((id) => keyOf(speciesId, id))));
+  const group = speciesById(speciesId).group;
+  map.easeTo({ center: [site.lon, site.lat], zoom: Math.max(map.getZoom(), group === 'land' ? 9 : 5), padding: viewPadding(), duration: 1600 });
+}
+
+let toastTimer = 0;
+function toast(text) {
+  const el = $('#toast');
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 3500);
+}
+
+// ---------- shareable links ----------
+
+let hashTimer = 0;
+let applyingHash = true; // until startup has read any shared link, never overwrite it
+function writeHash(now = false) {
+  if (applyingHash) return;
+  clearTimeout(hashTimer);
+  const write = () => {
+    if (applyingHash) return;
+    const h = encodeView(cameraString(map));
+    if (location.hash.slice(1) !== h) history.replaceState(null, '', h ? `#${h}` : location.pathname + location.search);
+  };
+  if (now) write(); else hashTimer = setTimeout(write, 600);
+}
+for (const ev of ['selection', 'mode', 'follow', 'story', 'story-scene', 'filter', 'overlay']) on(ev, () => writeHash());
+map.on('moveend', () => writeHash());
+
+async function applySharedView(view) {
+  applyingHash = true;
+  try {
+    const valid = view.species === 'all' || state.index.species.some((s) => s.id === view.species);
+    const id = valid ? view.species : 'all';
+    await select(id, { frame: !view.camera && !view.follow && view.story == null });
+    if (view.overlay && view.overlay !== settings.overlay) updateSettings({ overlay: view.overlay });
+    if (id !== 'all') {
+      const keys = new Set(facetsOf(id).flatMap((f) => f.values.map((v) => `${f.key}=${v.value}`)));
+      for (const h of view.hidden) if (keys.has(h)) state.hidden.add(h);
+      if (facetsOf(id).some((f) => f.key === view.colorBy)) state.colorBy = view.colorBy;
+      if (state.hidden.size || state.colorBy) applyFilter();
+    }
+    if (view.story != null && id !== 'all') {
+      await startStory(id, view.story);
+      return true;
+    }
+    const animal = id !== 'all' && view.follow
+      ? state.data.get(id).animals.find((a) => String(a.id) === view.follow)
+      : null;
+    if (animal) {
+      if (view.t != null) state.t = view.t;
+      await startFollow(id, animal);
+    } else if (view.mode) {
+      setMode(view.mode);
+      if (view.mode === 'dates' && view.t != null) state.t = Math.min(state.range[1], Math.max(state.range[0], view.t));
+      if (view.mode === 'season' && view.frac != null) state.frac = view.frac;
+    }
+    if (view.camera && !animal) map.jumpTo({ ...view.camera, padding: viewPadding() });
+    frame();
+    return true;
+  } finally {
+    applyingHash = false;
+    writeHash();
+  }
+}
+
 const controller = {
-  select, setMode, setPlaying, setSpeed, frame, setHighlight,
+  select, setMode, setPlaying, setSpeed, frame, setHighlight, pickSite,
   follow: (id, animal, opts) => { const p = startFollow(id, animal, opts); setPlaying(true); return p; },
   stopFollow, stopStory,
 };
@@ -503,8 +696,16 @@ async function main() {
   initStory(controller);
   setMode(settings.mode);
   renderSpeciesList();
-  await select('all');
-  if (settings.autoplay && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPlaying(true);
+  // A shared link opens paused at its moment; otherwise start as usual.
+  const shared = decodeView(location.hash);
+  if (shared) {
+    await applySharedView(shared);
+    if (shared.story != null) setPlaying(true);
+  } else {
+    applyingHash = false;
+    await select('all');
+    if (settings.autoplay && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPlaying(true);
+  }
 }
 
 main().catch((err) => {
@@ -514,4 +715,4 @@ main().catch((err) => {
 });
 
 // For debugging in the console.
-window.ttm = { state, map, updateSettings, select, startFollow, startStory };
+window.ttm = { state, map, updateSettings, select, startFollow, startStory, applySharedView, decodeView };

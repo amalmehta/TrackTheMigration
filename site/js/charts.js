@@ -9,6 +9,7 @@ import { colorFor } from './palette.js';
 import { settings, isDark } from './settings.js';
 import {
   state, emit, on, speciesById, keyOf, MONTHS, MONTHS_LONG, fmtSeason, fmtDist, fmtSpeed, kmIn, iconHtml,
+  isVisible, animalColor, facetShades, facetsOf, busiestMonths,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -179,8 +180,18 @@ function calendarTable(body) {
 
 // ---------- one species ----------
 
+// The species' data with filtered-out animals removed (the Who filter).
+const visibleData = (id) => {
+  const d = state.data.get(id);
+  return { ...d, animals: d.animals.filter(isVisible) };
+};
+
 function speciesCharts(body, sp) {
-  const d = state.data.get(sp.id);
+  const d = visibleData(sp.id);
+  if (!d.animals.length) {
+    d3.select(body).append('p').attr('class', 'muted').text('Every animal is filtered out. Switch a group back on in the panel.');
+    return;
+  }
   const grid = d3.select(body).append('div').attr('class', 'chart-grid');
   const a = grid.append('figure').attr('class', 'chart-card wide');
   const b = grid.append('figure').attr('class', 'chart-card');
@@ -188,12 +199,29 @@ function speciesCharts(body, sp) {
   yearLines(a, sp, d);
   monthColumns(b, sp, d);
   distanceColumns(c, sp, d);
+  if (d.sites?.length) siteBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
+}
+
+// Legend for the colour-by facet (two or more groups), shown above a chart.
+function facetLegend(fig, sp) {
+  if (!state.colorBy) return;
+  const facet = facetsOf(sp.id).find((f) => f.key === state.colorBy);
+  if (!facet) return;
+  const shades = facetShades(sp.id, facet.key, uiMode());
+  const lg = fig.append('div').attr('class', 'chart-legend');
+  for (const v of facet.values) {
+    if (state.hidden.has(`${facet.key}=${v.value}`)) continue;
+    const item = lg.append('span');
+    item.append('i').style('background', shades.get(v.value));
+    item.append('span').text(v.value.charAt(0).toUpperCase() + v.value.slice(1));
+  }
 }
 
 function yearLines(fig, sp, d) {
   const axis = mainAxis(d.animals.map((a) => a.pts));
   fig.append('figcaption').text(axis === 'lat' ? 'Latitude through the year' : 'Longitude through the year')
     .append('small').text(axis === 'lat' ? ' · north is up' : ' · east is up');
+  facetLegend(fig, sp);
   const node = fig.node();
   const W = node.clientWidth || 400;
   const H = 168;
@@ -225,7 +253,7 @@ function yearLines(fig, sp, d) {
   const line = d3.line().defined((p) => !p.gap).x((p) => x(p.f)).y((p) => y(p.v)).curve(d3.curveMonotoneX);
   const hl = state.highlight;
   const paths = svg.append('g').attr('clip-path', 'url(#clip-year)').selectAll('path').data(segs).join('path')
-    .attr('class', 'year-line').attr('stroke', color).attr('d', (s) => line(s.points))
+    .attr('class', 'year-line').attr('stroke', (s) => animalColor(sp.id, s.animal, uiMode())).attr('d', (s) => line(s.points))
     .attr('stroke-opacity', (s) => (hl ? (hl.has(s.key) ? 0.95 : 0.08) : 0.4))
     .attr('stroke-width', (s) => (hl && hl.has(s.key) ? 1.8 : 1.2));
   addPlayhead(svg, x, m.t, H - m.b);
@@ -263,7 +291,7 @@ function yearLines(fig, sp, d) {
       paths.attr('stroke-width', (s) => (p && s === p.s ? 2.4 : hl && hl.has(s.key) ? 1.8 : 1.2))
         .attr('stroke-opacity', (s) => (p && s === p.s ? 1 : hl ? (hl.has(s.key) ? 0.95 : 0.08) : 0.4));
       if (!p) { dot.style('opacity', 0); hideTip(); return; }
-      dot.attr('cx', p.px).attr('cy', p.py).style('opacity', 1);
+      dot.attr('cx', p.px).attr('cy', p.py).attr('fill', animalColor(sp.id, p.s.animal, uiMode())).style('opacity', 1);
       showTip(event, [
         [null, `Animal ${p.s.animal.id} · ${p.s.year}`, 'tip-date'],
         [fmtDeg(p.v, axis, 2), `on ${fmtSeason(Math.max(0, Math.min(0.999, p.f)))}`],
@@ -314,6 +342,7 @@ function monthColumns(fig, sp, d) {
 function distanceColumns(fig, sp, d) {
   fig.append('figcaption').text('How far each animal went');
   const animals = [...d.animals].sort((p, q) => q.km - p.km);
+  facetLegend(fig, sp);
   const node = fig.node();
   const W = node.clientWidth || 260;
   const H = 168;
@@ -330,7 +359,7 @@ function distanceColumns(fig, sp, d) {
   const hl = state.highlight;
   const bw = Math.min(24, x.bandwidth());
   svg.append('g').selectAll('path').data(animals).join('path')
-    .attr('class', 'bar clickable').attr('fill', color)
+    .attr('class', 'bar clickable').attr('fill', (a) => animalColor(sp.id, a, uiMode()))
     .attr('fill-opacity', (a) => (hl ? (hl.has(keyOf(sp.id, a)) ? 1 : 0.18) : 0.85))
     .attr('d', (a) => roundedTop(x(a.id) + (x.bandwidth() - bw) / 2, y(kmIn(a.km)), bw, y(0) - y(kmIn(a.km)), Math.min(4, bw / 2)))
     .on('pointermove', (event, a) => showTip(event, [[null, `Animal ${a.id}`, 'tip-date'], [fmtDist(a.km), `over ${a.days.toLocaleString()} days`], [null, 'Click to follow', 'tip-hint']]))
@@ -349,7 +378,7 @@ function distanceColumns(fig, sp, d) {
 }
 
 function speciesTables(body, sp) {
-  const d = state.data.get(sp.id);
+  const d = visibleData(sp.id);
   const wrap = d3.select(body).append('div').attr('class', 'table-wrap two');
   const mv = seasonalMovement(d.animals.map((a) => a.pts), 12, d.maxGapHours);
   const t1 = wrap.append('table');
@@ -375,6 +404,51 @@ function speciesTables(body, sp) {
     tr.append('td').text(`${d3.max(lats).toFixed(2)}°`);
     tr.append('td').text(`${d3.min(lats).toFixed(2)}°`);
   }
+}
+
+// The busiest stopover sites, by total animal-days; click one to pick its animals.
+function siteBars(fig, sp, d) {
+  fig.append('figcaption').text('Places they stayed').append('small').text(' · busiest first');
+  const ids = new Set(d.animals.map((a) => String(a.id)));
+  const sites = d.sites
+    .map((site, i) => ({ ...site, i, users: site.animals.filter((id) => ids.has(String(id))) }))
+    .filter((s) => s.users.length)
+    .slice(0, 7);
+  const node = fig.node();
+  const W = node.clientWidth || 260;
+  const rowH = 21;
+  const m = { l: 96, r: 70, t: 4 };
+  const H = m.t + sites.length * rowH + 4;
+  const x = d3.scaleLinear().domain([0, d3.max(sites, (s) => s.days) || 1]).range([m.l, W - m.r]);
+  const color = colorFor(sp.id, uiMode());
+  const svg = fig.append('svg').attr('class', 'chart').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
+    .attr('role', 'img').attr('aria-label', `${sp.name}: the places animals stayed longest`);
+  const row = svg.selectAll('g').data(sites).join('g').attr('class', 'site-row')
+    .attr('transform', (s, k) => `translate(0,${m.t + k * rowH})`)
+    .on('click', (_, s) => ctl.pickSite(sp.id, d.sites[s.i]))
+    .on('pointermove', (event, s) => showTip(event, [
+      [null, place(s), 'tip-date'],
+      [`${s.users.length}`, s.users.length === 1 ? 'animal' : 'animals'],
+      [`${s.days.toLocaleString()}`, 'animal-days in all'],
+      [null, `busiest ${busiestMonths(s.months)}`],
+      [null, 'Click to pick these animals', 'tip-hint'],
+    ]))
+    .on('pointerleave', hideTip);
+  row.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rowH).attr('fill', 'transparent');
+  row.append('text').attr('class', 'row-name site-name').attr('x', 0).attr('y', rowH / 2 + 4).text((s) => place(s));
+  row.append('path').attr('class', 'bar').attr('fill', color)
+    .attr('d', (s) => roundedRight(m.l, 5, x(s.days) - m.l, rowH - 10, 4));
+  row.append('text').attr('class', 'axis-note').attr('x', (s) => x(s.days) + 5).attr('y', rowH / 2 + 3)
+    .text((s) => `${s.days.toLocaleString()} d · ${busiestMonths(s.months)}`);
+}
+
+const place = (s) => `${Math.abs(s.lat).toFixed(1)}°${s.lat >= 0 ? 'N' : 'S'} ${Math.abs(s.lon).toFixed(1)}°${s.lon >= 0 ? 'E' : 'W'}`;
+
+// A bar with a rounded data end on the right and a square baseline on the left.
+function roundedRight(x, y, w, h, r) {
+  if (w <= 0) return '';
+  r = Math.min(r, w, h / 2);
+  return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
 }
 
 // 37.5 → "37.5°N"; longitudes are unwrapped for the antimeridian, so wrap them back.

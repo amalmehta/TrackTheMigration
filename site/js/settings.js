@@ -12,6 +12,7 @@ export const DEFAULTS = Object.freeze({
   nightShade: true,     // seasonal day/night shading on the globe
   effects: true,        // glowing trails, pulsing heads, starfield
   showRoutes: true,
+  showStops: true,      // stopover and resting sites
   trailDays: 30,
   units: 'km',
   mode: 'season',       // season | dates

@@ -6,7 +6,9 @@ import { SPECIES_COLORS, colorFor } from './palette.js';
 import { settings, isDark } from './settings.js';
 import { subsolarPoint, paintNight } from './solar.js';
 import { ENV_LAYERS, overlayDate, tileUrl } from './environment.js';
-import { state, emit, visibleSpecies, keyOf, instanceTime, currentHours, isPhone } from './store.js';
+import {
+  state, emit, visibleSpecies, keyOf, instanceTime, currentHours, isPhone, isVisible, animalColor,
+} from './store.js';
 
 const SATELLITE = {
   tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'],
@@ -113,7 +115,7 @@ function installLayers() {
     paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 2, 1, 4.5, 0.55, 6.5, 0], 'raster-fade-duration': 0 },
   });
 
-  for (const id of ['routes', 'trails', 'heads', 'focus']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
+  for (const id of ['routes', 'sites', 'trails', 'heads', 'focus']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
 
   map.addLayer({
     id: 'routes', type: 'line', source: 'routes',
@@ -130,20 +132,50 @@ function installLayers() {
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: { 'line-color': ['get', 'color'], 'line-width': 2.6, 'line-opacity': 0.9 },
   });
+  // Stopover sites: rings sized by total animal-days, brighter when in use at this time of year.
+  const vis = settings.showStops ? 'visible' : 'none';
+  map.addLayer({
+    id: 'site-glow', type: 'circle', source: 'sites', layout: { visibility: settings.effects ? vis : 'none' },
+    paint: {
+      'circle-color': ['get', 'color'],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, ['*', ['get', 'r'], 1.2], 7, ['*', ['get', 'r'], 2.6]],
+      'circle-blur': 1,
+      'circle-opacity': ['*', ['get', 'now'], 0.55],
+      'circle-pitch-alignment': 'map',
+    },
+  });
+  map.addLayer({
+    id: 'sites', type: 'circle', source: 'sites', layout: { visibility: vis },
+    paint: {
+      'circle-color': ['get', 'color'],
+      'circle-opacity': ['+', 0.06, ['*', ['get', 'now'], 0.22]],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, ['*', ['get', 'r'], 0.7], 7, ['*', ['get', 'r'], 1.6]],
+      'circle-stroke-color': ['get', 'color'],
+      'circle-stroke-width': 1.4,
+      'circle-stroke-opacity': ['+', 0.35, ['*', ['get', 'now'], 0.65]],
+      'circle-pitch-alignment': 'map',
+    },
+  });
   for (const sp of SPECIES) {
     map.addLayer({
-      id: `glow-${sp}`, type: 'line', source: 'trails', filter: ['==', ['get', 'species'], sp],
+      id: `glow-${sp}`, type: 'line', source: 'trails', filter: ['all', ['==', ['get', 'species'], sp], ['!', ['get', 'cb']]],
       layout: { 'line-join': 'round', 'line-cap': 'round', visibility: settings.effects ? 'visible' : 'none' },
       paint: { 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 9, 6, 7, 10, 5], 'line-blur': ['interpolate', ['linear'], ['zoom'], 1, 7, 10, 4], 'line-gradient': trailGradient(colorFor(sp, colorMode()), 0.5), 'line-opacity': ['interpolate', ['linear'], ['zoom'], 4, ['case', ['get', 'dim'], 0, 1], 9, ['case', ['get', 'dim'], 0, 0.55]] },
     });
   }
   for (const sp of SPECIES) {
     map.addLayer({
-      id: `trail-${sp}`, type: 'line', source: 'trails', filter: ['==', ['get', 'species'], sp],
+      id: `trail-${sp}`, type: 'line', source: 'trails', filter: ['all', ['==', ['get', 'species'], sp], ['!', ['get', 'cb']]],
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-width': 2.2, 'line-gradient': trailGradient(colorFor(sp, colorMode()), 1), 'line-opacity': ['case', ['get', 'dim'], 0.3, 1] },
     });
   }
+  // Trails coloured by a "who" facet: one colour per feature, so no gradient.
+  map.addLayer({
+    id: 'trail-cb', type: 'line', source: 'trails', filter: ['==', ['get', 'cb'], true],
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': ['get', 'color'], 'line-width': 2.2, 'line-opacity': ['case', ['get', 'dim'], 0.25, 0.85] },
+  });
   map.addLayer({
     id: 'halo', type: 'circle', source: 'heads',
     layout: { visibility: settings.effects ? 'visible' : 'none' },
@@ -182,6 +214,7 @@ function installLayers() {
   applyOverlay();
   nightStamp = '';
   refreshRoutes();
+  refreshSites();
   renderFrame();
   emit('style-ready');
 }
@@ -205,6 +238,7 @@ export function recolor() {
     map.setPaintProperty(`trail-${sp}`, 'line-gradient', trailGradient(c, 1));
   }
   refreshRoutes();
+  refreshSites();
   renderFrame();
 }
 
@@ -212,8 +246,15 @@ export function setEffects() {
   if (!map.getLayer('halo')) return;
   const v = settings.effects ? 'visible' : 'none';
   map.setLayoutProperty('halo', 'visibility', v);
+  map.setLayoutProperty('site-glow', 'visibility', settings.effects && settings.showStops ? 'visible' : 'none');
   for (const sp of SPECIES) map.setLayoutProperty(`glow-${sp}`, 'visibility', v);
   document.body.classList.toggle('no-effects', !settings.effects);
+}
+
+export function setStopsVisible() {
+  if (!map.getLayer('sites')) return;
+  map.setLayoutProperty('sites', 'visibility', settings.showStops ? 'visible' : 'none');
+  map.setLayoutProperty('site-glow', 'visibility', settings.showStops && settings.effects ? 'visible' : 'none');
 }
 
 export function setRoutesVisible() {
@@ -237,12 +278,12 @@ export function refreshRoutes() {
   for (const sp of visibleSpecies()) {
     const d = state.data.get(sp.id);
     if (!d) continue;
-    const color = colorFor(sp.id, mode);
     for (const a of d.animals) {
+      if (!isVisible(a)) continue;
       const key = keyOf(sp.id, a);
       features.push({
         type: 'Feature',
-        properties: { color, species: sp.id, animal: a.id, key, dim: isDim(key) },
+        properties: { color: animalColor(sp.id, a, mode), species: sp.id, animal: a.id, key, dim: isDim(key) },
         geometry: { type: 'LineString', coordinates: a.pts.map((p) => [p[0], p[1]]) },
       });
     }
@@ -267,7 +308,8 @@ export function renderFrame() {
     if (!head) continue;
     speciesMoving.add(inst.species);
     const key = keyOf(inst.species, inst.animal);
-    const props = { color: colorFor(inst.species, mode), species: inst.species, animal: inst.animal.id, key, year: inst.year ?? '', dim: isDim(key) };
+    const cb = !!state.colorBy && state.selected === inst.species;
+    const props = { color: animalColor(inst.species, inst.animal, mode), cb, species: inst.species, animal: inst.animal.id, key, year: inst.year ?? '', dim: isDim(key) };
     headF.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: head } });
     if (key === focusKey) focus = head;
     const trail = trailAt(inst.pts, t, trailHours, inst.gap);
@@ -280,7 +322,42 @@ export function renderFrame() {
   map.getSource('focus').setData(focus ? { type: 'Point', coordinates: focus } : EMPTY);
   updateNight();
   updateOverlayDate();
+  const month = new Date(currentHours() * 3.6e6).getUTCMonth();
+  if (month !== siteMonth) refreshSites(month);
   return { moving: headF.length, species: speciesMoving.size, focus };
+}
+
+// ---------- stopover sites ----------
+
+let siteMonth = -1;
+
+// Sites from the visible species, hiding any used only by filtered-out animals.
+export function refreshSites(month = new Date(currentHours() * 3.6e6).getUTCMonth()) {
+  const src = map.getSource('sites');
+  if (!src || !state.index) return;
+  siteMonth = month;
+  const mode = colorMode();
+  const features = [];
+  for (const sp of visibleSpecies()) {
+    const d = state.data.get(sp.id);
+    if (!d?.sites?.length) continue;
+    const ids = new Set(d.animals.filter(isVisible).map((a) => String(a.id)));
+    const maxDays = d.sites[0].days || 1;
+    d.sites.forEach((site, idx) => {
+      if (!site.animals.some((id) => ids.has(String(id)))) return;
+      const peak = Math.max(...site.months) || 1;
+      features.push({
+        type: 'Feature',
+        properties: {
+          species: sp.id, idx, color: colorFor(sp.id, mode),
+          r: (state.selected === 'all' ? 2.5 : 4) + (state.selected === 'all' ? 6 : 12) * Math.sqrt(site.days / maxDays),
+          now: site.months[month] / peak,
+        },
+        geometry: { type: 'Point', coordinates: [site.lon, site.lat] },
+      });
+    });
+  }
+  src.setData({ type: 'FeatureCollection', features });
 }
 
 // Gentle pulse on the heads' halos.
@@ -375,6 +452,14 @@ export function viewPadding() {
     right: following ? 420 : 60,
   };
 }
+
+// Keep the clear area right when the window changes size (rotating a phone,
+// resizing a desktop window).
+let resizeTimer = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => map.setPadding(viewPadding()), 200);
+});
 
 // Frame a bounding box [w, s, e, n]. `padding` on easeTo replaces the map's
 // padding each time, so it never stacks; cameraForBounds ignores map padding,

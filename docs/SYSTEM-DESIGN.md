@@ -9,6 +9,8 @@ flowchart TB
   subgraph Build["Build time (scripts/)"]
     REG[datasets.mjs<br>which packages, how to clean]
     FETCH[fetch-data.mjs]
+    REF[reference.mjs<br>who each animal is]
+    REF --> FETCH
     ASSETS[fetch-assets.mjs]
     RAW[(data/raw/<br>CSV cache, git-ignored)]
     REG --> FETCH
@@ -28,9 +30,10 @@ flowchart TB
     FOLLOW[follow.js<br>ride-along · readout · profile]
     CHARTS[charts.js<br>calendar · linked charts · brush]
     STORY[story.js + stories.js<br>guided scenes]
+    SHARE[share.js<br>view ↔ URL hash]
     PURE[tracks.js · solar.js · environment.js · palette.js<br>pure, unit-tested]
     SET[settings.js]
-    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET
+    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & SHARE
     GLOBE & FOLLOW & CHARTS & STORY --> STORE
     GLOBE & FOLLOW & CHARTS --> PURE
   end
@@ -47,9 +50,11 @@ flowchart TB
 | Component | Job |
 |---|---|
 | `scripts/datasets.mjs` | The registry of migrations: repository IDs, a one-line description, and cleaning settings (speed limit, thinning, caps, accepted Argos classes, geolocator stopovers). |
-| `scripts/fetch-data.mjs` | Downloads each CSV (cached) and reads the package metadata (authors, DOI, licence, paper, abstract). It filters bad fixes, simplifies and caps each track, and writes `site/data/<id>.json` and `index.json`. |
+| `scripts/fetch-data.mjs` | Downloads each CSV (cached; several files per study allowed) and reads the package metadata. Then: <ul><li>filters bad fixes</li><li>finds each animal's stopovers on the full-resolution cleaned track</li><li>clusters them into shared sites</li><li>simplifies and caps tracks for display</li><li>attaches who-each-animal-is attributes</li></ul> Writes `site/data/<id>.json` and `index.json`. |
+| `scripts/reference.mjs` | Turns a study's reference data (one row per deployment) into normalised attributes: sex, age when tagged, tagging site, handling. Keeps only *facets* that split the shown animals into at least two groups of two or more. Tagging sites use the coarsest useful grouping: the site name, then a region in brackets, then the country. |
+| `site/js/share.js` | Encodes the current view into the URL hash, and decodes it defensively (bad values ignored). Covers species, Season day or real date, followed animal, story scene, overlay, colour-by, hidden groups and camera. |
 | `scripts/fetch-assets.mjs` | Downloads the chosen PhyloPic silhouettes and records their credits and licences. Turns NASA Worldview's palettes into 24-stop legends for the overlays. Writes `assets.json` and `site/icons/`. |
-| `site/js/store.js` | Shared state (selection, clock, follow, story, chart selection), a tiny event bus, data loading, and formatting helpers. |
+| `site/js/store.js` | Shared state (selection, clock, follow, story, chart selection, hidden groups, colour-by), a tiny event bus, data loading, and formatting helpers. Also holds the who-filter helpers: visibility, and facet shades (dark → light steps of the species hue, grey for unknown). |
 | `site/js/globe.js` | Owns the map. Responsibilities: <ul><li>base map and 3D terrain</li><li>seasonal night shading (a canvas source)</li><li>NASA overlays (tiles swapped by date)</li><li>routes, gradient trails with glow, pulsing heads and the focus ring</li><li>the per-frame update and camera framing</li></ul> |
 | `site/js/follow.js` | Ride-along mode. The camera eases toward the animal each frame, and pauses when the person drags. The readout shows speed, distance, day, and ground height or distance from start. A two-row D3 journey profile with a playhead can be hovered and scrubbed. |
 | `site/js/charts.js` | The charts drawer. <ul><li>All species: a migration calendar heatmap.</li><li>One species: latitude or longitude through the year, with a brush and click-to-follow; distance per day by month; distance per animal, with click-to-follow.</li><li>A table view of the same numbers.</li></ul> |
@@ -82,6 +87,28 @@ The JavaScript work per frame is about 2 ms for all 645 instances, plus about 6 
 
 On narrower screens the panel tucks away, and the camera padding reserves room for the readout.
 
+**Who-they-are filters**
+
+1. Chips toggle `facet=value` groups in `state.hidden`.
+2. Instances, routes, stopover sites and charts are all rebuilt from visible animals only.
+3. Colour-by swaps each animal's colour for a shade of its species hue. Trails then draw from a dedicated per-feature-colour layer, because `line-gradient` can't vary by feature. The charts get a legend.
+
+**Stopovers**
+
+- At build time, `findStops` scans each cleaned track for runs of fixes staying within *km* of their running centroid for at least *days*, without crossing a tracking gap. The thresholds are per group, and longitudes are unwrapped so the antimeridian works.
+- `clusterStops` merges stops within 2.5 × *km* into sites (longest stops first). Each site carries total animal-days, visits, the animals that used it, and days per month.
+- On the globe, rings scale with √days and brighten with the share of that site's use falling in the current month.
+- The follow readout checks the animal's own stops to say "staying put · day N of M".
+
+**Share links**
+
+- The hash is rewritten (with `replaceState`, never adding history) 0.6 s after changes and every 2 s while playing.
+- On load, a hash is applied before anything else may write. That means:
+  1. select the species
+  2. restore the overlay and filters
+  3. open the story scene, or follow the animal, or set the mode, time and camera
+- The view opens paused. A late style load re-frames a followed animal.
+
 **Charts ↔ globe**
 
 - Brushing the latitude chart builds a set of animal keys. `state.highlight` dims everything else on the globe and in the other charts.
@@ -106,8 +133,8 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 | Data | Where | Committed? |
 |---|---|---|
-| Raw CSVs and metadata | `data/raw/` | No (about 300 MB; `npm run fetch`) |
-| Processed tracks | `site/data/<species>.json` (about 2.8 MB total) | Yes |
+| Raw CSVs, reference data and metadata | `data/raw/` | No (about 600 MB; `npm run fetch`) |
+| Processed tracks, per-animal attributes and stops, stopover sites, facets | `site/data/<species>.json` (about 5 MB total for 13 species) | Yes |
 | Species list, stats, citations | `site/data/index.json` | Yes |
 | Silhouette credits, overlay legends | `site/data/assets.json`, `site/icons/*.svg` | Yes |
 | Story text | `site/js/stories.js` | Yes |
@@ -117,7 +144,11 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 ## Key decisions and trade-offs
 
 - **Build-time fetch, not live API calls.** The site stays fast and can't break when an API changes. New data means re-running the scripts.
-- **Movebank Data Repository as the only track source.** Every package has a DOI, an open licence and the same CSV shape. Iconic migrations without an open package (Serengeti wildebeest, Arctic tern, caribou, sharks) aren't included.
+- **Movebank Data Repository as the only track source.** Every package has a DOI, an open licence and the same CSV shape, including a reference-data file for who each animal is. Iconic migrations without an open package (Serengeti wildebeest, Arctic tern, caribou, sharks) aren't included. The goose study is the 2 MB Alterra one, not the 760 MB LifeTrack geese.
+- **Stopovers computed at build time on unthinned tracks.** Thinning to 12–24 h fixes would hide shorter stops. Thresholds are simple distance-and-duration rules per group, which are easy to explain and tune, rather than a behavioural model.
+- **Facets only when they split the animals.** A filter that hides nothing, such as "female" when every elk is female, is noise, so it's dropped automatically.
+- **Colour-by uses shades of one hue.** Groups within a species stay in that species' colour family, following the colour rule, and are spaced in lightness so they stay distinguishable. "Unknown" is grey.
+- **Share state in the hash, not a server.** It works on static hosting, and links stay human-readable. The cost: the overlay in a link becomes the viewer's saved overlay setting.
 - **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
 - **NASA GIBS for live layers.** These are key-free and time-enabled.
   - Layers were chosen for coverage: NDVI monthly (2000 onward), AVHRR-OI sea temperature daily (1981–2020, which covers the 1990s whale data), and snow monthly.
@@ -132,14 +163,17 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 ## Testing
 
-`npm test` runs 40 `node:test` unit tests, and CI runs the same tests before every deploy.
+`npm test` runs 56 `node:test` unit tests, and CI runs the same tests before every deploy.
 
 - **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping.
 - **Analysis** (`analysis.test.mjs`):
   - cumulative distance, speed over a window, year fraction, seasonal movement, main axis of movement
   - subsolar point at the solstices, sun altitude, the darkness curve, the night canvas
   - NASA date snapping, the nearest-year fallback, tile URLs
-- **Palette** (`palette.test.mjs`): hue families, pairwise ΔE ≥ 20 and contrast against the background, in light and dark.
+- **Stopovers** (in `analysis.test.mjs`): finding a stay, not bridging tracking gaps, merging nearby stops into sites across the antimeridian.
+- **Reference** (`reference.test.mjs`): sex, age and handling normalisation; site grouping (osprey regions, stork countries); facets kept only when they split the animals.
+- **Share** (`share.test.mjs`): decoding dates, Season days, camera, colour-by and hidden groups; rejecting bad values; busiest-month ranges wrapping the new year.
+- **Palette** (`palette.test.mjs`): all 13 species. Covers hue families, pairwise ΔE ≥ 20 (the shades were found by search; the smallest pair is 21.9) and contrast against the background, in light and dark.
 - **Stories** (`stories.test.mjs`): one per species, 4–6 scenes, valid dates, views, overlays and placeholders, each ending in a ride-along.
 
 Checked by hand in a browser, at desktop, 800 px and 375 px phone sizes, with no console errors:
@@ -165,4 +199,7 @@ Checked by hand in a browser, at desktop, 800 px and 375 px phone sizes, with no
 - **Overlays may show a different year** when the animals' own year isn't in NASA's archive (the legend says so). Monthly layers change only once a month.
 - **No live tracking.** All studies are archived.
 - **Third-party tiles.** If EOX, OpenFreeMap, the terrain tiles or NASA GIBS are down, that layer is missing, but tracks and charts still work.
+- **Stopovers depend on thresholds.** A bird circling a lake for 2 days isn't a stop; a whale foraging within 40 km for a week is. The rings describe where animals lingered, not why.
+- **Facets are only as good as the reference data.** Many blue whales and storks have unknown sex. Stork "tagged at" has too many sites to group well, so it isn't shown.
+- **Share links carry the overlay into your settings.** Opening a link with an overlay switches that overlay on for you.
 - **Heavier on low-end devices.** 3D terrain, glow and night shading can each be switched off.

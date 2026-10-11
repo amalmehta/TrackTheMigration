@@ -17,8 +17,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATASETS, GROUPS } from './datasets.mjs';
 import {
-  speedFilter, thinByTime, capPoints, unwrapLongitudes, trackLengthKm,
+  speedFilter, thinByTime, capPoints, unwrapLongitudes, trackLengthKm, findStops, clusterStops,
 } from '../site/js/tracks.js';
+import { buildFacets } from './reference.mjs';
+
+// Where an animal counts as having "stopped": within km for at least days.
+const STOP_DEFAULTS = { land: { km: 6, days: 10 }, marine: { km: 40, days: 7 }, birds: { km: 30, days: 3 } };
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = join(ROOT, 'data', 'raw');
@@ -84,10 +88,22 @@ function splitCsv(line) {
   return out;
 }
 
-async function readFixes(file, ds) {
+async function readCsvRows(file) {
   const rl = createInterface({ input: createReadStream(file), crlfDelay: Infinity });
   let col = null;
-  const animals = new Map();
+  const rows = [];
+  for await (const line of rl) {
+    if (!line) continue;
+    const f = splitCsv(line);
+    if (!col) { col = f; continue; }
+    rows.push(Object.fromEntries(col.map((k, i) => [k, f[i] ?? ''])));
+  }
+  return rows;
+}
+
+async function readFixes(file, ds, animals = new Map()) {
+  const rl = createInterface({ input: createReadStream(file), crlfDelay: Infinity });
+  let col = null;
   let rows = 0;
   let kept = 0;
   for await (const line of rl) {
@@ -121,36 +137,71 @@ async function readFixes(file, ds) {
 
 const round = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
 
+// Clean, then find stops on the full-resolution track, then thin for display.
 function processAnimal(raw, ds) {
   raw.sort((a, b) => a[2] - b[2]);
-  let pts = speedFilter(raw, ds.maxKmh);
-  pts = thinByTime(pts, ds.thinHours);
+  const clean = unwrapLongitudes(speedFilter(raw, ds.maxKmh));
+  const stop = ds.stop || STOP_DEFAULTS[ds.group];
+  const stops = findStops(clean, stop.km, stop.days * 24, ds.maxGapHours);
+  let pts = thinByTime(clean, ds.thinHours);
   pts = capPoints(pts, ds.maxPoints);
-  pts = unwrapLongitudes(pts).map(([lon, lat, t]) => [round(lon, 4), round(lat, 4), round(t, 1)]);
-  return pts;
+  pts = pts.map(([lon, lat, t]) => [round(lon, 4), round(lat, 4), round(t, 1)]);
+  return { pts, stops };
 }
+
+// The source CSVs for a dataset: one file, or several (e.g. GPS + Argos).
+const sourceFiles = (ds) => (ds.files || [['', ds.file]]).map(([suffix, uuid]) => ({ uuid, path: join(RAW, `${ds.id}${suffix}.csv`) }));
 
 async function build(ds) {
   mkdirSync(RAW, { recursive: true });
-  const csv = join(RAW, `${ds.id}.csv`);
-  if (refresh || !existsSync(csv)) {
-    console.log(`  downloading ${ds.id}…`);
-    await download(`${API}/bitstreams/${ds.file}/content`, csv);
+  const files = sourceFiles(ds);
+  const refPath = join(RAW, `${ds.id}.ref.csv`);
+  for (const { uuid, path } of [...files, ...(ds.ref ? [{ uuid: ds.ref, path: refPath }] : [])]) {
+    if (refresh || !existsSync(path)) {
+      console.log(`  downloading ${path.split('/').pop()}…`);
+      await download(`${API}/bitstreams/${uuid}/content`, path);
+    }
   }
   const meta = await packageMeta(ds);
-  const { animals, rows, kept } = await readFixes(csv, ds);
+  const animals = new Map();
+  let rows = 0;
+  let kept = 0;
+  for (const { path } of files) {
+    const r = await readFixes(path, ds, animals);
+    rows += r.rows;
+    kept += r.kept;
+  }
 
   const tracks = [];
   for (const [id, raw] of animals) {
-    const pts = processAnimal(raw, ds);
+    const { pts, stops } = processAnimal(raw, ds);
     if (pts.length < (ds.minPoints ?? 10)) continue;
     const days = (pts[pts.length - 1][2] - pts[0][2]) / 24;
     if (days < 3) continue;
-    tracks.push({ id, km: Math.round(trackLengthKm(pts)), days: Math.round(days), pts });
+    tracks.push({ id, km: Math.round(trackLengthKm(pts)), days: Math.round(days), pts, stops });
   }
   tracks.sort((a, b) => b.km - a.km);
   const chosen = tracks.slice(0, ds.maxAnimals);
   if (chosen.length === 0) throw new Error(`no usable tracks for ${ds.id}`);
+
+  // Who each animal is (from the study's reference data), and the groupings worth filtering by.
+  const { attrs, facets } = ds.ref
+    ? buildFacets(await readCsvRows(refPath), chosen.map((t) => t.id))
+    : { attrs: new Map(), facets: [] };
+
+  // Stopover sites shared across animals.
+  const stop = ds.stop || STOP_DEFAULTS[ds.group];
+  const sites = clusterStops(chosen.flatMap((t) => t.stops.map((st) => ({ ...st, animal: t.id }))), stop.km * 2.5)
+    .slice(0, 40)
+    .map((x) => ({
+      lon: round(x.lon, 3), lat: round(x.lat, 3), days: Math.round(x.days), visits: x.visits,
+      animals: x.animals, months: x.months.map((m) => Math.round(m)),
+    }));
+  const animalsOut = chosen.map(({ stops, ...t }) => ({
+    ...t,
+    attrs: attrs.get(t.id) || {},
+    stops: stops.map((st) => [round(st.lon, 3), round(st.lat, 3), round(st.start, 1), round(st.end, 1)]),
+  }));
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
   let start = Infinity, end = -Infinity, points = 0;
@@ -166,14 +217,18 @@ async function build(ds) {
 
   await writeFile(
     join(OUT, `${ds.id}.json`),
-    JSON.stringify({ id: ds.id, maxGapHours: ds.maxGapHours, animals: chosen }),
+    JSON.stringify({ id: ds.id, maxGapHours: ds.maxGapHours, facets, sites, animals: animalsOut }),
   );
 
-  const { package: _p, file: _f, argosClasses: _a, stopovers: _s, minPoints: _m, maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, ...info } = ds;
+  const {
+    package: _p, file: _f, files: _fs, ref: _r, stop: _st, argosClasses: _a, stopovers: _s, minPoints: _m,
+    maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, ...info
+  } = ds;
   return {
     ...info,
     groupName: GROUPS[ds.group],
-    source: { ...meta, abstract: undefined, papers: undefined, fileUrl: `${API}/bitstreams/${ds.file}/content` },
+    source: { ...meta, abstract: undefined, papers: undefined, fileUrls: files.map((f) => `${API}/bitstreams/${f.uuid}/content`) },
+    facets: facets.map((f) => ({ key: f.key, label: f.label })),
     stats: {
       rawFixes: rows,
       usableFixes: kept,
@@ -185,8 +240,9 @@ async function build(ds) {
       medianKm: kms[Math.floor(kms.length / 2)],
       longestKm: kms[kms.length - 1],
       bbox: [minLon, minLat, maxLon, maxLat].map((v) => round(v, 3)),
+      sites: sites.length,
     },
-    processing: { maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints },
+    processing: { maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, stop },
     _abstract: meta.abstract,
   };
 }
@@ -210,6 +266,7 @@ async function main() {
       `  ${s.animalsShown}/${s.animalsInStudy} animals, ${s.pointsShown} points, ` +
       `${s.start.slice(0, 10)} → ${s.end.slice(0, 10)}, median ${s.medianKm} km, longest ${s.longestKm} km`,
     );
+    console.log(`  facets: ${clean.facets.map((f) => f.key).join(', ') || '—'} · stopover sites: ${clean.stats.sites}`);
     if (process.env.SHOW_ABSTRACTS) console.log(`  abstract: ${_abstract}\n`);
     species.push(clean);
   }

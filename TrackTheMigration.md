@@ -95,6 +95,26 @@ Decided without asking (v2):
 - Species silhouettes from PhyloPic (CC0, public domain or CC BY, credited in the app). Fonts: Inter and Fraunces (Google Fonts). Charts: D3 7 from cdnjs.
 - The default theme is now dark, and the light theme is kept.
 
+Asked and answered (2026-10-11, "keep going"):
+- Build all four: shareable links, filters by who the animal is, stopovers and resting places, and more migrations.
+
+Decided without asking (v3):
+- New migrations, all CC0 from the Movebank Data Repository:
+  - pronghorn (Adobe Town, Wyoming/Colorado)
+  - elk (Ya Ha Tinda herd, Banff)
+  - greater white-fronted goose: the small Alterra study, not the 760 MB LifeTrack one
+  - Hudsonian godwit (Chiloé to the Gulf of Mexico)
+- The bird and land colour families were re-optimised for 13 species (smallest ΔE 21.9). White stork, osprey and bar-tailed godwit changed shade to make room.
+- Who-they-are facets come from each study's reference data, and are shown only if they split the animals into at least two groups of two or more. Tagging sites use the coarsest useful grouping. Stork "handling" separates experimental or relocated birds, which the study itself flags.
+- What counts as a stopover:
+  - birds: 30 km for 3 days
+  - marine animals: 40 km for 7 days
+  - land animals: 6 km for 10 days
+  - the geolocator godwit: 150 km
+- Stopovers are computed at build time on unthinned tracks; up to 40 sites per species.
+- Share links live in the URL hash and update automatically. A shared link opens paused. A shared overlay becomes the viewer's overlay setting.
+- The elk silhouette is a cow, because every collared elk is female.
+
 CHANGELOG:
 
 - 2026-10-09 — created
@@ -117,3 +137,4 @@ CHANGELOG:
 - 2026-10-08 — added meta-instruction: color-code tags by similarity (related share a hue family, each distinct)
 - 2026-10-09 — built v1: data pipeline from the Movebank Data Repository (9 migrations), a 3D globe site with Season/Dates playback, Settings (⌘,), a feedback tab, tests, docs, and GitHub Pages deploy
 - 2026-10-09 — v2: cinematic redesign (glowing trails, starfield, seasonal day/night, silhouettes, dark glass UI); follow-an-animal mode with live readout and journey profile; linked charts (migration calendar, brushable latitude chart, monthly and per-animal distance); live NASA GIBS layers (vegetation, sea temperature, snow); guided stories for all nine species; 40 tests; docs updated
+- 2026-10-11 — v3: shareable links (URL hash, Share button); who-they-are filters and colour-by from study reference data; stopover detection, stopover rings, a 'Places they stayed' chart and 'staying put' in the readout; four more migrations (pronghorn, elk, white-fronted goose, Hudsonian godwit) with stories and silhouettes; palette re-optimised for 13 species; 56 tests

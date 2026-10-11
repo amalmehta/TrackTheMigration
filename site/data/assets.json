@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-09T21:25:30.505Z",
+  "generated": "2026-10-11T20:50:58.633Z",
   "icons": {
     "wildebeest": {
       "file": "icons/wildebeest.svg",
@@ -63,6 +63,34 @@
       "license": "CC BY 3.0",
       "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
       "sourceUrl": "https://www.phylopic.org/images/a6a38d55-71be-43f2-b781-9a845662de20"
+    },
+    "pronghorn": {
+      "file": "icons/pronghorn.svg",
+      "attribution": "Caleb M. Gordon",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/26f9f4f5-135c-42e2-959a-9d27848b33d7"
+    },
+    "elk": {
+      "file": "icons/elk.svg",
+      "attribution": "Unknown author",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/b156cc5b-3c1b-4c10-9de8-dfa9b6840f1a"
+    },
+    "white-fronted-goose": {
+      "file": "icons/white-fronted-goose.svg",
+      "attribution": "Andy Wilson",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/6647bf96-4733-4bc4-91d8-d52d6f1e4ee0"
+    },
+    "hudsonian-godwit": {
+      "file": "icons/hudsonian-godwit.svg",
+      "attribution": "Edwin Price",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/91973860-8980-4c6f-a146-58ff0cf33cf7"
     }
   },
   "layers": {

@@ -290,4 +290,128 @@ export const STORIES = {
       },
     ],
   },
+
+  pronghorn: {
+    title: 'Staying close to home',
+    scenes: [
+      {
+        title: 'Life on the steppe',
+        text: '{animals} GPS-collared female pronghorn in the Adobe Town area of southern Wyoming and northern Colorado, {years}. They share this cold, dry sagebrush steppe with feral horses and greater sage-grouse.',
+        view: 'species', at: '01-15', speed: 4,
+      },
+      {
+        title: 'Winter',
+        text: 'The study treats November to March as winter, the non-breeding season. The overlay shows how many days of the month each place was snow-covered.',
+        view: 'heads', at: '02-01', speed: 3, overlay: 'snow',
+      },
+      {
+        title: 'Not much of a migration',
+        text: 'April to June brings late pregnancy and the first fawns. Most of these pronghorn hardly move house: for most of them, their midsummer spot was within 20 km of where they spent the winter.',
+        view: 'heads', at: '06-15', speed: 4,
+      },
+      {
+        title: 'Sharing with horses',
+        text: 'Pronghorn chose much the same ground as feral horses, flatter slopes with shorter shrubs, but also avoided oil and gas well pads all year. Horses and pronghorn overlapped strongly in where they spent their time, in every season.',
+        view: 'species', at: '09-01', speed: 4,
+      },
+      {
+        title: 'The wanderer',
+        text: 'Follow {longestId}, which covered {longestKm} without ever leaving this corner of the steppe.',
+        view: 'species', at: '01-15', speed: 7, follow: 'longest',
+      },
+    ],
+  },
+
+  elk: {
+    title: 'To migrate or not',
+    scenes: [
+      {
+        title: 'A partly migratory herd',
+        text: 'Ya Ha Tinda elk are partially migratory: each year some migrate and some stay. Shown are {animals} collared females, {years}.',
+        view: 'species', at: '03-01', speed: 4,
+      },
+      {
+        title: 'Late winter',
+        text: 'Late winter, with NASA snow cover. Watch where each elk is now, then compare with summer.',
+        view: 'heads', at: '03-15', speed: 3, overlay: 'snow',
+      },
+      {
+        title: 'Residents and migrants',
+        text: 'Comparing each elk’s late-winter and midsummer positions in these tracks, about two-thirds stayed within 10 km. Those are the residents. The rest moved 15–60 km: the migrants.',
+        view: 'species', at: '07-15', speed: 4,
+      },
+      {
+        title: 'Switching sides',
+        text: 'The same elk can switch. Over ten years, individuals switched between migrating and staying at about 15% a year. Elk were more likely to migrate after a severe winter, when wolves were more numerous, and as they grew older.',
+        view: 'species', at: '10-01', speed: 5,
+      },
+      {
+        title: 'One elk’s years',
+        text: 'Follow {longestId}, tracked for {longestKm}. The readout shows the ground height under her.',
+        view: 'species', at: '04-01', speed: 7, follow: 'longest',
+      },
+    ],
+  },
+
+  'white-fronted-goose': {
+    title: 'Spring in the Arctic',
+    scenes: [
+      {
+        title: 'Winter in the Netherlands',
+        text: '{animals} greater white-fronted geese, tagged on their wintering grounds in the Netherlands, carried GPS and satellite tags in {years}.',
+        view: 'heads', at: '01-20', speed: 4,
+      },
+      {
+        title: 'East in spring',
+        text: 'In spring they head east, stopping around the Baltic and in western Russia.',
+        view: 'heads', at: '04-20', speed: 3,
+      },
+      {
+        title: 'The White Sea',
+        text: 'By late May they have reached the White Sea region.',
+        view: 'heads', at: '05-20', speed: 3,
+      },
+      {
+        title: 'Summer on the tundra',
+        text: 'They spend summer on the Arctic tundra, some as far east as the Taymyr Peninsula.',
+        view: 'heads', at: '07-10', speed: 4,
+      },
+      {
+        title: 'A network of places',
+        text: 'In autumn they retrace the route. These tracks helped build a model of migration as a network of breeding, stopover and wintering sites: the glowing rings are the places the geese stayed. Follow {longestId}: {longestKm}.',
+        view: 'species', at: '09-20', speed: 6, follow: 'longest',
+      },
+    ],
+  },
+
+  'hudsonian-godwit': {
+    title: 'Holding the line',
+    scenes: [
+      {
+        title: 'Chiloé Island',
+        text: '{animals} Hudsonian godwits carried satellite tags from Chiloé Island in southern Chile, {years}.',
+        view: 'species', at: '04-01', speed: 2,
+      },
+      {
+        title: 'The big flight north',
+        text: 'In early April they set off north: a days-long flight across more than 7,000 km, mostly over open ocean, to the Gulf of Mexico.',
+        view: 'species', at: '04-08', speed: 1,
+      },
+      {
+        title: 'Fighting the wind',
+        text: 'Wind blows a flying bird sideways. These godwits strongly preferred to correct for that drift completely, all the way along.',
+        view: 'heads', at: '04-15', speed: 1,
+      },
+      {
+        title: 'Not what was expected',
+        text: 'The researchers had expected correction to grow with distance and to be limited over open sea. It wasn’t, and it didn’t decide where each bird reached the Gulf coast.',
+        view: 'species', at: '04-25', speed: 1,
+      },
+      {
+        title: 'Why it matters',
+        text: 'Correcting for wind seems crucial to godwits, a sign of how risky these crossings are as winds change. Follow {longestId}: {longestKm}.',
+        view: 'species', at: '04-01', speed: 3, follow: 'longest',
+      },
+    ],
+  },
 };

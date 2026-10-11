@@ -215,3 +215,76 @@ export function mainAxis(tracks) {
   }
   return lon > lat ? 'lon' : 'lat';
 }
+
+// --- Stopovers: places an animal stayed for a while ---
+
+// Runs of consecutive fixes that stay within `radiusKm` of their running
+// centroid for at least `minHours`, without a tracking gap longer than
+// `maxGapHours`. Points should be unwrapped (see unwrapLongitudes).
+// Returns [{ lon, lat, start, end }] in time order.
+export function findStops(pts, radiusKm, minHours, maxGapHours = Infinity) {
+  const stops = [];
+  const n = pts.length;
+  let i = 0;
+  while (i < n) {
+    let sumLon = pts[i][0];
+    let sumLat = pts[i][1];
+    let k = 1;
+    let j = i;
+    while (j + 1 < n) {
+      if (pts[j + 1][2] - pts[j][2] > maxGapHours) break;
+      if (haversineKm([sumLon / k, sumLat / k], pts[j + 1]) > radiusKm) break;
+      j++;
+      sumLon += pts[j][0];
+      sumLat += pts[j][1];
+      k++;
+    }
+    if (j > i && pts[j][2] - pts[i][2] >= minHours) {
+      stops.push({ lon: sumLon / k, lat: sumLat / k, start: pts[i][2], end: pts[j][2] });
+      i = j + 1;
+    } else i++;
+  }
+  return stops;
+}
+
+const wrapLon = (lon) => ((((lon + 180) % 360) + 360) % 360) - 180;
+
+// Group stops from many animals into shared sites: each stop joins the
+// nearest site within `mergeKm`, longest stops first. Sites carry total
+// days, visits, the animals that used them and days per calendar month.
+export function clusterStops(stops, mergeKm) {
+  const sorted = [...stops].sort((a, b) => (b.end - b.start) - (a.end - a.start));
+  const sites = [];
+  for (const s of sorted) {
+    const p = [wrapLon(s.lon), s.lat];
+    let best = null;
+    let bestD = Infinity;
+    for (const site of sites) {
+      const d = haversineKm([site.lon, site.lat], p);
+      if (d <= mergeKm && d < bestD) { best = site; bestD = d; }
+    }
+    const days = (s.end - s.start) / 24;
+    if (!best) {
+      best = { lon: p[0], lat: p[1], days: 0, visits: 0, animals: new Set(), months: new Array(12).fill(0), _w: 0 };
+      sites.push(best);
+    } else {
+      // Weighted centre (shift longitude next to the site first).
+      let lon = p[0];
+      if (lon - best.lon > 180) lon -= 360;
+      if (lon - best.lon < -180) lon += 360;
+      const w = best._w + days;
+      best.lon = wrapLon((best.lon * best._w + lon * days) / w);
+      best.lat = (best.lat * best._w + p[1] * days) / w;
+    }
+    best._w += days;
+    best.days += days;
+    best.visits += 1;
+    if (s.animal != null) best.animals.add(s.animal);
+    for (let h = s.start; h < s.end; h += 24) {
+      best.months[new Date(h * 3.6e6).getUTCMonth()] += Math.min(1, (s.end - h) / 24);
+    }
+  }
+  return sites
+    .map(({ _w, animals, ...site }) => ({ ...site, animals: [...animals] }))
+    .sort((a, b) => b.days - a.days);
+}

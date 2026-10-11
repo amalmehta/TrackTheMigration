@@ -99,3 +99,42 @@ test('night canvas: lit under the sun, dark opposite', async () => {
   assert.ok(alphaAt(1, 32) > 150);            // the antimeridian is in night
   assert.ok(alphaAt(15, 32) > 0 && alphaAt(15, 32) < alphaAt(1, 32)); // twilight just past −90°
 });
+
+test('findStops finds a long stay and ignores travel', async () => {
+  const { findStops } = await import('../site/js/tracks.js');
+  const pts = [];
+  // travel east 1° per 12 h, then stay ~put for 5 days, then travel again
+  for (let i = 0; i < 5; i++) pts.push([i, 0, i * 12]);
+  for (let i = 0; i < 10; i++) pts.push([5 + (i % 2) * 0.01, 0.01 * (i % 3), 60 + i * 12]);
+  for (let i = 1; i < 4; i++) pts.push([5 + i, 0, 168 + i * 12]);
+  const stops = findStops(pts, 10, 72);
+  assert.equal(stops.length, 1);
+  near(stops[0].lon, 5.005, 0.01);
+  assert.equal(stops[0].start, 60);
+  assert.equal(stops[0].end, 168);
+});
+
+test('findStops does not bridge tracking gaps', async () => {
+  const { findStops } = await import('../site/js/tracks.js');
+  const pts = [[0, 0, 0], [0, 0, 24], [0, 0, 500], [0, 0, 524]];
+  assert.equal(findStops(pts, 5, 30, 48).length, 0);
+  assert.equal(findStops(pts, 5, 30).length, 1);
+});
+
+test('clusterStops merges nearby stops into sites with months', async () => {
+  const { clusterStops } = await import('../site/js/tracks.js');
+  const jan = Date.UTC(2010, 0, 10) / 3.6e6;
+  const sites = clusterStops([
+    { lon: 10, lat: 10, start: jan, end: jan + 24 * 4, animal: 'a' },
+    { lon: 10.1, lat: 10, start: jan, end: jan + 24 * 2, animal: 'b' },
+    { lon: 40, lat: 10, start: jan, end: jan + 24, animal: 'a' },
+    { lon: 179.9, lat: 0, start: jan, end: jan + 48, animal: 'c' },
+    { lon: 180.1, lat: 0, start: jan, end: jan + 24, animal: 'd' },
+  ], 50);
+  assert.equal(sites.length, 3);
+  assert.equal(sites[0].days, 6);
+  assert.deepEqual(sites[0].animals.sort(), ['a', 'b']);
+  near(sites[0].months[0], 6, 1e-9);
+  const dateline = sites.find((s) => Math.abs(Math.abs(s.lon) - 180) < 1);
+  assert.equal(dateline.visits, 2);
+});

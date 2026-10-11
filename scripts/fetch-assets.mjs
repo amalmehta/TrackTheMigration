@@ -27,6 +27,10 @@ const SILHOUETTES = {
   'white-stork': '6846ae3b-0fdb-4cee-8d83-1f3c47e68fbc',
   osprey: 'd25f13d6-722e-4da3-8073-0a86b8a15976',
   'bar-tailed-godwit': 'a6a38d55-71be-43f2-b781-9a845662de20',
+  pronghorn: '26f9f4f5-135c-42e2-959a-9d27848b33d7',
+  elk: 'b156cc5b-3c1b-4c10-9de8-dfa9b6840f1a', // a cow: every elk in the study is female
+  'white-fronted-goose': '6647bf96-4733-4bc4-91d8-d52d6f1e4ee0',
+  'hudsonian-godwit': '91973860-8980-4c6f-a146-58ff0cf33cf7',
 };
 
 const LICENSE_NAMES = {

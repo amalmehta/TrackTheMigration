@@ -2,6 +2,7 @@
 
 import { seasonToHours, splitByYear, cumulativeKm } from './tracks.js';
 import { settings } from './settings.js';
+import { colorFor } from './palette.js';
 
 export const state = {
   index: null,          // site/data/index.json
@@ -17,7 +18,44 @@ export const state = {
   highlight: null,      // Set of "species/animal" keys picked in a chart, or null
   follow: null,         // { species, animal } while following an animal
   story: null,          // { species, index } while a story is playing
+  hidden: new Set(),    // "facet=value" groups switched off in the Who filter
+  colorBy: null,        // facet key the selected species is coloured by, or null
 };
+
+// ---------- who-is-this-animal filters ----------
+
+export const isVisible = (animal) => {
+  if (!state.hidden.size || !animal.attrs) return true;
+  for (const [k, v] of Object.entries(animal.attrs)) if (state.hidden.has(`${k}=${v}`)) return false;
+  return true;
+};
+
+export const facetsOf = (speciesId) => state.data.get(speciesId)?.facets || [];
+
+// Shades of the species colour for the values of the colour-by facet:
+// dark → light steps of one hue, grey for "unknown".
+export function facetShades(speciesId, facetKey, mode) {
+  const facet = facetsOf(speciesId).find((f) => f.key === facetKey);
+  if (!facet) return new Map();
+  const base = d3.hcl(colorFor(speciesId, mode));
+  const known = facet.values.filter((v) => v.value !== 'unknown');
+  const n = known.length;
+  const out = new Map();
+  known.forEach((v, i) => {
+    const t = n === 1 ? 0 : i / (n - 1);                     // 0 … 1
+    const c = d3.hcl(base.h, base.c * (1.05 - 0.25 * t), mode === 'dark' ? 45 + 45 * t : 30 + 40 * t);
+    out.set(v.value, c.formatHex());
+  });
+  out.set('unknown', mode === 'dark' ? '#9ca3af' : '#6b7280');
+  return out;
+}
+
+export function animalColor(speciesId, animal, mode) {
+  if (state.colorBy && state.selected === speciesId && animal.attrs?.[state.colorBy]) {
+    return facetShades(speciesId, state.colorBy, mode).get(animal.attrs[state.colorBy]) || colorFor(speciesId, mode);
+  }
+  return colorFor(speciesId, mode);
+}
 
 const handlers = new Map();
 export function on(event, fn) {
@@ -62,6 +100,26 @@ export const currentHours = () => (state.mode === 'dates' ? state.t : seasonToHo
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// "Mar–Apr" from days-per-month: the months at ≥ 60% of the peak, as ranges.
+export function busiestMonths(months) {
+  const peak = Math.max(...months);
+  if (!peak) return '—';
+  const on = months.map((m) => m >= 0.6 * peak);
+  const ranges = [];
+  for (let i = 0; i < 12; i++) {
+    if (!on[i] || (i > 0 && on[i - 1])) continue;
+    let j = i;
+    while (j + 1 < 12 && on[j + 1]) j++;
+    ranges.push([i, j]);
+  }
+  // A range running into December and one starting in January are one winter: "Oct–Mar".
+  if (ranges.length > 1 && ranges[0][0] === 0 && ranges.at(-1)[1] === 11) {
+    const first = ranges.shift();
+    ranges[ranges.length - 1][1] = first[1];
+  }
+  return ranges.map(([a, b]) => (a === b ? MONTHS[a] : `${MONTHS[a]}–${MONTHS[b]}`)).join(', ');
+}
 
 export const fmtDate = (h) => {
   const d = new Date(h * 3.6e6);

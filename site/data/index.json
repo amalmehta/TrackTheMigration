@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-09T21:07:10.744Z",
+  "generated": "2026-10-11T21:11:07.422Z",
   "groups": {
     "land": "Land mammals",
     "marine": "Marine animals",
@@ -32,8 +32,20 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1095",
         "dataCitation": "Stabach, Jared A.; Hughey, Lacey F.; Reid, Robin S.; Worden, Jeffrey S.; Leimgruber, Peter; Boone, Randall B. (2020) Data from: Comparison of movement strategies of three populations of white-bearded wildebeest. Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/1ff949f2-3df4-45fb-ac16-bbf1ddf32108/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/1ff949f2-3df4-45fb-ac16-bbf1ddf32108/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        },
+        {
+          "key": "sex",
+          "label": "Sex"
+        }
+      ],
       "stats": {
         "rawFixes": 279082,
         "usableFixes": 279082,
@@ -49,14 +61,19 @@
           -2.941,
           37.685,
           -1.119
-        ]
+        ],
+        "sites": 23
       },
       "processing": {
         "maxKmh": 20,
         "thinHours": 12,
         "maxGapHours": 120,
         "maxAnimals": 30,
-        "maxPoints": 1500
+        "maxPoints": 1500,
+        "stop": {
+          "km": 6,
+          "days": 10
+        }
       }
     },
     {
@@ -81,8 +98,11 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.342",
         "dataCitation": "Bartlam-Brooks, Hattie L.A.; Harris, Stephen (2013) Data from: In search of greener pastures: using satellite images to predict the effects of environmental change on zebra migration. Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/9672ab98-93db-4943-bbb0-ef1a9435545d/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/9672ab98-93db-4943-bbb0-ef1a9435545d/content"
+        ]
       },
+      "facets": [],
       "stats": {
         "rawFixes": 53794,
         "usableFixes": 53776,
@@ -98,14 +118,19 @@
           -20.803,
           25.353,
           -19.213
-        ]
+        ],
+        "sites": 5
       },
       "processing": {
         "maxKmh": 20,
         "thinHours": 6,
         "maxGapHours": 120,
         "maxAnimals": 30,
-        "maxPoints": 1500
+        "maxPoints": 1500,
+        "stop": {
+          "km": 6,
+          "days": 10
+        }
       }
     },
     {
@@ -131,8 +156,11 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.3619",
         "dataCitation": "Wilde, Luke; Monteith, Kevin L.; Kauffman, Matthew J. (2026) Data from: Study \"Wyoming Sublette Mule Deer (2018-2020)\". Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/de7b956a-f5b6-4727-a2cc-a119a1217a68/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/de7b956a-f5b6-4727-a2cc-a119a1217a68/content"
+        ]
       },
+      "facets": [],
       "stats": {
         "rawFixes": 948632,
         "usableFixes": 948632,
@@ -148,14 +176,138 @@
           41.665,
           -108.382,
           44.365
-        ]
+        ],
+        "sites": 26
       },
       "processing": {
         "maxKmh": 20,
         "thinHours": 24,
         "maxGapHours": 120,
         "maxAnimals": 40,
-        "maxPoints": 1100
+        "maxPoints": 1100,
+        "stop": {
+          "km": 6,
+          "days": 10
+        }
+      }
+    },
+    {
+      "id": "pronghorn",
+      "name": "Pronghorn",
+      "scientific": "Antilocapra americana",
+      "group": "land",
+      "region": "Wyoming and Colorado, USA",
+      "blurb": "GPS-collared female pronghorn in the Adobe Town area of southern Wyoming and northern Colorado, a cold, dry sagebrush steppe they share with feral horses and greater sage-grouse.",
+      "groupName": "Land mammals",
+      "source": {
+        "title": "Data from: Study \"Pronghorn (Antilocapra americana), Wyoming/Colorado, USA\"",
+        "paperCitation": "Hennig JD, Scasta JD, Pratt AC, Wanner CP, Beck JL. 2022. Habitat selection and space use overlap between feral horses, pronghorn, and greater sage-grouse in cold arid steppe. J Wildlife Manage. e22329. doi:10.1002/jwmg.22329",
+        "authors": [
+          "Beck, Jeffrey L.",
+          "Hennig, Jacob D.",
+          "Scasta, John D."
+        ],
+        "issued": "2022-12-13",
+        "doi": "10.5441/001/1.74pf3n2p",
+        "doiUrl": "https://doi.org/10.5441/001/1.74pf3n2p",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1578",
+        "dataCitation": "Beck, Jeffrey L.; Hennig, Jacob D.; Scasta, John D. (2022) Data from: Study \"Pronghorn (Antilocapra americana), Wyoming/Colorado, USA\". Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/17ee83f6-d3ec-4030-94fb-e7cdbfeabc1d/content"
+        ]
+      },
+      "facets": [],
+      "stats": {
+        "rawFixes": 99673,
+        "usableFixes": 99673,
+        "animalsInStudy": 32,
+        "animalsShown": 32,
+        "pointsShown": 32876,
+        "start": "2017-11-14T06:06:00.000Z",
+        "end": "2019-11-07T21:06:00.000Z",
+        "medianKm": 1697,
+        "longestKm": 2402,
+        "bbox": [
+          -108.741,
+          40.874,
+          -107.744,
+          41.694
+        ],
+        "sites": 14
+      },
+      "processing": {
+        "maxKmh": 25,
+        "thinHours": 12,
+        "maxGapHours": 120,
+        "maxAnimals": 32,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 6,
+          "days": 10
+        }
+      }
+    },
+    {
+      "id": "elk",
+      "name": "Elk",
+      "scientific": "Cervus elaphus canadensis",
+      "group": "land",
+      "region": "Ya Ha Tinda and Banff National Park, Canada",
+      "blurb": "Female elk from the partially migratory Ya Ha Tinda herd beside Banff National Park. Some migrate each year and others stay put, and the same elk can switch strategy from one year to the next.",
+      "groupName": "Land mammals",
+      "source": {
+        "title": "Data from: Study \"Ya Ha Tinda elk project, Banff National Park, 2001-2020 (females)\"",
+        "paperCitation": "Eggeman S, Hebblewhite M, Bohm H, Whittington J, Merril E (2016) Behavioral flexibility in migratory behavior in a long-lived large herbivore. Journal of Animal Ecology 85(3): 785-797. doi:10.1111/1365-2656.12495",
+        "authors": [
+          "Hebblewhite, Mark",
+          "Merrill, Evelyn",
+          "Martin, Hans",
+          "Berg, Jodi E.",
+          "Bohm, Holger",
+          "Eggeman, Scott L."
+        ],
+        "issued": "2020-07-24",
+        "doi": "10.5441/001/1.5g4h5t6c",
+        "doiUrl": "https://doi.org/10.5441/001/1.5g4h5t6c",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1129",
+        "dataCitation": "Hebblewhite, Mark; Merrill, Evelyn; Martin, Hans; Berg, Jodi E.; Bohm, Holger; Eggeman, Scott L. (2020) Data from: Study \"Ya Ha Tinda elk project, Banff National Park, 2001-2020 (females)\". Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/80b6ef22-316f-41f0-9348-bd5ee6022122/content"
+        ]
+      },
+      "facets": [],
+      "stats": {
+        "rawFixes": 1585456,
+        "usableFixes": 1585430,
+        "animalsInStudy": 175,
+        "animalsShown": 40,
+        "pointsShown": 41024,
+        "start": "2006-03-01T03:00:00.000Z",
+        "end": "2020-06-04T18:00:00.000Z",
+        "medianKm": 1832,
+        "longestKm": 2925,
+        "bbox": [
+          -116.469,
+          51.338,
+          -114.844,
+          51.917
+        ],
+        "sites": 8
+      },
+      "processing": {
+        "maxKmh": 20,
+        "thinHours": 24,
+        "maxGapHours": 120,
+        "maxAnimals": 40,
+        "maxPoints": 1100,
+        "stop": {
+          "km": 6,
+          "days": 10
+        }
       }
     },
     {
@@ -182,8 +334,20 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.837",
         "dataCitation": "Mate, Bruce R.; Palacios, Daniel M.; Irvine, Ladd M.; Follett, Tomas M. (2019) Data from: Behavioural estimation of blue whale movements in the Northeast Pacific from state-space model analysis of satellite tracks. Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/bab61b80-771a-4568-bfb4-41ff356ee8c6/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/bab61b80-771a-4568-bfb4-41ff356ee8c6/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        },
+        {
+          "key": "sex",
+          "label": "Sex"
+        }
+      ],
       "stats": {
         "rawFixes": 16249,
         "usableFixes": 5783,
@@ -199,14 +363,19 @@
           6.37,
           -89.941,
           53.118
-        ]
+        ],
+        "sites": 36
       },
       "processing": {
         "maxKmh": 15,
         "thinHours": 12,
         "maxGapHours": 240,
         "maxAnimals": 40,
-        "maxPoints": 800
+        "maxPoints": 800,
+        "stop": {
+          "km": 40,
+          "days": 7
+        }
       }
     },
     {
@@ -235,8 +404,20 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1660",
         "dataCitation": "Andrews-Goff, Virginia; Gales, Nick; Childerhouse, Simon J.; Laverick, Sarah M.; Polanowski, Andrea M.; Double, Michael C. (2023) Data from: Australia’s east coast humpback whales: satellite tag derived movements on breeding grounds, feeding grounds and along the northern and southern migration.. Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/aca1254b-7574-4677-a4d0-5fc23415859f/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/aca1254b-7574-4677-a4d0-5fc23415859f/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "sex",
+          "label": "Sex"
+        },
+        {
+          "key": "stage",
+          "label": "Age when tagged"
+        }
+      ],
       "stats": {
         "rawFixes": 30388,
         "usableFixes": 25447,
@@ -252,14 +433,19 @@
           -70.025,
           183.786,
           -15.825
-        ]
+        ],
+        "sites": 19
       },
       "processing": {
         "maxKmh": 15,
         "thinHours": 12,
         "maxGapHours": 240,
         "maxAnimals": 40,
-        "maxPoints": 800
+        "maxPoints": 800,
+        "stop": {
+          "km": 40,
+          "days": 7
+        }
       }
     },
     {
@@ -294,8 +480,16 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1350",
         "dataCitation": "Okuyama, Junichi; Watabe, Akemi; Takuma, Shunichi; Tanaka, Kentaro; Shirai, Kotaro; Murakami-Sugihara, Naoko; Arita, Mamiko; Fujita, Kento; Nishizawa, Hideaki; Narazaki, Tomoko; Yamashita, Yoshiya; Kameda, Kazunari (2022) Data from: Latitudinal cline in the ratio of foraging dichotomy in the North Pacific population of loggerhead turtles revealed a priority conservation area. Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/7045a29d-6034-43ff-8ec8-7ce46c736691/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/7045a29d-6034-43ff-8ec8-7ce46c736691/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        }
+      ],
       "stats": {
         "rawFixes": 17360,
         "usableFixes": 4895,
@@ -311,14 +505,19 @@
           26.181,
           189.556,
           41.719
-        ]
+        ],
+        "sites": 27
       },
       "processing": {
         "maxKmh": 10,
         "thinHours": 12,
         "maxGapHours": 240,
         "maxAnimals": 40,
-        "maxPoints": 800
+        "maxPoints": 800,
+        "stop": {
+          "km": 40,
+          "days": 7
+        }
       }
     },
     {
@@ -349,8 +548,24 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.743",
         "dataCitation": "Berthold, Peter; Kaatz, Christoph; Kaatz, Michael; Querner, Ulrich; van den Bossche, Willem; Chernetsov, Nikita; Fiedler, Wolfgang; Wikelski, Martin (2022) Data from: Study \"MPIAB Argos white stork tracking (1991-2017)\". Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/f0147626-8366-4b23-9a55-b2a76e75acbc/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/f0147626-8366-4b23-9a55-b2a76e75acbc/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "sex",
+          "label": "Sex"
+        },
+        {
+          "key": "stage",
+          "label": "Age when tagged"
+        },
+        {
+          "key": "handling",
+          "label": "Handling"
+        }
+      ],
       "stats": {
         "rawFixes": 222661,
         "usableFixes": 51362,
@@ -366,14 +581,78 @@
           -34.161,
           45.119,
           54.973
-        ]
+        ],
+        "sites": 40
       },
       "processing": {
         "maxKmh": 80,
         "thinHours": 12,
         "maxGapHours": 240,
         "maxAnimals": 40,
-        "maxPoints": 1200
+        "maxPoints": 1200,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
+      }
+    },
+    {
+      "id": "white-fronted-goose",
+      "name": "White-fronted Goose",
+      "scientific": "Anser albifrons",
+      "group": "birds",
+      "region": "Netherlands to the Russian Arctic",
+      "blurb": "Greater white-fronted geese followed by GPS and satellite tags from their wintering grounds in the Netherlands to breeding grounds in the Russian Arctic, and back.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: A periodic Markov model to formalise animal migration on a network [white-fronted goose data]",
+        "paperCitation": "Kölzsch A, Kleyheeg E, Kruckenberg H, Kaatz M, Blasius B (2018) A periodic Markov model to formalise animal migration on a network. Royal Society Open Science 5: 180438. doi:10.1098/rsos.180438",
+        "authors": [
+          "Kruckenberg, Helmut",
+          "Müskens, Gerhard J.D.M.",
+          "Ebbinge, Barwolt S."
+        ],
+        "issued": "2018-06-13",
+        "doi": "10.5441/001/1.kk38017f",
+        "doiUrl": "https://doi.org/10.5441/001/1.kk38017f",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.747",
+        "dataCitation": "Kruckenberg, Helmut; Müskens, Gerhard J.D.M.; Ebbinge, Barwolt S. (2018) Data from: A periodic Markov model to formalise animal migration on a network [white-fronted goose data]. Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/04f98922-2294-4476-93c0-55a35c0a1d03/content",
+          "https://datarepository.movebank.org/server/api/core/bitstreams/cf2ad987-30ba-4ce3-87db-ffaf47cff0d3/content"
+        ]
+      },
+      "facets": [],
+      "stats": {
+        "rawFixes": 11812,
+        "usableFixes": 10164,
+        "animalsInStudy": 7,
+        "animalsShown": 7,
+        "pointsShown": 4830,
+        "start": "2007-01-11T12:00:00.000Z",
+        "end": "2008-12-28T18:48:00.000Z",
+        "medianKm": 8792,
+        "longestKm": 19239,
+        "bbox": [
+          3.588,
+          51.106,
+          87.633,
+          73.575
+        ],
+        "sites": 40
+      },
+      "processing": {
+        "maxKmh": 100,
+        "thinHours": 6,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
       }
     },
     {
@@ -398,8 +677,24 @@
         "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.736",
         "dataCitation": "Martell, Mark S.; Douglas, David (2019) Data from: Fall migration routes, timing, and wintering sites of North American ospreys as determined by satellite telemetry. Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/d9c00b17-8072-41a1-a44c-1e7612ce9405/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/d9c00b17-8072-41a1-a44c-1e7612ce9405/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        },
+        {
+          "key": "sex",
+          "label": "Sex"
+        },
+        {
+          "key": "stage",
+          "label": "Age when tagged"
+        }
+      ],
       "stats": {
         "rawFixes": 86383,
         "usableFixes": 23852,
@@ -415,14 +710,19 @@
           -18.499,
           -49.594,
           53.006
-        ]
+        ],
+        "sites": 40
       },
       "processing": {
         "maxKmh": 80,
         "thinHours": 12,
         "maxGapHours": 240,
         "maxAnimals": 40,
-        "maxPoints": 1200
+        "maxPoints": 1200,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
       }
     },
     {
@@ -448,8 +748,16 @@
         "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.3100",
         "dataCitation": "Battley, Phil F.; Lisovski, Simeon; Conklin, Jesse R. (2024) Data from: Study \"Bar-tailed Godwit geolocator tracking New Zealand 2013-2014\". Movebank Data Repository.",
-        "fileUrl": "https://datarepository.movebank.org/server/api/core/bitstreams/c1908560-b8b8-4fc4-8b76-d2fbbf7beee9/content"
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/c1908560-b8b8-4fc4-8b76-d2fbbf7beee9/content"
+        ]
       },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        }
+      ],
       "stats": {
         "rawFixes": 103,
         "usableFixes": 103,
@@ -465,14 +773,88 @@
           -46.47,
           207,
           69.109
-        ]
+        ],
+        "sites": 12
       },
       "processing": {
         "maxKmh": 120,
         "thinHours": 0,
         "maxGapHours": 1440,
         "maxAnimals": 40,
-        "maxPoints": 800
+        "maxPoints": 800,
+        "stop": {
+          "km": 150,
+          "days": 3
+        }
+      }
+    },
+    {
+      "id": "hudsonian-godwit",
+      "name": "Hudsonian Godwit",
+      "scientific": "Limosa haemastica",
+      "group": "birds",
+      "region": "Chiloé, Chile to the Gulf of Mexico",
+      "blurb": "Hudsonian godwits from Chiloé Island, Chile, satellite-tracked on their northward migration: a days-long flight across more than 7,000 km, mostly over open ocean, to the Gulf of Mexico.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Compensation for wind drift prevails for a shorebird on a long-distance, transoceanic flight",
+        "paperCitation": "Linscott JA, Navedo JG, Clements SJ, Loghry JP, Ruiz J, Ballard BM, Weegman MD, Senner NR. 2022. Compensation for wind drift prevails for a shorebird on a long-distance, transoceanic flight. Move Ecol. 10(11). doi:10.1186/s40462-022-00310-z",
+        "authors": [
+          "Linscott, Jennifer A.",
+          "Navedo, Juan G.",
+          "Clements, Sarah J.",
+          "Loghry, Jason P.",
+          "Ruiz, Jorge",
+          "Ballard, Bart M.",
+          "Weegman, Mitch D.",
+          "Senner, Nathan"
+        ],
+        "issued": "2023-04-19",
+        "doi": "10.5441/001/1.t81488n5",
+        "doiUrl": "https://doi.org/10.5441/001/1.t81488n5",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1412",
+        "dataCitation": "Linscott, Jennifer A.; Navedo, Juan G.; Clements, Sarah J.; Loghry, Jason P.; Ruiz, Jorge; Ballard, Bart M.; Weegman, Mitch D.; Senner, Nathan (2023) Data from: Compensation for wind drift prevails for a shorebird on a long-distance, transoceanic flight. Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/75f1d579-dc16-45b1-9135-cc62a419ac74/content",
+          "https://datarepository.movebank.org/server/api/core/bitstreams/9264d088-0467-4be2-b6da-5618f9560253/content"
+        ]
+      },
+      "facets": [
+        {
+          "key": "sex",
+          "label": "Sex"
+        }
+      ],
+      "stats": {
+        "rawFixes": 6463,
+        "usableFixes": 3545,
+        "animalsInStudy": 25,
+        "animalsShown": 22,
+        "pointsShown": 915,
+        "start": "2019-04-01T00:00:00.000Z",
+        "end": "2021-05-21T23:30:00.000Z",
+        "medianKm": 8354,
+        "longestKm": 41471,
+        "bbox": [
+          -98.665,
+          -42.623,
+          -56.796,
+          29.934
+        ],
+        "sites": 15
+      },
+      "processing": {
+        "maxKmh": 120,
+        "thinHours": 6,
+        "maxGapHours": 240,
+        "maxAnimals": 25,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
       }
     }
   ]

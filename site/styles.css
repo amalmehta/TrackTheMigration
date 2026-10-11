@@ -142,6 +142,31 @@ body.in-story .panel { transform: translateX(calc(-100% - 24px)); opacity: 0; po
 .credits p { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 .license { display: inline-block; margin-left: 4px; padding: 0 7px; border-radius: 99px; border: 1px solid var(--border); font-size: 11px; }
 
+/* ---------- Who they are ---------- */
+.who { margin: 0 0 10px; }
+.who:empty { display: none; }
+.who-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin-bottom: 4px; }
+.who-head .kicker { margin: 0; }
+.cb-select { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.cb-select select { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px 6px; font-size: 12px; }
+.cb-select select option { background: var(--surface); color: var(--text); }
+.facet { margin: 6px 0 8px; }
+.facet-label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.facet p { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.facet-chip small { color: var(--muted); font-size: 11px; }
+.facet-chip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; background: transparent; }
+.facet-chip[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+.swatch-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 1.5px var(--surface); }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11.5px; color: var(--text-2); margin: 0 0 4px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.chart-legend i { width: 14px; height: 2px; border-radius: 1px; display: inline-block; }
+.site-row { cursor: pointer; }
+.site-row:hover .site-name { fill: var(--text); text-decoration: underline; }
+.map-tip .tip-months { display: flex; align-items: flex-end; gap: 8px; margin: 4px 0 2px; }
+.map-tip .tip-months span { color: var(--muted); font-size: 11.5px; }
+.toast { position: fixed; left: 50%; bottom: 112px; transform: translateX(-50%); padding: 8px 14px; border-radius: 99px; z-index: 12; font-size: 13px; animation: rise .25s ease; max-width: calc(100vw - 32px); overflow-wrap: anywhere; }
+
 /* ---------- Buttons ---------- */
 .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 10px; padding: 7px 12px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 500; font-size: 13px; transition: background .15s, transform .1s; }
 .btn:hover { background: var(--surface-3); }
@@ -262,7 +287,7 @@ body.panel-hidden .charts { left: 80px; }
 .charts-head p { margin: 2px 0 0; font-size: 12px; max-width: 760px; }
 .charts-actions { display: flex; gap: 6px; align-items: center; }
 .charts-body { flex: 1; min-height: 0; overflow: auto; margin-top: 8px; }
-.chart-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; height: 100%; }
+.chart-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.25fr; gap: 14px; height: 100%; }
 .chart-card { margin: 0; min-width: 0; }
 .chart-card figcaption { font-size: 12.5px; font-weight: 600; margin-bottom: 2px; }
 .chart-card figcaption small { font-weight: 400; color: var(--muted); }
@@ -364,6 +389,8 @@ body.charts-open .maplibregl-ctrl-bottom-right, body.charts-open .maplibregl-ctr
   .time-main { flex-basis: calc(100% - 140px); }
   .time-controls { flex-direction: row; width: 100%; }
   .time-controls .seg { flex: 1; }
+  .time-row .chip .lbl { display: none; }
+  .time-row .chip { padding: 3px 8px; }
   .month-ticks span:nth-child(even) { display: none; }
   .maplibregl-ctrl-top-right { top: 150px; }
   .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: calc(46vh + 4px); }
@@ -374,6 +401,7 @@ body.charts-open .maplibregl-ctrl-bottom-right, body.charts-open .maplibregl-ctr
   .legend-why, .legend-shift { display: none; }
   .feedback-tab { top: 34%; }
   .loading { top: 160px; }
+  .toast { bottom: auto; top: 160px; }
   .hud { top: auto; bottom: 0; left: 0; right: 0; width: auto; border-radius: var(--radius) var(--radius) 0 0; z-index: 7; max-height: 50vh; overflow-y: auto; }
   .hud-date { font-size: 20px; }
   body.following .float-btn, body.following #layers-pop, body.following .legend { right: 10px; }
