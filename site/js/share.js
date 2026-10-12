@@ -17,6 +17,7 @@ const pad = (n) => String(n).padStart(2, '0');
 
 export function encodeView(camera) {
   const p = new URLSearchParams();
+  if (state.tour) return 'tour=1';
   if (state.selected !== 'all') p.set('s', state.selected);
   if (state.story) {
     p.set('st', String(state.story.index + 1));
@@ -47,6 +48,7 @@ export function decodeView(hash) {
     overlay: p.get('ov'),
     colorBy: p.get('cb'),
     hidden: p.get('hide') ? p.get('hide').split(',').filter(Boolean) : [],
+    tour: p.has('tour'),
     camera: null,
     mode: null,
     frac: null,

@@ -1,10 +1,10 @@
 # Track the Migration
 
-Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, turtles, storks, geese and godwits, replayed on a living 3D globe from published tracking data. It includes guided stories, linked charts, live NASA nature and human-impact layers, filters for who each animal is, the places they stopped, a camera that rides along with any animal, races between animals, a "guess where" game, embeds and video export, and links that open at the exact moment you share.
+Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, turtles, storks, geese and godwits, replayed on a living 3D globe from published tracking data. Press **A year on Earth** for a three-minute guided tour of the whole year. Or dig in: guided stories, linked charts, live NASA nature and human-impact layers, filters for who each animal is, the places they stopped, a camera that rides along with any animal, races between animals, a "guess where" game, sound you can listen to, full keyboard and screen-reader support, embeds and video export, and links that open at the exact moment you share.
 
 **[Open the live site →](https://amalmehta.github.io/TrackTheMigration/)**
 
-![Every migration at once in Season view, late March](docs/images/all-migrations.jpg)
+![A year on Earth: the tour reaches December and the white storks wintering across Africa](docs/images/tour.jpg)
 
 | Ride along with one animal | Guided stories with live NASA layers |
 |---|---|

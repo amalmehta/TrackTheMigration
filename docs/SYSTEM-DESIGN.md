@@ -36,9 +36,12 @@ flowchart TB
     RACE[race.js<br>compare · race · split screen]
     GAME[game.js<br>guess where]
     REC[record.js<br>video export]
+    A11Y[a11y.js<br>keyboard · descriptions]
+    TOUR[tour.js<br>A year on Earth]
+    SND[sound.js<br>sonification]
     PURE[tracks.js · solar.js · environment.js · palette.js<br>pure, unit-tested]
     SET[settings.js]
-    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & SHARE & RACE & GAME & REC
+    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & SHARE & RACE & GAME & REC & A11Y & TOUR & SND
     GLOBE & FOLLOW & CHARTS & STORY --> STORE
     GLOBE & FOLLOW & CHARTS --> PURE
   end
@@ -62,6 +65,9 @@ flowchart TB
 | `site/js/race.js` | The compare tray and races. <ul><li>Racers replay from their own day 1 (`instanceTime` = start + day).</li><li>The leaderboard has statuses (moving, staying put, untracked, tag ended), and there's a distance-over-time chart with a scrubbing crosshair.</li><li>The race is sized to the field when one track is much longer.</li><li>Split screen creates one lightweight MapLibre globe per racer.</li></ul> |
 | `site/js/game.js` | Guess where. <ul><li>Picks random real moments with a meaningful 30-day move (land ≥ 12 km, marine ≥ 150 km, birds ≥ 250 km).</li><li>Hides routes, stopovers and the time bar so nothing gives the answer away.</li><li>Plays the answer forward and scores `1000·exp(−miss / max(25 km, move/2))`.</li></ul> |
 | `site/js/record.js` | Video export. Each frame it composites the map canvas (kept readable with `preserveDrawingBuffer`) with captions onto a 2D canvas. `MediaRecorder` turns that into WebM (or MP4 in Safari), stopped by a wall-clock timer. |
+| `site/js/a11y.js` | Plain-language descriptions, sent to a polite live region and the map's label. <ul><li>Per species: the animals tracked now, and the mean direction and speed of their last week (from `recentHeading` and `compassWord`), or "in different directions" when headings disagree.</li><li>A follow mode summary.</li><li>Race standings.</li></ul> Keyboard: step the clock, cycle on-screen animals with a focus ring, follow, race, describe, open charts and layers, and a shortcuts dialog. |
+| `site/js/tour.js` | A year on Earth. Season view at 2 days/s. Every 18 days a director scores each species: <ul><li>activity in this half-month, scaled by how vigorous that species is for its group</li><li>plus a story scene within 30 days</li><li>minus recently or often shown</li></ul> It then frames the winner's current positions, dims the rest, and captions with that scene's text. It ends when the year wraps, and loops in embeds. |
+| `site/js/sound.js` | Web Audio sonification. One voice per visible species (oscillators, a low-pass filter, gain), into a compressor and a generated reverb. Every 150 ms, pitch is set from the mean latitude (pentatonic, register by group) and gain from the mean 3-day speed relative to the group. |
 | `site/js/share.js` | Encodes the current view into the URL hash, and decodes it defensively (bad values ignored). Covers species, Season day or real date, followed animal, story scene, overlay, colour-by, hidden groups and camera. |
 | `scripts/fetch-assets.mjs` | Downloads the chosen PhyloPic silhouettes and records their credits and licences. Turns NASA Worldview's palettes into 24-stop legends for the overlays. Writes `assets.json` and `site/icons/`. |
 | `site/js/store.js` | Shared state (selection, clock, follow, story, chart selection, hidden groups, colour-by), a tiny event bus, data loading, and formatting helpers. Also holds the who-filter helpers: visibility, and facet shades (dark → light steps of the species hue, grey for unknown). |
@@ -119,6 +125,13 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
   3. open the story scene, or follow the animal, or set the mode, time and camera
 - The view opens paused. A late style load re-frames a followed animal.
 
+**Loading**
+
+- The All migrations view loads `index.json`, `assets.json` and `overview.json`: every species at ≤ 180 points per animal, plus the top 15 sites.
+- A species' full file (all points, footprint values, stops, facets) loads only when it's opened, followed, raced or used in the game.
+- `viewData()` gives the right one for the current view. `fullAnimal()` swaps a light copy for the full track when you follow or race from the All view.
+- In headless Chrome the first frame's data arrived in about 1.9 s, against 7.7 s when every full file loaded.
+
 **Races**
 
 - Racers come from the compare tray, which is filled by shift-clicking or "+ Race". Starting a race replaces the normal instances with one per racer, coloured by species, or by shades of a species when it races itself.
@@ -161,6 +174,7 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 | Data | Where | Committed? |
 |---|---|---|
 | Raw CSVs, reference data and metadata | `data/raw/` | No (about 600 MB; `npm run fetch`) |
+| Light all-species copy for the All view | `site/data/overview.json` (≈ 1.1 MB, ≈ 0.34 MB gzipped) | Yes |
 | Processed tracks, per-animal attributes and stops, stopover sites, facets | `site/data/<species>.json` (about 5.5 MB total for 13 species) | Yes |
 | Species list, stats, citations | `site/data/index.json` | Yes |
 | Silhouette credits, overlay legends | `site/data/assets.json`, `site/icons/*.svg` | Yes |
@@ -182,6 +196,10 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **The game scores relative to the move**, so species with very different scales are equally fair. Rounds are random, with repeats avoided within a game.
 - **Video is recorded in the browser** with `MediaRecorder` on a composited canvas, so captions are burned in and nothing is uploaded. WebM is preferred because Chrome's MP4 recorder produced empty files in testing.
 - **Animal data updates at most 30 times a second** while the camera renders every frame, which halves the per-frame data work.
+- **An overview file instead of every species up front.** The All view needs shapes and timing, not every fix, so the first load is about five times smaller. The cost is a second small download when you open a species.
+- **Descriptions are computed, not written.** Direction and speed come from the tracks, so they're always true for the moment you're on. They're spoken on pause and on demand, not continuously, so a screen reader isn't flooded.
+- **The tour director is a simple, explainable score** rather than a script, so it adapts to all 13 species and any future ones. In testing it showed all 13 in one year, none more than three times.
+- **Sound stays consonant on purpose.** Notes are snapped to a pentatonic scale and spread across registers by group, so 13 voices blend instead of clashing. It's off by default.
 - **Share state in the hash, not a server.** It works on static hosting, and links stay human-readable. The cost: the overlay in a link becomes the viewer's saved overlay setting.
 - **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
 - **NASA GIBS for live layers.** These are key-free and time-enabled.
@@ -197,7 +215,7 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 ## Testing
 
-`npm test` runs 61 `node:test` unit tests, and CI runs the same tests before every deploy.
+`npm test` runs 63 `node:test` unit tests, and CI runs the same tests before every deploy.
 
 - **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping.
 - **Analysis** (`analysis.test.mjs`):
@@ -208,12 +226,19 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Reference** (`reference.test.mjs`): sex, age and handling normalisation; site grouping (osprey regions, stork countries); facets kept only when they split the animals.
 - **Share** (`share.test.mjs`): decoding dates, Season days, camera, colour-by and hidden groups; rejecting bad values; busiest-month ranges wrapping the new year.
 - **PNG and footprint** (`png.test.mjs`): paletted and RGB decoding with sub, up and Paeth filters; rejecting non-PNGs; Web-Mercator pixel maths; footprint summaries and bands.
+- **Descriptions and sound** (in `analysis.test.mjs`): bearings, compass words and recent heading; latitude → pentatonic pitch by group; speed → level.
 - **People overlays** (in `analysis.test.mjs`): nearest census or lights year, the fixed footprint snapshot, URLs without a time dimension.
 - **Palette** (`palette.test.mjs`): all 13 species. Covers hue families, pairwise ΔE ≥ 20 (the shades were found by search; the smallest pair is 21.9) and contrast against the background, in light and dark.
 - **Stories** (`stories.test.mjs`): one per species, 4–6 scenes, valid dates, views, overlays and placeholders, each ending in a ride-along.
 
 Checked in a browser and with a headless Chrome driven over the DevTools protocol (a scratch script, not part of the repo):
 
+- Overview loading.
+- Keyboard: n/p, step, Enter to follow, d to describe, ? for help.
+- Spoken descriptions.
+- The tour director's choices across a full year.
+- The sound toggle.
+- Per-frame CPU: 1.9 ms for 991 animated animal-years.
 - Race: three species, leaderboard, chart, sizing, split screen.
 - Game: rounds, scoring, no spoilers.
 - Embed mode.
@@ -251,4 +276,7 @@ Earlier rounds, checked by hand at desktop, 800 px and 375 px phone sizes, with 
 - **Race distances use thinned tracks**, so they understate wiggly movement equally for every racer. Split screen opens one extra map per racer, which is heavier on phones.
 - **The game picks rounds at random,** so some are much easier than others.
 - **Video depends on the browser.** It's 12 seconds, at the size of the window, and a slow device records a choppier video.
+- **Not measured on a real GPU.** On-screen frame rate couldn't be checked from here: the app's browser pane was hidden and headless Chrome renders too slowly to judge. The JavaScript work per frame was measured instead.
+- **Descriptions summarise, they don't name places.** They say "mostly north over the last week", not "over the Sahara"; there's no geocoder.
+- **Sound needs a click to start** (a browser rule). It reflects species averages, not individuals.
 - **Heavier on low-end devices.** 3D terrain, glow and night shading can each be switched off.

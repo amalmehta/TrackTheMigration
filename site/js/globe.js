@@ -7,7 +7,8 @@ import { settings, isDark } from './settings.js';
 import { subsolarPoint, paintNight } from './solar.js';
 import { ENV_LAYERS, overlayDate, tileUrl } from './environment.js';
 import {
-  state, emit, visibleSpecies, keyOf, instanceTime, currentHours, isPhone, isVisible, animalColor,
+  state, emit, visibleSpecies, keyOf, instanceTime, currentHours, isPhone, isVisible, animalColor, viewData,
+  reducedMotion, dur,
 } from './store.js';
 
 const SATELLITE = {
@@ -304,7 +305,7 @@ export function refreshRoutes() {
     return;
   }
   for (const sp of visibleSpecies()) {
-    const d = state.data.get(sp.id);
+    const d = viewData(sp.id);
     if (!d) continue;
     for (const a of d.animals) {
       if (!isVisible(a)) continue;
@@ -329,7 +330,9 @@ export function renderFrame() {
   const headF = [];
   const trailF = [];
   const speciesMoving = new Set();
-  const focusKey = state.follow ? keyOf(state.follow.species, state.follow.animal) : null;
+  // The ring marks the followed animal, or the one picked with the keyboard (n / p).
+  const focusKey = state.follow ? keyOf(state.follow.species, state.follow.animal)
+    : state.kbdFocus ? keyOf(state.kbdFocus.species, state.kbdFocus.animal) : null;
   let focus = null;
   for (const inst of state.instances) {
     const t = instanceTime(inst);
@@ -369,7 +372,7 @@ export function refreshSites(month = new Date(currentHours() * 3.6e6).getUTCMont
   const mode = colorMode();
   const features = [];
   for (const sp of visibleSpecies()) {
-    const d = state.data.get(sp.id);
+    const d = viewData(sp.id);
     if (!d?.sites?.length) continue;
     const ids = new Set(d.animals.filter(isVisible).map((a) => String(a.id)));
     const maxDays = d.sites[0].days || 1;
@@ -392,7 +395,7 @@ export function refreshSites(month = new Date(currentHours() * 3.6e6).getUTCMont
 
 // Gentle pulse on the heads' halos.
 export function pulse(now) {
-  if (!settings.effects || !map.getLayer('halo')) return;
+  if (!settings.effects || reducedMotion() || !map.getLayer('halo')) return;
   const k = 1 + 0.28 * Math.sin(now / 420);
   map.setPaintProperty('halo', 'circle-radius', ['interpolate', ['linear'], ['zoom'], 1, 7 * k, 6, 13 * k]);
 }
@@ -512,13 +515,13 @@ export function frameBounds([w, s, e, n], { pitch = 0, maxZoom = 8, duration = 2
   if (huge) zoom = Math.min(zoom, isPhone() ? 0.6 : 1.7);
   map.easeTo({
     center: [(w + e) / 2, (s + n) / 2], zoom: Math.max(0.5, zoom),
-    pitch: huge ? 0 : pitch, bearing, padding: pad, duration, essential: true,
+    pitch: huge ? 0 : pitch, bearing, padding: pad, duration: dur(duration), essential: true,
   });
 }
 
 export function frameSpecies(species) {
   if (!species) {
-    map.easeTo({ center: [20, 15], zoom: isPhone() ? 0.5 : 1.5, pitch: 0, bearing: 0, padding: viewPadding(), duration: 2000 });
+    map.easeTo({ center: [20, 15], zoom: isPhone() ? 0.5 : 1.5, pitch: 0, bearing: 0, padding: viewPadding(), duration: dur(2000) });
     return;
   }
   frameBounds(species.stats.bbox, { pitch: species.group === 'land' ? 55 : 20 });

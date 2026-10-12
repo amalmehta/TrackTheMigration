@@ -34,12 +34,12 @@ export function initGame(controller) {
   });
 }
 
-// A random real moment with a meaningful 30-day move ahead.
-function pickRound(used) {
+// A random real moment with a meaningful 30-day move ahead (loads species as needed).
+async function pickRound(used) {
   const species = state.index.species;
   for (let attempt = 0; attempt < 400; attempt++) {
     const sp = species[Math.floor(Math.random() * species.length)];
-    const d = state.data.get(sp.id);
+    const d = await loadSpecies(sp.id);
     const a = d.animals[Math.floor(Math.random() * d.animals.length)];
     const p0 = a.pts[0][2];
     const p1 = a.pts[a.pts.length - 1][2] - AHEAD_DAYS * 24;
@@ -62,9 +62,6 @@ export async function startGame() {
   if (state.story) ctl.stopStory();
   if (state.follow) ctl.stopFollow();
   if (state.race) ctl.stopRace();
-  $('#loading').hidden = false;
-  await Promise.all(state.index.species.map((s) => loadSpecies(s.id)));
-  $('#loading').hidden = true;
   game = { round: 0, total: 0, used: new Set(), results: [], phase: 'idle' };
   document.body.classList.add('gaming');
   $('#game').hidden = false;
@@ -86,7 +83,7 @@ export function stopGame() {
 
 async function nextRound() {
   if (game.round >= ROUNDS) return finish();
-  const r = pickRound(game.used);
+  const r = await pickRound(game.used);
   if (!r) return finish();
   game.round++;
   game.current = r;

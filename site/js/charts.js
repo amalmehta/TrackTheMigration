@@ -9,7 +9,7 @@ import { colorFor } from './palette.js';
 import { settings, isDark } from './settings.js';
 import {
   state, emit, on, speciesById, keyOf, MONTHS, MONTHS_LONG, fmtSeason, fmtDist, fmtSpeed, kmIn, iconHtml,
-  isVisible, animalColor, facetShades, facetsOf, busiestMonths,
+  isVisible, animalColor, facetShades, facetsOf, busiestMonths, viewData,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -110,7 +110,7 @@ function addPlayhead(svg, x, y1, y2) {
 }
 
 function movementFor(id, bins) {
-  const d = state.data.get(id);
+  const d = viewData(id);
   return seasonalMovement(d.animals.map((a) => a.pts), bins, d.maxGapHours);
 }
 

@@ -7,7 +7,8 @@ import { colorFor } from './palette.js';
 export const state = {
   index: null,          // site/data/index.json
   assets: null,         // site/data/assets.json (icons + overlay legends)
-  data: new Map(),      // species id → { animals, maxGapHours }
+  data: new Map(),      // species id → full data { animals, maxGapHours, facets, sites }
+  overview: null,       // species id → light data for the All migrations view
   selected: 'all',
   mode: settings.mode,  // 'season' | 'dates'
   frac: 0.2,            // season mode: fraction of the year
@@ -23,6 +24,7 @@ export const state = {
   compare: [],          // [{ species, animal }] picked for a race (up to 4)
   race: null,           // { racers, day, maxDay, split } while racing
   only: null,           // "species/animal" key: show just this animal (the guessing game)
+  tour: false,          // true during A year on Earth
 };
 
 export const MAX_RACERS = 4;
@@ -76,6 +78,32 @@ export function emit(event, data) {
 export const speciesById = (id) => state.index.species.find((s) => s.id === id);
 export const visibleSpecies = () => (state.selected === 'all' ? state.index.species : [speciesById(state.selected)]);
 export const keyOf = (species, animal) => `${species}/${animal.id ?? animal}`;
+
+// The light all-species file for the All migrations view (loaded once).
+export async function loadOverview() {
+  if (state.overview) return state.overview;
+  const res = await fetch('data/overview.json');
+  if (!res.ok) throw new Error("Couldn't load the overview");
+  const json = await res.json();
+  state.overview = new Map(Object.entries(json).map(([id, d]) => {
+    for (const a of d.animals) {
+      a.years = splitByYear(a.pts);
+      a.cum = cumulativeKm(a.pts);
+    }
+    return [id, d];
+  }));
+  return state.overview;
+}
+
+// What the current view draws for a species: the overview in All migrations, else the full data.
+export const viewData = (id) => (state.selected === 'all' ? state.overview?.get(id) : state.data.get(id));
+
+// The full-resolution version of an animal (from an overview copy or an id).
+export async function fullAnimal(species, animalOrId) {
+  const d = await loadSpecies(species);
+  const id = String(animalOrId?.id ?? animalOrId);
+  return d.animals.find((a) => String(a.id) === id) || null;
+}
 
 export async function loadSpecies(id) {
   if (state.data.has(id)) return state.data.get(id);
@@ -153,3 +181,9 @@ export function iconHtml(id, cls = 'sil') {
 }
 
 export const isPhone = () => window.innerWidth < 720;
+
+// Reduced motion: the setting, or the system preference when set to "system".
+export const reducedMotion = () => settings.motion === 'reduce' ||
+  (settings.motion === 'system' && typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+// Camera move length, or 0 when motion is reduced.
+export const dur = (ms) => (reducedMotion() ? 0 : ms);

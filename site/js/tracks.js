@@ -288,3 +288,24 @@ export function clusterStops(stops, mergeKm) {
     .map(({ _w, animals, ...site }) => ({ ...site, animals: [...animals] }))
     .sort((a, b) => b.days - a.days);
 }
+
+// --- Describing movement in words (screen readers) ---
+
+// Initial bearing from a to b, degrees clockwise from north.
+export function bearing([lon1, lat1], [lon2, lat2]) {
+  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(toRad(lon2 - lon1));
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+export const compassWord = (deg) => COMPASS[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
+
+// Where an animal has been heading over the last `hours` before t:
+// { km, bearing } of the straight line from then to now, or null.
+export function recentHeading(pts, t, hours = 168, maxGapHours = Infinity) {
+  const now = positionAt(pts, t, maxGapHours);
+  const then = positionAt(pts, t - hours, maxGapHours);
+  if (!now || !then) return null;
+  return { km: haversineKm(then, now), bearing: bearing(then, now) };
+}

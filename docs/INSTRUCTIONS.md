@@ -4,6 +4,12 @@
 
 Open **https://amalmehta.github.io/TrackTheMigration/**.
 
+### A year on Earth
+- Press **A year on Earth** on the All migrations card, or open a link ending in `#tour=1`.
+- One calendar year plays in about three minutes. Every ~18 days the camera moves to whichever migration is busiest at that time of year, dims the rest, and shows the matching part of that species' story.
+- **Space** pauses. **×** leaves. At the end, **Watch again**.
+- In an embed (`?embed=1#tour=1`) it loops.
+
 ### The basics
 - **Each glowing dot is one tagged animal.** Its fading tail is where it went over the last month (change this in Settings).
 - **Play / pause** with the round button or the space bar. Drag the slider to scrub.
@@ -102,6 +108,27 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - A legend shows the date being displayed. If the animals' year has no NASA data (for example blue whales in the 1990s and vegetation), it shows the same season in the nearest year that has data, and says so.
 - The same menu switches 3D terrain, day and night by season, glow and stars, and full routes on or off.
 
+### Listen to the migration
+- The speaker button in the time bar turns on sound. Each species is a soft voice:
+  - **pitch follows how far north its animals are**, snapped to a pentatonic scale so it always sounds consonant
+  - **loudness follows how fast they're moving**, judged against what's fast for that kind of animal
+- Sea animals sing low with a slow whale-like vibrato, land animals sit in the middle, and birds are high.
+- Spring is a rising, swelling chorus; a quiet stretch means animals are staying put.
+- Volume is in Settings. Sound is off until you switch it on, and it only plays while the globe is playing.
+
+### Keyboard and screen readers
+- Everything works from the keyboard. Press **?** for the full list. The main keys:
+  - **Space**: play or pause
+  - **,** and **.**: step a day (**<** and **>**: a week)
+  - **n** and **p**: move between the animals on screen
+  - **Enter** follows the selected animal; **r** adds it to a race
+  - **c**: charts · **l**: layers · **d**: describe
+- **d** describes the globe in plain words: the date, how many animals are tracked, and for the most active species which way they're heading and how fast.
+  - Example: "White Stork: 42 moving, mostly north, about 93 km/day."
+  - While following: the animal's speed, what it's doing, how far it went in the last week and in which direction, and the human footprint there.
+- The description is read out automatically when you pause, change species or start following. The map's label carries it too.
+- **Motion** in Settings (Match system / Reduced / Full) turns off camera flights, pulsing and animations. Reduced motion also stops the globe from playing on open.
+
 ### Settings and feedback
 - **Settings** is the gear button, or **⌘,** (Ctrl+, on Windows/Linux). Every preference is in one place:
   - theme (dark by default), base map, NASA overlay, terrain and its height, day/night, glow effects
@@ -128,7 +155,7 @@ Everything in `site/data/` and `site/icons/` is committed, so the site works wit
 npm run fetch
 ```
 
-This rebuilds the tracks from the Movebank Data Repository. The first run downloads about 300 MB into the git-ignored `data/raw/`.
+This rebuilds the tracks from the Movebank Data Repository, plus `overview.json`: a light copy of every species for the All migrations view, at most 180 points per animal, about 0.3 MB compressed. The first run downloads about 300 MB into the git-ignored `data/raw/`.
 - `--refresh` re-downloads everything.
 - `npm run fetch -- zebra osprey` rebuilds only those species.
 - `SHOW_ABSTRACTS=1` prints each study's abstract.
@@ -167,13 +194,14 @@ This re-downloads the PhyloPic silhouettes with their credits, and rebuilds the 
 npm test
 ```
 
-This runs 61 unit tests:
+This runs 63 unit tests:
 - the track maths, analysis helpers and sun position
 - stopover detection and clustering
 - the night shading and the NASA date handling
 - reference-data facets and share-link parsing
 - the PNG decoder and footprint sampling maths
 - the people overlays' nearest-year logic
+- bearings and compass words for the spoken descriptions, and the sound's pitch and loudness mapping
 - the colour rules for all 13 species and the story content
 
 See [System design → Testing](SYSTEM-DESIGN.md#testing) for what's checked by hand.

@@ -147,3 +147,31 @@ test('clusterStops merges nearby stops into sites with months', async () => {
   const dateline = sites.find((s) => Math.abs(Math.abs(s.lon) - 180) < 1);
   assert.equal(dateline.visits, 2);
 });
+
+test('bearings and compass words', async () => {
+  const { bearing, compassWord, recentHeading } = await import('../site/js/tracks.js');
+  near(bearing([0, 0], [0, 10]), 0, 1e-6);
+  near(bearing([0, 0], [10, 0]), 90, 1e-6);
+  near(bearing([0, 0], [0, -10]), 180, 1e-6);
+  assert.equal(compassWord(0), 'north');
+  assert.equal(compassWord(44), 'north-east');
+  assert.equal(compassWord(181), 'south');
+  assert.equal(compassWord(350), 'north');
+  const pts = [[0, 0, 0], [0, 1, 168]];
+  const h = recentHeading(pts, 168, 168);
+  near(h.km, 111.2, 0.2);
+  assert.equal(compassWord(h.bearing), 'north');
+  assert.equal(recentHeading(pts, 100, 168), null);
+});
+
+test('sonification maps latitude to pentatonic notes and speed to level', async () => {
+  const { latToFreq, speedToLevel } = await import('../site/js/sound.js');
+  near(latToFreq(-75, 'land'), 130.81, 0.01);                 // C3 at the far south
+  near(latToFreq(-75, 'birds'), 261.63, 0.01);                // birds an octave up
+  assert.ok(latToFreq(60, 'land') > latToFreq(0, 'land'));    // north is higher
+  const semis = 12 * Math.log2(latToFreq(10, 'marine') / 65.406);
+  assert.ok([0, 2, 4, 7, 9].includes(Math.round(semis) % 12)); // always in the scale
+  assert.equal(speedToLevel(0, 'land'), 0);
+  assert.equal(speedToLevel(1000, 'birds'), 1);
+  assert.ok(speedToLevel(10, 'land') > speedToLevel(10, 'birds'));
+});

@@ -160,6 +160,21 @@
   </section>
   <div id="split" class="split" hidden></div>
 
+  <!-- A year on Earth -->
+  <section id="tour" class="tour glass" hidden aria-label="A year on Earth" aria-live="polite">
+    <div class="tour-top">
+      <span id="tour-month" class="tour-month"></span>
+      <button id="tour-exit" class="icon-btn" aria-label="Leave the tour">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="tour-progress"><i id="tour-bar"></i></div>
+    <div class="tour-who"><span id="tour-icon" class="story-icon"></span><span id="tour-species" class="kicker"></span></div>
+    <h2 id="tour-title" class="story-title"></h2>
+    <p id="tour-text" class="story-text"></p>
+    <div class="story-nav"><span class="muted small">Space pauses · the camera picks the busiest migration</span><button id="tour-replay" class="btn primary" hidden>Watch again</button></div>
+  </section>
+
   <!-- Guess where -->
   <section id="game" class="game glass" hidden aria-label="Guess where" aria-live="polite">
     <div class="story-top">
@@ -241,6 +256,9 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
           <span class="lbl">Charts</span>
         </button>
+        <button id="sound-btn" class="chip" aria-pressed="false" title="Listen: pitch follows latitude, loudness follows speed" aria-label="Sound">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        </button>
         <button id="share-btn" class="chip" title="Share this exact view" aria-label="Share this view" aria-haspopup="true" aria-expanded="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
           <span class="lbl">Share</span>
@@ -251,6 +269,26 @@
 
   <div id="loading" class="loading glass" role="status">Loading tracks…</div>
   <div id="toast" class="toast glass" role="status" hidden></div>
+  <div id="sr-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+  <dialog id="keys-dialog" class="sheet" aria-labelledby="keys-title">
+    <div class="keys-body">
+      <h2 id="keys-title">Keyboard</h2>
+      <dl class="keys">
+        <dt><kbd>Space</kbd></dt><dd>Play or pause</dd>
+        <dt><kbd>,</kbd> <kbd>.</kbd></dt><dd>Back or forward one day (<kbd>&lt;</kbd> <kbd>&gt;</kbd>: a week)</dd>
+        <dt><kbd>n</kbd> <kbd>p</kbd></dt><dd>Next or previous animal on screen</dd>
+        <dt><kbd>Enter</kbd></dt><dd>Follow that animal</dd>
+        <dt><kbd>r</kbd></dt><dd>Add or remove it from a race</dd>
+        <dt><kbd>d</kbd></dt><dd>Describe what's happening (for screen readers)</dd>
+        <dt><kbd>c</kbd> <kbd>l</kbd></dt><dd>Charts · Layers</dd>
+        <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Story scenes</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Stop following, leave a story</dd>
+        <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>Settings</dd>
+        <dt><kbd>?</kbd></dt><dd>This list</dd>
+      </dl>
+      <div class="actions"><button id="keys-close" class="btn primary">Done</button></div>
+    </div>
+  </dialog>
   <div id="share-pop" class="share-pop glass" hidden>
     <button id="share-link" class="menu-item"><b>Copy link</b><small>Opens at this exact moment</small></button>
     <button id="share-embed" class="menu-item"><b>Copy embed code</b><small>Put the globe in a blog post or slide</small></button>
@@ -308,8 +346,12 @@
         <label class="field row"><span>Speed</span>
           <select name="speed"><option value="1">1 day/s</option><option value="3">3 days/s</option><option value="7">1 week/s</option><option value="14">2 weeks/s</option><option value="30">1 month/s</option><option value="91">3 months/s</option></select></label>
         <label class="field row check"><span>Play on open</span><input type="checkbox" name="autoplay"></label>
+        <label class="field row check"><span>Sound (pitch = latitude, loudness = speed)</span><input type="checkbox" name="sound"></label>
+        <label class="field row"><span>Volume</span><input type="range" name="volume" min="0" max="1" step="0.1"><output data-for="volume"></output></label>
+        <label class="field row"><span>Motion</span>
+          <select name="motion"><option value="system">Match system</option><option value="reduce">Reduced</option><option value="full">Full</option></select></label>
       </fieldset>
-      <p class="muted small">Keys: Space play/pause · ← → story scenes · Esc stop following or exit a story · ⌘, settings. Share copies a link to exactly what you're looking at.</p>
+      <p class="muted small">Press <kbd>?</kbd> for every keyboard shortcut, and <kbd>d</kbd> to hear what's happening on the globe.</p>
       <div class="actions">
         <button type="button" id="settings-reset" class="btn ghost">Reset to defaults</button>
         <button value="close" class="btn primary">Done</button>

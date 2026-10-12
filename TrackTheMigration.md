@@ -131,6 +131,18 @@ Decided without asking (v4):
 - Embeds use `?embed=1` and autoplay.
 - Animal data updates at most 30 times a second.
 
+Asked and answered (2026-10-11, third "keep going"):
+- Build speed & accessibility, A year on Earth, and Listen to the migration. Not the installable/offline app.
+
+Decided without asking (v5):
+- The All view loads a light `overview.json` (≤ 180 points per animal); full species files load on demand.
+- Keyboard keys: , . < > to step time, n/p to pick animals, Enter, r, d, c, l, ? (shown in a dialog).
+- Spoken descriptions are computed from the tracks: direction and speed over the last week. They're read on pause, selection, follow and with d. There are no place names, because there's no geocoder.
+- Motion setting: Match system / Reduced / Full.
+- The tour runs 2 days/s (about 3 minutes), 18-day segments, chosen by a transparent score, captioned only with existing story text or the species blurb, and loops in embeds. It's shareable as `#tour=1`.
+- Sound is off by default. Pitch follows latitude (pentatonic; marine low, land middle, birds high) and loudness follows speed relative to the group.
+- Frame rate on a real GPU couldn't be measured here (the browser pane stayed hidden), so per-frame CPU time was measured instead.
+
 CHANGELOG:
 
 - 2026-10-09 — created
@@ -155,3 +167,4 @@ CHANGELOG:
 - 2026-10-09 — v2: cinematic redesign (glowing trails, starfield, seasonal day/night, silhouettes, dark glass UI); follow-an-animal mode with live readout and journey profile; linked charts (migration calendar, brushable latitude chart, monthly and per-animal distance); live NASA GIBS layers (vegetation, sea temperature, snow); guided stories for all nine species; 40 tests; docs updated
 - 2026-10-11 — v3: shareable links (URL hash, Share button); who-they-are filters and colour-by from study reference data; stopover detection, stopover rings, a 'Places they stayed' chart and 'staying put' in the readout; four more migrations (pronghorn, elk, white-fronted goose, Hudsonian godwit) with stories and silhouettes; palette re-optimised for 13 species; 56 tests
 - 2026-10-11 — v4: compare & race (split screen, leaderboard, distance chart); human impact layers (footprint, population, night lights) plus footprint per fix in the readout and charts; guess-where game; embed mode and 12-second video export from the Share menu; 61 tests
+- 2026-10-11 — v5: faster first load (overview file, on-demand species); keyboard control, spoken descriptions, reduced-motion setting, shortcuts dialog; A year on Earth guided tour; Listen to the migration (Web Audio sonification); 63 tests

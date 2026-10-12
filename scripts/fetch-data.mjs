@@ -263,6 +263,26 @@ async function build(ds) {
   };
 }
 
+// A light copy of every species for the All migrations view (≈ 0.3 MB gzipped
+// instead of 1.6 MB): at most 180 points per animal and the 15 busiest sites.
+// A species' full file loads only when it's opened.
+const OVERVIEW_POINTS = 180;
+async function writeOverview(ids) {
+  const out = {};
+  for (const id of ids) {
+    const d = JSON.parse(await readFile(join(OUT, `${id}.json`), 'utf8'));
+    out[id] = {
+      maxGapHours: d.maxGapHours,
+      sites: d.sites.slice(0, 15),
+      animals: d.animals.map((a) => ({
+        id: a.id, km: a.km, days: a.days,
+        pts: capPoints(a.pts, OVERVIEW_POINTS).map(([lon, lat, t]) => [round(lon, 3), round(lat, 3), Math.round(t)]),
+      })),
+    };
+  }
+  await writeFile(join(OUT, 'overview.json'), JSON.stringify(out));
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const indexPath = join(OUT, 'index.json');
@@ -289,6 +309,7 @@ async function main() {
   }
   const index = { generated: new Date().toISOString(), groups: GROUPS, species };
   await writeFile(indexPath, JSON.stringify(index, null, 2));
+  await writeOverview(species.map((s) => s.id));
   console.log(`✓ wrote ${species.length} species to site/data/`);
 }
 

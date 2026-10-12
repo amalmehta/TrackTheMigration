@@ -60,6 +60,7 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
 body {
   background: radial-gradient(ellipse at 60% 40%, #0b1424 0%, #05070c 70%);
@@ -402,6 +403,20 @@ body.racing #charts, body.racing #hud, body.racing #compare-tray { display: none
 .split-label .sil { color: var(--sp); }
 .split-km { color: rgba(255,255,255,.75); }
 
+/* ---------- A year on Earth ---------- */
+.tour { position: fixed; left: 16px; bottom: 112px; width: 430px; z-index: 7; padding: 16px 18px 14px; animation: rise .4s ease;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--sp, var(--accent)) 22%, transparent), transparent 55%), var(--glass); }
+.tour-top { display: flex; align-items: center; justify-content: space-between; }
+.tour-month { font: 600 32px/1.1 var(--display); letter-spacing: -0.01em; }
+.tour-progress { height: 3px; border-radius: 2px; background: var(--surface-3); margin: 8px 0 12px; overflow: hidden; }
+.tour-progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.tour-who { display: flex; align-items: center; gap: 10px; }
+.tour-who .kicker { margin: 0; }
+body.touring .panel { transform: translateX(calc(-100% - 24px)); opacity: 0; pointer-events: none; }
+body.touring #hud, body.touring #story, body.touring #compare-tray { display: none !important; }
+#sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+#sound-btn[aria-pressed="false"] .wave { opacity: .25; }
+
 /* ---------- Guess where ---------- */
 .game { position: fixed; left: 16px; bottom: 112px; width: 420px; z-index: 7; padding: 16px 18px 14px; animation: rise .4s ease;
   background: linear-gradient(170deg, color-mix(in srgb, var(--sp) 20%, transparent), transparent 50%), var(--glass); }
@@ -481,7 +496,8 @@ body.embed .timebar { left: 12px; right: 12px; bottom: 12px; height: 64px; }
   .race { left: 0; right: 0; bottom: 0; height: 55vh; border-radius: var(--radius) var(--radius) 0 0; z-index: 8; }
   .race-body { grid-template-columns: 1fr; grid-template-rows: auto 160px; overflow-y: auto; }
   .split { top: 150px; left: 6px; right: 6px; bottom: 56vh; grid-template-columns: repeat(2, 1fr); }
-  .game { left: 0; right: 0; bottom: 0; width: auto; border-radius: var(--radius) var(--radius) 0 0; }
+  .game, .tour { left: 0; right: 0; bottom: 0; width: auto; border-radius: var(--radius) var(--radius) 0 0; }
+  .tour-month { font-size: 24px; }
   .share-pop { right: 10px; left: 10px; width: auto; top: 160px; bottom: auto; }
   .chart-grid { grid-template-columns: 1fr; height: auto; }
   .table-wrap.two { grid-template-columns: 1fr; }
@@ -490,3 +506,13 @@ body.embed .timebar { left: 12px; right: 12px; bottom: 12px; height: 64px; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+body.reduce-motion * { animation: none !important; transition: none !important; }
+
+/* Keyboard focus: always visible, never just a colour change. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.maplibregl-canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.keys-body { padding: 18px 18px 14px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 10px 0 0; font-size: 13px; }
+.keys dt { white-space: nowrap; }
+.keys dd { margin: 0; color: var(--text-2); }
+kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); border-bottom-width: 2px; background: var(--surface-2); font: 600 12px/1.4 var(--font); text-align: center; }

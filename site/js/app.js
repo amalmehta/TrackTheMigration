@@ -14,12 +14,16 @@ import { encodeView, decodeView, cameraString } from './share.js';
 import { initRace, toggleCompare, inCompare, renderTray, startRace, stopRace, raceFrame, raceLabel } from './race.js';
 import { initGame, startGame, stopGame, inGame } from './game.js';
 import { record, canRecord } from './record.js';
+import { initA11y, announce, describe, clearKbdFocus } from './a11y.js';
+import { initTour, startTour, stopTour, tourFrame, inTour } from './tour.js';
+import { setSound, setVolume } from './sound.js';
 import { initFollow, startFollow, stopFollow, followFrame, recenterFollow } from './follow.js';
 import { initCharts, renderCharts, chartsTime, setOpen as setChartsOpen } from './charts.js';
 import { initStory, startStory, stopStory, hasStory } from './story.js';
 import {
   state, on, emit, speciesById, visibleSpecies, loadSpecies, MONTHS, MONTHS_LONG, fmtDate, fmtSeason, fmtDist,
   fmtMonthYear, esc, iconHtml, year, isPhone, isVisible, facetsOf, facetShades, keyOf, busiestMonths,
+  loadOverview, viewData, reducedMotion,
 } from './store.js';
 
 const REPO = 'amalmehta/TrackTheMigration';
@@ -31,7 +35,7 @@ function buildInstances() {
   if (state.race) return; // racers are set up by the race
   state.instances = [];
   for (const sp of visibleSpecies()) {
-    const d = state.data.get(sp.id);
+    const d = viewData(sp.id);
     if (!d) continue;
     for (const a of d.animals) {
       if (!isVisible(a)) continue;
@@ -81,6 +85,7 @@ function frame() {
     raceFrame();
     return;
   }
+  tourFrame();
   if (state.mode === 'season') {
     $('#time-label').textContent = fmtSeason(state.frac);
     $('#time-year').textContent = 'every year';
@@ -126,6 +131,7 @@ function tick(now) {
 function setPlaying(on) {
   if (state.playing === on) return;
   state.playing = on;
+  if (!on && state.index) announce(describe()); // say where things stand when the globe stops
   $('#play-btn').classList.toggle('playing', on);
   $('#play-btn').setAttribute('aria-label', on ? 'Pause' : 'Play');
   if (on) { last = 0; requestAnimationFrame(tick); }
@@ -145,6 +151,7 @@ function setHighlight(keys) {
 // ---------- selection ----------
 
 async function select(id, { frame: doFrame = true } = {}) {
+  if (inTour() && id !== 'all') stopTour();
   if (state.follow && state.follow.species !== id) stopFollow();
   if (state.story && state.story.species !== id) stopStory();
   if (state.selected !== id) {
@@ -153,12 +160,13 @@ async function select(id, { frame: doFrame = true } = {}) {
   }
   state.selected = id;
   state.highlight = null;
+  clearKbdFocus();
   renderSpeciesList();
   $('#loading').hidden = false;
   $('#loading').textContent = 'Loading tracks…';
   try {
-    const ids = id === 'all' ? state.index.species.map((s) => s.id) : [id];
-    await Promise.all(ids.map(loadSpecies));
+    if (id === 'all') await loadOverview();
+    else await loadSpecies(id);
   } catch (err) {
     $('#loading').textContent = `Couldn't load tracks: ${err.message}`;
     return;
@@ -173,6 +181,7 @@ async function select(id, { frame: doFrame = true } = {}) {
   renderCharts();
   if (doFrame) frameSpecies(id === 'all' ? null : speciesById(id));
   emit('selection', id);
+  announce(describe());
 }
 
 // ---------- panel ----------
@@ -220,7 +229,8 @@ function renderInfo() {
       <p>Each glowing dot is one tagged animal; its tail is where it went over the last ${settings.trailDays} days.
       In <b>Season</b> view every year an animal was tracked plays over one calendar year, so you can see who moves when.</p>
       <div class="actions-row">
-        <button class="btn primary" data-act="calendar">${chartIcon} Migration calendar</button>
+        <button class="btn primary" data-act="tour">${playIcon} A year on Earth</button>
+        <button class="btn" data-act="calendar">${chartIcon} Migration calendar</button>
         <button class="btn" data-act="game">${gameIcon} Guess where</button>
       </div>
       <p class="hint">Pick a migration for its story, or click any dot to ride along with that animal.
@@ -232,6 +242,7 @@ function renderInfo() {
         overlays from <a href="https://earthdata.nasa.gov/gibs" target="_blank" rel="noopener">NASA GIBS</a>.</p></details>`;
     info.querySelector('[data-act="calendar"]').addEventListener('click', () => setChartsOpen(true));
     info.querySelector('[data-act="game"]').addEventListener('click', () => startGame());
+    info.querySelector('[data-act="tour"]').addEventListener('click', () => startTour());
     return;
   }
   const s = speciesById(state.selected);
@@ -516,13 +527,13 @@ function wireControls() {
   });
 
   window.addEventListener('keydown', (e) => {
-    if (e.target.closest('input, textarea, select, dialog, button')) return;
+    if (e.target?.closest?.('input, textarea, select, dialog, button')) return;
     if (e.code === 'Space') { e.preventDefault(); setPlaying(!state.playing); }
   });
 
   // Click an animal (dot or route) to ride along with it.
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: 'map-tip' });
-  const animalFrom = (f) => state.data.get(f.properties.species)?.animals.find((a) => String(a.id) === String(f.properties.animal));
+  const animalFrom = (f) => viewData(f.properties.species)?.animals.find((a) => String(a.id) === String(f.properties.animal));
   for (const layer of ['heads', 'routes']) {
     map.on('click', layer, (e) => {
       if (inGame() || state.race) return;
@@ -551,7 +562,7 @@ function wireControls() {
   });
 
   // Stopover sites: hover for who used them and when; click to pick those animals.
-  const siteOf = (f) => state.data.get(f.properties.species)?.sites?.[f.properties.idx];
+  const siteOf = (f) => viewData(f.properties.species)?.sites?.[f.properties.idx];
   map.on('mousemove', 'sites', (e) => {
     const f = e.features[0];
     const site = siteOf(f);
@@ -637,6 +648,9 @@ onSettingsChange((changed) => {
   if (changed.includes('showRoutes')) setRoutesVisible();
   if (changed.includes('showStops')) { setStopsVisible(); renderWho(); }
   if (changed.includes('effects')) setEffects();
+  if (changed.includes('motion')) document.body.classList.toggle('reduce-motion', reducedMotion());
+  if (changed.includes('sound')) { setSound(settings.sound); emit('sound'); }
+  if (changed.includes('volume')) setVolume(settings.volume);
   if (changed.includes('nightShade')) setNightVisible();
   if (changed.includes('overlay')) applyOverlay();
   if (changed.includes('speed')) setSpeed(settings.speed);
@@ -767,6 +781,10 @@ async function applySharedView(view) {
       await startStory(id, view.story);
       return true;
     }
+    if (view.tour) {
+      await startTour();
+      return true;
+    }
     const animal = id !== 'all' && view.follow
       ? state.data.get(id).animals.find((a) => String(a.id) === view.follow)
       : null;
@@ -789,8 +807,10 @@ async function applySharedView(view) {
 
 const controller = {
   select, setMode, setPlaying, setSpeed, frame, setHighlight, pickSite, toggleCompare, stopRace,
-  follow: (id, animal, opts) => { const p = startFollow(id, animal, opts); setPlaying(true); return p; },
   stopFollow, stopStory,
+  toggleCharts: () => setChartsOpen($('#charts').hidden),
+  openLayers: () => $('#layers-btn').click(),
+  follow: (id, animal, opts) => { const p = startFollow(id, animal, opts); setPlaying(true); return p; },
 };
 
 async function main() {
@@ -812,6 +832,16 @@ async function main() {
   initStory(controller);
   initRace(controller);
   initGame(controller);
+  initA11y(controller);
+  initTour(controller);
+  // Sound: a toggle in the time bar (browsers only allow audio after a click).
+  const soundBtn = $('#sound-btn');
+  const syncSound = () => soundBtn.setAttribute('aria-pressed', String(settings.sound));
+  syncSound();
+  soundBtn.addEventListener('click', () => updateSettings({ sound: !settings.sound }));
+  if (settings.sound) document.addEventListener('pointerdown', () => setSound(true), { once: true });
+  on('sound', syncSound);
+  document.body.classList.toggle('reduce-motion', reducedMotion());
   setupEmbed();
   setMode(settings.mode);
   renderSpeciesList();
@@ -820,11 +850,11 @@ async function main() {
   if (shared) {
     await applySharedView(shared);
     // Stories and embedded globes play; a plain shared link opens paused at its moment.
-    if (shared.story != null || document.body.classList.contains('embed')) setPlaying(true);
+    if ((shared.story != null || document.body.classList.contains('embed')) && !shared.tour) setPlaying(true);
   } else {
     applyingHash = false;
     await select('all');
-    if (settings.autoplay && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPlaying(true);
+    if (settings.autoplay && !reducedMotion()) setPlaying(true);
   }
 }
 

@@ -7,7 +7,7 @@ import { colorFor } from './palette.js';
 import { settings } from './settings.js';
 import { colorMode, refreshRoutes, refreshSites, frameBounds } from './globe.js';
 import {
-  state, emit, speciesById, fmtDist, esc, iconHtml, MAX_RACERS,
+  state, emit, speciesById, fmtDist, esc, iconHtml, MAX_RACERS, fullAnimal,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -96,6 +96,8 @@ export async function startRace() {
   if (state.story) ctl.stopStory();
   if (state.follow) ctl.stopFollow();
   ctl.setPlaying(false);
+  // Racers picked in All migrations are light copies: swap in the full tracks.
+  for (const c of state.compare) c.animal = (await fullAnimal(c.species, c.animal)) || c.animal;
   const colors = racerColors(state.compare);
   const racers = state.compare.map((c, i) => {
     const pts = c.animal.pts;

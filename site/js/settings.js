@@ -18,6 +18,9 @@ export const DEFAULTS = Object.freeze({
   mode: 'season',       // season | dates
   speed: 7,             // days per second
   autoplay: true,
+  motion: 'system',     // system | reduce | full — camera flights, pulsing, animations
+  sound: false,         // listen to the migration
+  volume: 0.6,
 });
 
 function load() {
@@ -71,7 +74,7 @@ export function bindSettingsDialog(dialog, openButton) {
       if (el.type === 'checkbox') el.checked = v;
       else el.value = String(v);
       const out = form.querySelector(`output[data-for="${el.name}"]`);
-      if (out) out.textContent = `${v}×`;
+      if (out) out.textContent = el.name === 'volume' ? `${Math.round(v * 100)}%` : `${v}×`;
     }
   };
   const read = (el) => {

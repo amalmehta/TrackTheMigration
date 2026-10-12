@@ -6,7 +6,7 @@ import { colorFor } from './palette.js';
 import { settings } from './settings.js';
 import { map, colorMode, refreshRoutes, viewPadding } from './globe.js';
 import {
-  state, emit, speciesById, fmtDate, fmtDist, fmtSpeed, esc, iconHtml, kmIn,
+  state, emit, speciesById, fmtDate, fmtDist, fmtSpeed, esc, iconHtml, kmIn, fullAnimal, reducedMotion, dur,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -44,6 +44,8 @@ export function initFollow(controller) {
 export async function startFollow(speciesId, animal, { fromStory = false } = {}) {
   if (state.story && !fromStory) ctl.stopStory();
   if (state.selected !== speciesId) await ctl.select(speciesId, { frame: false });
+  animal = await fullAnimal(speciesId, animal); // a click in All migrations hands over a light copy
+  if (!animal) return;
   const d = state.data.get(speciesId);
   if (!state.follow) prevMode = state.mode;
   state.follow = { species: speciesId, animal, gap: d.maxGapHours };
@@ -66,6 +68,8 @@ export async function startFollow(speciesId, animal, { fromStory = false } = {})
   }
   flyToAnimal(2600);
   emit('follow', state.follow);
+  const sp = speciesById(speciesId);
+  document.getElementById('sr-live').textContent = `Following ${sp.name} ${animal.id}. Press D to hear where it is, Escape to stop.`;
   ctl.frame();
 }
 
@@ -105,7 +109,7 @@ function flyToAnimal(duration) {
   flying = true;
   map.flyTo({
     center: p, zoom: ZOOM[group], pitch: PITCH[group], bearing: map.getBearing(),
-    padding: viewPadding(), duration, essential: true,
+    padding: viewPadding(), duration: dur(duration), essential: true,
   }, { follow: true });
   map.once('moveend', () => { flying = false; });
 }
@@ -120,7 +124,7 @@ export function followFrame() {
     let dLon = head[0] - c.lng;
     if (dLon > 180) dLon -= 360;
     if (dLon < -180) dLon += 360;
-    const k = 0.12;
+    const k = reducedMotion() ? 1 : 0.12; // reduced motion: jump, don't glide
     if (Math.abs(dLon) + Math.abs(head[1] - c.lat) > 1e-5) {
       map.jumpTo({ center: [c.lng + dLon * k, c.lat + (head[1] - c.lat) * k] });
     }

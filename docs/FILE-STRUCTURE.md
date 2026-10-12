@@ -24,6 +24,9 @@ TrackTheMigration/
 │   │   ├── race.js            Compare tray, races, leaderboard, split screen
 │   │   ├── game.js            Guess where
 │   │   ├── record.js          Record a short video of the globe
+│   │   ├── a11y.js            Keyboard control and spoken descriptions
+│   │   ├── tour.js            A year on Earth
+│   │   ├── sound.js           Listen to the migration (Web Audio)
 │   │   ├── story.js           Story player
 │   │   ├── stories.js         Story content (scenes per species)
 │   │   ├── tracks.js          Track maths and analysis (shared with the scripts)
@@ -34,6 +37,7 @@ TrackTheMigration/
 │   └── data/
 │       ├── index.json         Species list, stats, citations, licences
 │       ├── assets.json        Silhouette credits, overlay legend colours
+│       ├── overview.json      Light copy of every species for the All migrations view
 │       └── <species>.json     Tracks, who-each-animal-is, stops and stopover sites per migration
 │
 ├── scripts/

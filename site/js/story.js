@@ -5,7 +5,7 @@ import { STORIES } from './stories.js';
 import { colorFor } from './palette.js';
 import { settings, updateSettings } from './settings.js';
 import { map, frameBounds, frameSpecies, headBounds, viewPadding } from './globe.js';
-import { state, emit, speciesById, fmtDist, esc, iconHtml, year } from './store.js';
+import { state, emit, speciesById, fmtDist, esc, iconHtml, year, dur } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 let ctl = null;   // { select, setMode, setPlaying, frame, follow, stopFollow, setSpeed }
@@ -19,7 +19,7 @@ export function initStory(controller) {
   $('#story-prev').addEventListener('click', () => go(state.story.index - 1));
   $('#story-exit').addEventListener('click', () => stopStory());
   window.addEventListener('keydown', (e) => {
-    if (!state.story || e.target.closest('input, textarea, select, dialog')) return;
+    if (!state.story || e.target?.closest?.('input, textarea, select, dialog')) return;
     if (e.key === 'ArrowRight') { e.preventDefault(); go(state.story.index + 1); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); go(state.story.index - 1); }
     if (e.key === 'Escape') stopStory();
@@ -67,8 +67,11 @@ export function stopStory() {
   emit('story', null);
 }
 
+// Story text with {placeholders} filled from the tracks (full data, or the overview).
+export const fillStoryText = (text, id) => fill(text, id);
+
 function fill(text, id) {
-  const d = state.data.get(id);
+  const d = state.data.get(id) || state.overview?.get(id);
   const sp = speciesById(id);
   const longest = [...d.animals].sort((a, b) => b.km - a.km)[0];
   const ys = year(sp.stats.start) === year(sp.stats.end) ? year(sp.stats.start) : `${year(sp.stats.start)}–${year(sp.stats.end)}`;
@@ -123,7 +126,7 @@ async function go(i) {
     const b = headBounds();
     if (b) frameBounds(b, { pitch: sp.group === 'land' ? 55 : 15, maxZoom: sp.group === 'land' ? 9 : 5, duration: 2600 });
   } else {
-    map.flyTo({ ...sc.view, padding: viewPadding(), duration: 3200, essential: true });
+    map.flyTo({ ...sc.view, padding: viewPadding(), duration: dur(3200), essential: true });
   }
   ctl.setPlaying(true);
 }
