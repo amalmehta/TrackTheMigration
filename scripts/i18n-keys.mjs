@@ -97,7 +97,8 @@ export async function collectKeys() {
   ['wild 0–9', 'light 10–24', 'moderate 25–49', 'heavy 50+', 'unknown', 'All animals'].forEach(add);
   ['sex', 'handling', 'tagged at', 'age'].forEach(add);
   ['animal', 'animals', 'on average', 'not tracked', 'days of tracking', 'Click to follow', 'Click to pick these animals',
-    'animal-days in all', 'median travel speed', 'travelling steps', 'fixes', 'median', 'crossed halfway', 'vs usual'].forEach(add);
+    'animal-days in all', 'median travel speed', 'travelling steps', 'fixes', 'median', 'crossed halfway', 'vs usual',
+    'crossings', 'typical crossing', 'typical distance', 'Click to see them on the globe', 'sea', 'desert', 'mountains'].forEach(add);
   return [...keys].sort();
 }
 

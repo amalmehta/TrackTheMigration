@@ -14,6 +14,8 @@ flowchart TB
     FP[footprint.mjs · conditions.mjs · elevation.mjs<br>footprint · greenness / sea temp · ground height]
     WIND[wind.mjs<br>tailwind along bird routes]
     WIND --> FETCH
+    PLACES[places.mjs · barriers.mjs · diary.mjs · seasons.mjs<br>place names · crossings · diaries · this week]
+    PLACES --> FETCH
     TILES_B --> FP
     REF --> FETCH
     FP --> FETCH
@@ -27,6 +29,7 @@ flowchart TB
   WV[(NASA Worldview palettes)] -->|legend colours| ASSETS
   GIBSB[(NASA GIBS + Terrain Tiles)] -->|tiles, cached| TILES_B
   OM[(Open-Meteo ERA5 archive)] -->|hourly wind 100 m, cached| WIND
+  NE[(Natural Earth)] -->|countries, provinces, seas, deserts, ranges, lakes, towns| PLACES
   WA[(world-atlas land)] -->|outline| ASSETS
   FETCH --> DATA[(site/data/*.json)]
   ASSETS --> DATA
@@ -35,7 +38,7 @@ flowchart TB
   subgraph Browser["Browser (site/js/)"]
     APP[app.js<br>clock · selection · startup]
     UI[panel.js · layers.js · map-input.js<br>sharing.js · ui.js]
-    ATLAS[atlas.js · near.js · poster.js<br>atlas · who passed near · posters]
+    ATLAS[atlas.js · near.js · poster.js · diary.js · thisweek.js<br>atlas · who passed near · posters · diary · this week]
     I18N[i18n.js + lang/es.js, fr.js<br>languages]
     PERF[perf.js<br>auto quality]
     STORE[store.js<br>shared state · events · formatting]
@@ -79,6 +82,10 @@ flowchart TB
 | `scripts/conditions.mjs` | The conditions each animal met: vegetation greenness (NDVI, monthly, zoom 7) under every displayed fix of land animals, and sea surface temperature (daily, snapped to the 1st or 15th, zoom 4) under marine animals. Uses the same date snapping and nearest-year fallback as the live overlays. |
 | `scripts/elevation.mjs` | Ground height (AWS Terrain Tiles, zoom 10) under a bird's in-flight GPS fixes, so flight height = GPS height − ground. |
 | `scripts/wind.mjs` | Wind along bird routes. For every step a bird was travelling (faster than 4 km/h over the step, at most two weeks long; long geolocator flights get one sample a day along the line), the hourly ERA5 wind 100 m above the ground at the step's midpoint and time, split into tailwind and crosswind along the bird's heading. Requests group many places per date, are cached in `data/raw/wind/`, wait out per-minute and hourly limits, and stop for the day at the daily limit so a later run finishes the job. |
+| `scripts/places.mjs` | An offline gazetteer from Natural Earth (public domain): for any point, the nearest town (60 km), the state or province (larger countries), country, lake, desert or mountain range, or at sea the sea (grouped: the Alboran Sea is "Mediterranean Sea") and any coastal town within 150 km. Names in English, Spanish and French. Places are stored as compact label tuples into a per-species names table. Coarse coastlines are handled by snapping a point "at sea" within 25 km of a town to that town. |
+| `scripts/barriers.mjs` | Barrier crossings. Each track is sampled every 15 km along its lines between fixes (not across tracking gaps); a crossing is a run inside one sea, desert or mountain range that enters from outside, leaves, covers ≥ 150 km, takes ≤ 45 days, and has a real fix inside or a leg of ≥ 600 km (so a straight line clipping a coast isn't counted). Seas count for birds only. |
+| `scripts/diary.mjs` | Each animal's diary: first and last record, its longest stays (back-to-back stays at the same spot merged), crossings, its fastest day, farthest north and south, and round-number distance milestones, each with a place. |
+| `scripts/seasons.mjs` | This week in migration: for each half-month, how many animal-years are tracked, km/day, a shared heading (when they agree and move ≥ 15 km/day) and where the travellers are (a medoid, so a species in two places isn't put between them), with its place name. |
 | `scripts/i18n-keys.mjs`, `scripts/i18n-add.mjs` | Collect every English string the site can show (from `t()` calls, the page, and the data) and report what each language is missing; add or update translations. |
 | `scripts/topojson.mjs` | Decodes a TopoJSON object into rings; used for the land outline behind the atlas maps. |
 | `scripts/smoke.mjs` | The browser smoke test: serves `site/`, drives headless Chrome over the DevTools protocol and walks the main flows (home, species and charts, follow with conditions, a shared stork link with flight height and 3D, a story, the atlas, the tour, embed, phone layout). Any uncaught exception or console error fails it. |
@@ -88,6 +95,8 @@ flowchart TB
 | `site/js/poster.js` | Journey posters: a 2400 × 3200 PNG of one animal's journey drawn on a canvas: route coloured from start to end (tracking gaps dashed), stopovers sized by days, start and end labels, four key numbers, a latitude strip and full credits. |
 | `site/js/perf.js` | Auto quality. While the globe is moving or playing it times frames in 2-second windows (after a 10-second warm-up). Two slow windows (< 28 fps) step detail down: no glow → sharpness 1× and 30-day trails → no terrain or night shading and 14-day trails. Eight fast windows step back up, unless a step up had to be undone. It only lowers what's drawn, through `globe.quality`; settings are untouched. An optional frame-rate meter. |
 | `site/js/i18n.js`, `site/js/lang/` | Languages. `t('English text', vars)` looks the text up in the chosen language's dictionary (Spanish, French), or returns the English. Dates and numbers use each language's conventions. Static page text is translated on load; species, groups, stories and layer text are translated once after data loads. The language comes from the browser unless chosen in Settings; changing it reloads the page. |
+| `site/js/diary.js` | The Diary tab in the follow readout: entries as sentences in the page language; click to jump; the current entry is marked as time passes. Also "crossing the Sahara · day 3" in the readout, and the place-label formatter used everywhere. |
+| `site/js/thisweek.js` | The This week card on All migrations: the busiest species at today's time of year (scaled by what's busy for land, sea or air), where and which way they're going, who picks up next fortnight, and a button to watch. The globe also opens on today's date. |
 | `site/js/land.js` | The land outline, loaded once, shared by the atlas and posters. |
 | `site/js/panel.js` | The side panel: the species list, the info card for the selection, and "who they are" (filter chips, colour-by, stopover summary). |
 | `site/js/layers.js` | The Layers popover (basemap, overlay, terrain, effects) and the overlay legend. |
@@ -157,6 +166,12 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 1. `travelSteps` picks the steps a bird was travelling; `windSampler` fetches (or reads from cache) the hourly wind at 100 m for each step's midpoint and hour, on ERA5's 0.25° grid.
 2. `windComponents` turns wind speed and direction into tailwind (positive helps) and crosswind relative to the step's heading.
 3. Each step is stored as `[start, end, tailwind, crosswind, ground speed km/day]`. The readout shows the wind for the step the bird is on; the journey profile draws one bar per step; the species chart compares median travel speed across six wind bands.
+
+**Barriers, diaries and places** (build time)
+
+1. The gazetteer loads Natural Earth once; every stopover site, diary entry and weekly summary gets a label tuple like `['near', town, province]` or `['off', town, country]`, indexing a small per-species table of names in three languages.
+2. `findCrossings` runs on each displayed track. Species files carry the crossings (barrier, animal, start, end, km, entry and exit points); the chart groups them by barrier and draws the stretches inside it on the globe when clicked.
+3. `buildDiary` turns stops, crossings, extremes and milestones into dated entries; the browser writes them as sentences.
 
 **Then vs now**
 
@@ -245,6 +260,9 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 | Land outline for the atlas | `site/data/land.json` (from world-atlas 110 m, rounded to 0.1°) | Yes |
 | Wind per travelling step (birds) | `wind` arrays in bird species files; cache `data/raw/wind/cache.json` | Data yes, cache no |
 | Translations | `site/js/lang/es.js`, `site/js/lang/fr.js` (keyed by the English text) | Yes |
+| Place names, crossings, diaries | `names`, `crossings`, `sites[].place` and `animals[].diary` in species files | Yes |
+| This week | `weeks` (24 half-months, own names table) per species in `index.json` | Yes |
+| Natural Earth layers | `data/raw/ne/` (about 18 MB) | No |
 | Story text | `site/js/stories.js` | Yes |
 | Viewer preferences | Browser `localStorage` key `ttm.settings` | n/a |
 | Imagery, maps, terrain, NASA overlays | Third-party tile servers, fetched at runtime | n/a |
@@ -280,6 +298,10 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Posters on a canvas, not the map.** A clean, print-style drawing at fixed size, independent of the screen, with no tile licensing questions; satellite imagery isn't needed to read a journey.
 - **Auto quality lowers drawing, never settings.** On a slow device the glow, sharpness, trail length, terrain and night shading step down in that order, and back up when there's headroom. Choosing "Always full detail" turns it off.
 - **Translations keyed by the English text.** Code stays readable (`t('A year on Earth')`), a missing translation falls back to English, and a test fails if any string the site can show lacks a Spanish or French version or loses a `{placeholder}` or HTML tag. Gendered sentences ("this white stork") were reworded to use the animal's name.
+- **Place names from Natural Earth, offline**, not a geocoding service. Thousands of lookups at build time would break a free service's limits; Natural Earth is public domain, translated, and good enough to say "near Kano, Nigeria" or "Sahara, Chad". Small towns are missing, so rural places fall back to the province, region or country.
+- **Crossings need evidence.** Lines between fixes are straight, so a crossing counts only with a fix inside the barrier or a long leg that can only be a non-stop flight; this removed most false sea crossings by storks (Black Sea 27 → 2) while keeping the godwits' Pacific flights.
+- **Diaries are generated, not written**, so every animal has one and every sentence is checkable against its track. Repeated stays at the same spot merge, so a resident animal's diary says so plainly.
+- **This week uses half-months.** Weekly bins would be noisy for most species; the card shows the real date range it covers.
 - **Share state in the hash, not a server.** It works on static hosting, and links stay human-readable. The cost: the overlay in a link becomes the viewer's saved overlay setting.
 - **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
 - **NASA GIBS for live layers.** These are key-free and time-enabled.
@@ -362,6 +384,8 @@ Earlier rounds, checked by hand at desktop, 800 px and 375 px phone sizes, with 
 
 ## Known limits
 
+- **Place names are approximate.** Natural Earth's coastlines and towns are coarse: a point a few kilometres offshore can be "at sea", and only larger countries have provinces. Diary and site names describe the area, not an exact spot.
+- **Crossings depend on the fixes.** With fixes a day or more apart, a crossing's duration is between fixes, not the true flight time, and short crossings (like Gibraltar's 14 km) are below the 150 km threshold.
 - **Wind is 100 m above the ground**, from a 0.25° reanalysis, sampled once per travelling step. Birds often fly much higher, where winds differ, and a step can span many hours of changing wind.
 - **Then vs now is a hint, not a finding.** Different animals were tracked in different years, samples are small, and tags from one year can dominate. Only species with enough crossings get a trend line.
 - **Who passed near is limited by the tracks.** Between fixes animals are assumed to travel in a straight line; with fixes days apart (Argos, geolocators) a pass can be off by tens of kilometres or missed.

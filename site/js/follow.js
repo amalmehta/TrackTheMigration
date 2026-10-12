@@ -3,6 +3,7 @@
 
 import { positionAt, distanceAt, speedAt, mainAxis, haversineKm, indexAtOrBefore, seasonToHours } from './tracks.js';
 import { colorFor } from './palette.js';
+import { diaryFrame, crossingNow } from './diary.js';
 import { settings } from './settings.js';
 import { map, colorMode, refreshRoutes, viewPadding, setCurtain } from './globe.js';
 import {
@@ -161,6 +162,7 @@ export function followFrame() {
     }
   }
   updateHud(head);
+  diaryFrame();
 }
 
 // ---------- the readout ----------
@@ -189,7 +191,8 @@ function updateHud(head) {
   const moving = !!positionAt(pts, t, gap);
   $('#hud-speed').textContent = v == null ? '—' : fmtSpeed(v);
   const stop = animal.stops?.find(([, , a, b]) => t >= a && t <= b);
-  $('#hud-speed-note').textContent = !moving ? tr('not tracked right now')
+  const crossing = moving && crossingNow();
+  $('#hud-speed-note').textContent = !moving ? tr('not tracked right now') : crossing ? crossing
     : stop ? tr('staying put · day {n} of {total} here', { n: Math.floor((t - stop[2]) / 24) + 1, total: Math.max(1, Math.round((stop[3] - stop[2]) / 24)) })
       : tr('over the last day');
   $('#hud-dist').textContent = fmtDist(distanceAt(pts, animal.cum, t));

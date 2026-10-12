@@ -567,3 +567,25 @@ kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border-radius: 
 /* frame-rate meter */
 .fps { position: fixed; right: 70px; top: 16px; z-index: 6; padding: 4px 10px; border-radius: 99px; font: 600 12px/1.4 var(--sans, Inter), system-ui; font-variant-numeric: tabular-nums; color: var(--text-2); }
 .fps.slow { color: #f59e0b; }
+
+/* follow readout: journey / diary tabs */
+.hud-tabs { display: flex; gap: 4px; margin-top: 10px; border-bottom: 1px solid var(--border); }
+.hud-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 4px 8px 6px; color: var(--muted); font: 600 12px/1.2 inherit; cursor: pointer; }
+.hud-tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.hud-diary { max-height: 260px; overflow-y: auto; }
+.diary { list-style: none; margin: 0; padding: 0; }
+.diary-row { width: 100%; display: grid; grid-template-columns: 82px 1fr; column-gap: 8px; text-align: left; background: none; border: 0; border-radius: 8px; padding: 5px 6px; color: var(--text); cursor: pointer; font-size: 12.5px; }
+.diary-row:hover, .diary-row:focus-visible { background: var(--surface-2); }
+.diary-row.now { background: var(--surface-3); box-shadow: inset 3px 0 0 var(--accent); }
+.diary-date { grid-row: span 2; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11.5px; padding-top: 1px; }
+.diary-row small { color: var(--muted); grid-column: 2; }
+/* this week in migration */
+.thisweek { margin: 4px 0 14px; padding: 12px; border-radius: 14px; background: var(--surface-2); }
+.thisweek ul { list-style: none; margin: 6px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.tw-row { width: 100%; display: flex; gap: 10px; align-items: center; text-align: left; background: none; border: 0; border-left: 3px solid var(--sp); border-radius: 8px; padding: 5px 8px; color: var(--text); cursor: pointer; }
+.tw-row:hover, .tw-row:focus-visible { background: var(--surface-3); }
+.tw-row span { display: flex; flex-direction: column; min-width: 0; }
+.tw-row small { color: var(--muted); font-size: 12px; }
+
+#hud-poster.busy svg { animation: pulse-dl 0.9s ease-in-out infinite; }
+@keyframes pulse-dl { 50% { opacity: 0.35; } }

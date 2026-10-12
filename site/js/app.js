@@ -4,7 +4,7 @@
 import { settings, onSettingsChange, updateSettings, applyTheme, bindSettingsDialog } from './settings.js';
 import {
   map, switchBasemap, applyTerrain, recolor, setEffects, setRoutesVisible, setNightVisible,
-  applyOverlay, refreshRoutes, refreshSites, setStopsVisible, renderFrame, pulse, frameSpecies,
+  applyOverlay, refreshRoutes, refreshSites, setStopsVisible, renderFrame, pulse, frameSpecies, setCrossings,
 } from './globe.js';
 import { decodeView } from './share.js';
 import { initRace, toggleCompare, inCompare, stopRace, raceFrame, raceLabel } from './race.js';
@@ -14,6 +14,8 @@ import { initTour, stopTour, tourFrame, inTour } from './tour.js';
 import { setSound, setVolume } from './sound.js';
 import { initAtlas, openAtlas } from './atlas.js';
 import { initNear, openNear } from './near.js';
+import { initDiary } from './diary.js';
+import { initThisWeek, todayFraction } from './thisweek.js';
 import { initFollow, startFollow, stopFollow, followFrame, recenterFollow } from './follow.js';
 import { initCharts, renderCharts, chartsTime, setOpen as setChartsOpen } from './charts.js';
 import { initStory, startStory, stopStory } from './story.js';
@@ -151,6 +153,7 @@ function setSpeed(v) {
 
 function setHighlight(keys) {
   state.highlight = keys && keys.size ? keys : null;
+  if (!state.highlight) setCrossings([]);
   refreshRoutes();
   frame();
   emit('highlight', state.highlight);
@@ -170,6 +173,7 @@ async function select(id, { frame: doFrame = true } = {}) {
   }
   state.selected = id;
   state.highlight = null;
+  setCrossings([]);
   clearKbdFocus();
   renderSpeciesList();
   $('#loading').hidden = false;
@@ -267,7 +271,7 @@ function wireControls() {
     if (!state.follow) return;
     const btn = $('#hud-poster');
     btn.disabled = true;
-    btn.textContent = t('Drawing…');
+    btn.classList.add('busy');
     try {
       const { blob, name } = await makePoster(state.follow.species, state.follow.animal);
       download(blob, name);
@@ -276,7 +280,7 @@ function wireControls() {
       toast(t("Couldn't make the poster: {e}", { e: err.message }));
     } finally {
       btn.disabled = false;
-      btn.textContent = t('Poster');
+      btn.classList.remove('busy');
     }
   });
 
@@ -398,6 +402,8 @@ async function main() {
   initA11y(controller);
   initTour(controller);
   initAtlas(controller);
+  initDiary(controller);
+  initThisWeek(controller);
   initNear(controller);
   initPerf({ toast });
   // Sound: a toggle in the time bar (browsers only allow audio after a click).
@@ -419,6 +425,7 @@ async function main() {
     if ((shared.story != null || document.body.classList.contains('embed')) && !shared.tour) setPlaying(true);
   } else {
     startWritingHash();
+    state.frac = todayFraction(); // open on today's time of year
     await select('all');
     if (settings.autoplay && !reducedMotion()) setPlaying(true);
   }

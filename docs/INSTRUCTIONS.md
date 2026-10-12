@@ -53,6 +53,14 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - Pick a species, narrow it to a group (sex, age, where tagged) and sort by distance, time tracked, human footprint or date. Search by an animal's name or number.
 - Hover a card to replay the journey; click it to fly to that animal and ride along. Cards tagged **height** have flight heights.
 
+### This week in migration
+- The All migrations card starts with **This week in migration**: which species are busiest at today's time of year (from every year each animal was tracked), how many are tracked, which way and how fast they're going and where, and who picks up next. Click a species to watch it at this time of year, or **Watch this week** for all of them. The globe also opens on today's date.
+
+### Diary and barriers
+- Following an animal, the **Diary** tab tells its journey as dated entries: first and last record, the places it stayed and for how long, the seas, deserts and mountains it crossed, its fastest day, its farthest north and south, and distance milestones. Click an entry to jump to that day. While it's crossing a barrier, the readout says so ("crossing Sahara · day 3").
+- The species charts include **Barriers they crossed**: the seas, deserts and mountain ranges crossed by the most animals, with the typical time and distance. Click one to see every crossing on the globe and pick those animals.
+- Stopover sites are named after the nearest town, region or sea.
+
 ### Who passed near
 - **Who passed near…** on the All migrations card (or **m**). Type a town, park or coast and press **Search**, or **Use my location**, and pick a distance.
 - You get every tracked animal that came that close, nearest first, with the date of its closest approach and how many other visits it made. Click one to jump to that moment and ride along (paused; press play).
@@ -67,7 +75,7 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - For species that migrate far enough, the species charts include **Then vs now**: the date each animal crossed the halfway point of its range, by year and direction, against the usual date. A trend line ("days earlier per decade") appears only with enough data. Click a dot to follow that animal.
 
 ### Journey posters
-- Following an animal, press **Poster** to save a print-ready image (2400 × 3200 px) of its whole journey: the route coloured from start to end, its stopovers, key numbers, its latitude through time and the data credits.
+- Following an animal, press the **download** button (next to + Race) to save a print-ready poster (2400 × 3200 px) of its whole journey: the route coloured from start to end, its stopovers, key numbers, its latitude through time and the data credits.
 
 ### Share a moment, embed it, record it
 - **Share** (in the time bar) opens a menu:

@@ -24,10 +24,15 @@ import { footprintSampler, footprintSummary } from './footprint.mjs';
 import { conditionsSampler } from './conditions.mjs';
 import { groundSampler } from './elevation.mjs';
 import { windSampler, windAlong } from './wind.mjs';
+import { gazetteer, placeLabel, newNameTable } from './places.mjs';
+import { findCrossings } from './barriers.mjs';
+import { buildDiary } from './diary.mjs';
+import { seasonSummary } from './seasons.mjs';
 
 let sampleFootprint = null; // created on first use (fetches NASA's palette)
 let groundAt = null;        // ground-height sampler, created on first use
 let windAt = null;          // wind sampler, created on first use
+let where = null;           // place names (Natural Earth), loaded on first use
 
 // Where an animal counts as having "stopped": within km for at least days.
 const STOP_DEFAULTS = { land: { km: 6, days: 10 }, marine: { km: 40, days: 7 }, birds: { km: 30, days: 3 } };
@@ -262,6 +267,28 @@ async function build(ds) {
     for (const t of chosen) windBy.set(t.id, await windAlong(t.pts, (windAt ??= windSampler(RAW))));
   }
 
+  // Place names, barrier crossings and a diary for each animal; names for stopover sites.
+  where ??= await gazetteer(RAW);
+  const names = newNameTable();
+  const label = (lon, lat) => placeLabel(where(lon, lat), names);
+  const nameIdx = (n) => placeLabel({ lake: n }, names)[1]; // any name → its index in the table
+  for (const site of sites) site.place = label(site.lon, site.lat);
+  const crossingKinds = ds.group === 'birds' ? ['sea', 'desert', 'mountains'] : ds.group === 'land' ? ['desert', 'mountains'] : [];
+  const crossings = [];
+  const diaryBy = new Map();
+  for (const t of chosen) {
+    const mine = crossingKinds.length ? findCrossings(t.pts, where.barrierAt, { maxGapHours: ds.maxGapHours, kinds: crossingKinds }) : [];
+    for (const c of mine) {
+      crossings.push({ b: nameIdx(c.name), kind: c.kind, animal: t.id, t0: round(c.t0, 1), t1: round(c.t1, 1), km: Math.round(c.km),
+        from: c.from.map((v) => round(v, 2)), to: c.to.map((v) => round(v, 2)) });
+    }
+    diaryBy.set(t.id, buildDiary(t, {
+      stops: t.stops.map((st) => [st.lon, st.lat, st.start, st.end]), crossings: mine, label, nameIdx,
+    }));
+  }
+  const weekNames = newNameTable();
+  const weeks = seasonSummary(chosen, ds.maxGapHours, (lon, lat) => placeLabel(where(lon, lat), weekNames));
+
   const animalsOut = chosen.map(({ stops, ...t }) => ({
     ...t,
     attrs: attrs.get(t.id) || {},
@@ -272,6 +299,7 @@ async function build(ds) {
     ...(altBy.has(t.id) ? { alt: altBy.get(t.id) } : {}),
     // [step start h, step end h, tailwind km/h (+ helps), crosswind km/h (+ from the left), ground speed km/day]
     ...(windBy.get(t.id)?.length ? { wind: windBy.get(t.id) } : {}),
+    diary: diaryBy.get(t.id),
   }));
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -288,7 +316,7 @@ async function build(ds) {
 
   await writeFile(
     join(OUT, `${ds.id}.json`),
-    JSON.stringify({ id: ds.id, maxGapHours: ds.maxGapHours, facets, sites, condKey, animals: animalsOut }),
+    JSON.stringify({ id: ds.id, maxGapHours: ds.maxGapHours, facets, sites, condKey, crossings, names: names.list, animals: animalsOut }),
   );
 
   const {
@@ -316,7 +344,10 @@ async function build(ds) {
       condition: condKey,
       flyingAnimals: altBy.size,
       windSteps: [...windBy.values()].reduce((n, w) => n + w.length, 0),
+      crossings: crossings.length,
     },
+    // This week in migration: one entry per half-month, places from its own small names table.
+    weeks: { names: weekNames.list, bins: weeks },
     processing: { maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, stop },
     _abstract: meta.abstract,
   };

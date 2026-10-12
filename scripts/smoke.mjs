@@ -176,6 +176,23 @@ await check('bird charts: wind and timing', async () => {
   await until(`[...document.querySelectorAll('#charts figcaption')].some((f) => /Then vs now/.test(f.textContent))`, 'the timing chart');
 });
 
+await check('this week in migration, and an animal\'s diary', async () => {
+  await open('/');
+  await until(`document.querySelectorAll('.thisweek .tw-row').length >= 2`, 'the This week card');
+  await js(`const a = [...ttm.state.data.get('white-stork')?.animals || (await (await fetch('data/white-stork.json')).json()).animals].sort((x, y) => y.km - x.km)[0];
+    await ttm.startFollow('white-stork', a); document.querySelector('#hud-tab-diary').click();`);
+  await until(`document.querySelectorAll('.diary-row').length >= 5`, 'diary entries');
+  await js(`document.querySelectorAll('.diary-row')[3].click();`);
+  await until(`document.querySelector('.diary-row.now')`, 'the current entry marked');
+});
+
+await check('barriers they crossed', async () => {
+  await open('/#s=white-stork');
+  await js(`document.querySelector('[data-act="charts"]').click();`);
+  await until(`[...document.querySelectorAll('#charts figcaption')].some((f) => /Barriers they crossed/.test(f.textContent))`, 'the crossings chart');
+  await js(`document.querySelector('#charts figure:has(.site-row) .site-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));`);
+});
+
 await check('embed mode', async () => {
   await open('/?embed=1');
   await until(`document.body.classList.contains('embed') && !document.querySelector('#embed-link').hidden`, 'the embed link');

@@ -8,6 +8,7 @@ import { startGame } from './game.js';
 import { startTour } from './tour.js';
 import { openAtlas } from './atlas.js';
 import { openNear } from './near.js';
+import { thisWeekHtml, wireThisWeek } from './thisweek.js';
 import { startFollow, stopFollow } from './follow.js';
 import { renderCharts, setOpen as setChartsOpen } from './charts.js';
 import { startStory, hasStory } from './story.js';
@@ -60,7 +61,7 @@ export function renderInfo() {
     const sp = state.index.species;
     const animals = sp.reduce((n, s) => n + s.stats.animalsShown, 0);
     info.style.removeProperty('--sp');
-    info.innerHTML = `
+    info.innerHTML = `${thisWeekHtml()}
       <p class="kicker">${t('Real tracking data · {n} migrations', { n: sp.length })}</p>
       <h2 class="hero-title">${t('{n} animals, one planet', { n: num(animals) })}</h2>
       <p>${t('Each glowing dot is one tagged animal; its tail is where it went over the last {n} days. In <b>Season</b> view every year an animal was tracked plays over one calendar year, so you can see who moves when.', { n: settings.trailDays })}</p>
@@ -83,6 +84,7 @@ export function renderInfo() {
     info.querySelector('[data-act="tour"]').addEventListener('click', () => startTour());
     info.querySelector('[data-act="atlas"]').addEventListener('click', () => openAtlas());
     info.querySelector('[data-act="near"]').addEventListener('click', () => openNear());
+    wireThisWeek(info);
     return;
   }
   const s = speciesById(state.selected);

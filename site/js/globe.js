@@ -32,6 +32,7 @@ const GIBS_ATTR = 'Overlays: <a href="https://earthdata.nasa.gov/gibs" target="_
 const SPECIES = Object.keys(SPECIES_COLORS);
 const EMPTY = { type: 'FeatureCollection', features: [] };
 let nearData = EMPTY; // kept so the place survives a basemap switch
+let crossingData = EMPTY; // barrier crossings picked in the charts
 
 // Temporary limits set by Auto quality (perf.js) on slower devices. They sit
 // on top of the person's settings and never change them.
@@ -125,7 +126,7 @@ function installLayers() {
     paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 2, 1, 4.5, 0.55, 6.5, 0], 'raster-fade-duration': 0 },
   });
 
-  for (const id of ['routes', 'sites', 'curtain', 'trails', 'heads', 'focus', 'guess', 'near']) map.addSource(id, { type: 'geojson', data: id === 'near' ? nearData : EMPTY, lineMetrics: id === 'trails' });
+  for (const id of ['routes', 'sites', 'curtain', 'trails', 'heads', 'focus', 'guess', 'near', 'crossings']) map.addSource(id, { type: 'geojson', data: id === 'near' ? nearData : id === 'crossings' ? crossingData : EMPTY, lineMetrics: id === 'trails' });
 
   map.addLayer({
     id: 'routes', type: 'line', source: 'routes',
@@ -243,6 +244,17 @@ function installLayers() {
   map.addLayer({
     id: 'near-pin', type: 'circle', source: 'near', filter: ['==', ['geometry-type'], 'Point'],
     paint: { 'circle-radius': 6, 'circle-color': '#ffffff', 'circle-stroke-color': '#0b1220', 'circle-stroke-width': 2.5, 'circle-pitch-alignment': 'map' },
+  });
+  // Barrier crossings picked in the charts: the stretch of each track inside the barrier.
+  map.addLayer({
+    id: 'crossings-glow', type: 'line', source: 'crossings',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#ffd166', 'line-width': 9, 'line-blur': 6, 'line-opacity': 0.55 },
+  });
+  map.addLayer({
+    id: 'crossings', type: 'line', source: 'crossings',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#ffe7a3', 'line-width': 2.5 },
   });
   // The guessing game: your guess, the real spot, and the miss between them.
   map.addLayer({
@@ -553,6 +565,11 @@ export function setNear(place) {
     ] };
   }
   map.getSource('near')?.setData(nearData);
+}
+
+export function setCrossings(features) {
+  crossingData = features?.length ? { type: 'FeatureCollection', features } : EMPTY;
+  map.getSource('crossings')?.setData(crossingData);
 }
 
 export function setGuess(features) {

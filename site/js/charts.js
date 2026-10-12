@@ -6,6 +6,8 @@
 
 import { seasonalMovement, mainAxis, yearFraction, seasonToHours, halfwayCrossings, slope } from './tracks.js';
 import { colorFor } from './palette.js';
+import { placeText, placeShort, duration } from './diary.js';
+import { setCrossings, frameBounds } from './globe.js';
 import { settings, isDark } from './settings.js';
 import {
   state, emit, on, speciesById, keyOf, MONTHS, MONTHS_LONG, fmtSeason, fmtDist, fmtSpeed, kmIn, iconHtml,
@@ -207,8 +209,74 @@ function speciesCharts(body, sp) {
   if (d.animals.some((a) => a.hf)) footprintBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
   if (d.animals.some((a) => a.cond)) conditionsByMonth(grid.append('figure').attr('class', 'chart-card'), sp, d);
   if (d.animals.some((a) => a.wind)) windColumns(grid.append('figure').attr('class', 'chart-card'), sp, d);
+  if (d.crossings?.length) crossingBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
   const timing = timingByYear(sp, d);
   if (timing) timingChart(grid.append('figure').attr('class', 'chart-card'), sp, timing);
+}
+
+// Barriers they crossed: seas, deserts and mountain ranges, by how many
+// animals crossed each, with typical time and distance. Click one to see the
+// crossings on the globe and pick those animals.
+function crossingBars(fig, sp, d) {
+  fig.append('figcaption').text(t('Barriers they crossed')).append('small').text(t(' · by animals crossing'));
+  const ids = new Set(d.animals.map((a) => String(a.id)));
+  const by = new Map();
+  for (const c of d.crossings) {
+    if (!ids.has(String(c.animal))) continue;
+    if (!by.has(c.b)) by.set(c.b, []);
+    by.get(c.b).push(c);
+  }
+  const rows = [...by].map(([b, list]) => ({
+    b, list, kind: list[0].kind, name: placeShort(['x', b], d.names),
+    animals: new Set(list.map((c) => String(c.animal))).size,
+    hours: d3.median(list, (c) => c.t1 - c.t0), km: d3.median(list, (c) => c.km),
+  })).filter((r) => r.animals >= 2).sort((a, b) => b.animals - a.animals || b.list.length - a.list.length).slice(0, 7);
+  if (!rows.length) { fig.remove(); return; }
+  const node = fig.node();
+  const W = node.clientWidth || 260;
+  const rowH = 21;
+  const m = { l: 118, r: 86, t: 4 };
+  const H = m.t + rows.length * rowH + 4;
+  const x = d3.scaleLinear().domain([0, d3.max(rows, (r) => r.animals) || 1]).range([m.l, W - m.r]);
+  const color = colorFor(sp.id, uiMode());
+  const svg = fig.append('svg').attr('class', 'chart').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
+    .attr('role', 'img').attr('aria-label', t('{name}: seas, deserts and mountains they crossed', { name: sp.name }));
+  const row = svg.selectAll('g').data(rows).join('g').attr('class', 'site-row')
+    .attr('transform', (r, k) => `translate(0,${m.t + k * rowH})`)
+    .on('click', (_, r) => showCrossings(sp, d, r))
+    .on('pointermove', (event, r) => showTip(event, [
+      [null, `${r.name} · ${t(r.kind)}`, 'tip-date'],
+      [`${r.animals}`, r.animals === 1 ? 'animal' : 'animals'],
+      [`${r.list.length}`, 'crossings'],
+      [duration(r.hours), 'typical crossing'],
+      [fmtDist(r.km), 'typical distance'],
+      [null, 'Click to see them on the globe', 'tip-hint'],
+    ]))
+    .on('pointerleave', hideTip);
+  row.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rowH).attr('fill', 'transparent');
+  row.append('text').attr('class', 'row-name site-name').attr('x', 0).attr('y', rowH / 2 + 4).text((r) => clip(r.name, 17));
+  row.append('path').attr('class', 'bar').attr('fill', color)
+    .attr('d', (r) => roundedRight(m.l, 5, x(r.animals) - m.l, rowH - 10, 4));
+  row.append('text').attr('class', 'axis-note').attr('x', (r) => x(r.animals) + 5).attr('y', rowH / 2 + 3)
+    .text((r) => `${r.animals} · ${duration(r.hours)}`);
+}
+
+// Draw one barrier's crossings on the globe (the stretch of each track inside it),
+// pick the animals that made them, and frame them.
+function showCrossings(sp, d, r) {
+  const byId = new Map(d.animals.map((a) => [String(a.id), a]));
+  const features = [];
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const c of r.list) {
+    const a = byId.get(String(c.animal));
+    if (!a) continue;
+    const coords = [c.from, ...a.pts.filter((p) => p[2] > c.t0 && p[2] < c.t1).map((p) => [p[0], p[1]]), c.to];
+    for (const [x, y] of coords) { if (x < w) w = x; if (x > e) e = x; if (y < s) s = y; if (y > n) n = y; }
+    features.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } });
+  }
+  setCrossings(features);
+  ctl.setHighlight(new Set(r.list.map((c) => keyOf(sp.id, c.animal))));
+  if (Number.isFinite(w)) frameBounds([w - 1, s - 1, e + 1, n + 1], { maxZoom: 6, duration: 1600 });
 }
 
 // Then vs now: the date each animal crossed the halfway line of its range,
@@ -639,7 +707,7 @@ function siteBars(fig, sp, d) {
   const node = fig.node();
   const W = node.clientWidth || 260;
   const rowH = 21;
-  const m = { l: 96, r: 54, t: 4 };
+  const m = { l: 118, r: 54, t: 4 };
   const H = m.t + sites.length * rowH + 4;
   const x = d3.scaleLinear().domain([0, d3.max(sites, (s) => s.days) || 1]).range([m.l, W - m.r]);
   const color = colorFor(sp.id, uiMode());
@@ -649,7 +717,7 @@ function siteBars(fig, sp, d) {
     .attr('transform', (s, k) => `translate(0,${m.t + k * rowH})`)
     .on('click', (_, s) => ctl.pickSite(sp.id, d.sites[s.i]))
     .on('pointermove', (event, s) => showTip(event, [
-      [null, place(s), 'tip-date'],
+      [null, placeText(s.place, d.names) || place(s), 'tip-date'],
       [`${s.users.length}`, s.users.length === 1 ? 'animal' : 'animals'],
       [num(s.days), 'animal-days in all'],
       [null, t('busiest {m}', { m: busiestMonths(s.months) })],
@@ -657,13 +725,14 @@ function siteBars(fig, sp, d) {
     ]))
     .on('pointerleave', hideTip);
   row.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rowH).attr('fill', 'transparent');
-  row.append('text').attr('class', 'row-name site-name').attr('x', 0).attr('y', rowH / 2 + 4).text((s) => place(s));
+  row.append('text').attr('class', 'row-name site-name').attr('x', 0).attr('y', rowH / 2 + 4).text((s) => clip(placeShort(s.place, d.names) || place(s), 17));
   row.append('path').attr('class', 'bar').attr('fill', color)
     .attr('d', (s) => roundedRight(m.l, 5, x(s.days) - m.l, rowH - 10, 4));
   row.append('text').attr('class', 'axis-note').attr('x', (s) => x(s.days) + 5).attr('y', rowH / 2 + 3)
     .text((s) => `${num(s.days)} ${t('d')}`);
 }
 
+const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 const place = (s) => `${Math.abs(s.lat).toFixed(1)}°${s.lat >= 0 ? 'N' : 'S'} ${Math.abs(s.lon).toFixed(1)}°${s.lon >= 0 ? 'E' : 'W'}`;
 
 // A bar with a rounded data end on the right and a square baseline on the left.
