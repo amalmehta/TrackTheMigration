@@ -95,6 +95,7 @@ async function open(path, { width = 1280, height = 800, mobile = false } = {}) {
 }
 
 const results = [];
+let langScript = null;
 async function check(name, fn) {
   const before = pageErrors.length;
   try {
@@ -155,10 +156,61 @@ await check('A year on Earth starts', async () => {
   await until(`ttm.state.tour && !document.querySelector('#tour').hidden`, 'the tour card');
 });
 
+await check('who passed near: a shared place lists passing animals', async () => {
+  await open('/#near=36.817,-1.286,100&nm=Nairobi');
+  await until(`document.querySelectorAll('.near-row').length > 3`, 'animals near Nairobi');
+  await js(`document.querySelector('.near-row').click();`);
+  await until(`ttm.state.follow && !ttm.state.playing`, 'a paused ride-along at the closest moment');
+});
+
+await check('a journey poster draws', async () => {
+  const r = await js(`const { makePoster } = await import(new URL('js/poster.js', location.href).href);
+    const { blob, name } = await makePoster(ttm.state.follow.species, ttm.state.follow.animal);
+    return { size: blob.size, type: blob.type, name };`);
+  assert(r.type === 'image/png' && r.size > 100000, `poster was ${r.size} bytes of ${r.type}`);
+});
+
+await check('bird charts: wind and timing', async () => {
+  await open('/#s=white-stork');
+  await js(`document.querySelector('[data-act="charts"]').click();`);
+  await until(`[...document.querySelectorAll('#charts figcaption')].some((f) => /Then vs now/.test(f.textContent))`, 'the timing chart');
+});
+
+await check('this week in migration, and an animal\'s diary', async () => {
+  await open('/');
+  await until(`document.querySelectorAll('.thisweek .tw-row').length >= 2`, 'the This week card');
+  await js(`const a = [...ttm.state.data.get('white-stork')?.animals || (await (await fetch('data/white-stork.json')).json()).animals].sort((x, y) => y.km - x.km)[0];
+    await ttm.startFollow('white-stork', a); document.querySelector('#hud-tab-diary').click();`);
+  await until(`document.querySelectorAll('.diary-row').length >= 5`, 'diary entries');
+  await js(`document.querySelectorAll('.diary-row')[3].click();`);
+  await until(`document.querySelector('.diary-row.now')`, 'the current entry marked');
+});
+
+await check('barriers they crossed', async () => {
+  await open('/#s=white-stork');
+  await js(`document.querySelector('[data-act="charts"]').click();`);
+  await until(`[...document.querySelectorAll('#charts figcaption')].some((f) => /Barriers they crossed/.test(f.textContent))`, 'the crossings chart');
+  await js(`document.querySelector('#charts figure:has(.site-row) .site-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));`);
+});
+
 await check('embed mode', async () => {
   await open('/?embed=1');
   await until(`document.body.classList.contains('embed') && !document.querySelector('#embed-link').hidden`, 'the embed link');
 });
+
+for (const lang of ['es', 'fr']) {
+  await check(`in ${lang === 'es' ? 'Spanish' : 'French'}`, async () => {
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('ttm.settings', JSON.stringify({ lang: '${lang}' })) } catch {}` }).then((r) => { langScript = r.result?.identifier; });
+    await open('/');
+    const r = await js(`const dict = (await import(new URL('js/lang/${lang}.js', location.href).href)).default;
+      return { lang: document.documentElement.lang, html: document.body.innerText, word: dict['A year on Earth'] };`);
+    const word = r.word;
+    assert(r.lang === lang, `page language is ${r.lang}`);
+    assert(r.html.includes(word), `no "${word}" on the page`);
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: langScript });
+    await js(`localStorage.removeItem('ttm.settings')`);
+  });
+}
 
 await check('phone layout has no sideways scroll', async () => {
   await open('/', { width: 390, height: 844, mobile: true });
@@ -170,7 +222,7 @@ ws.close();
 chrome.kill();
 server.close();
 await wait(300);
-rmSync(profile, { recursive: true, force: true });
+try { rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 }); } catch { /* Chrome may still be closing; the OS cleans temp */ }
 
 for (const [status, name, err] of results) console.log(`${status === 'ok' ? '✓' : '✗'} ${name}${err ? `\n    ${err}` : ''}`);
 const failed = results.filter((r) => r[0] !== 'ok').length;

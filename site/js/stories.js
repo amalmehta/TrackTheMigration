@@ -260,6 +260,99 @@ export const STORIES = {
     ],
   },
 
+  'steppe-eagle': {
+    title: 'Riding the wind south',
+    scenes: [
+      {
+        title: 'Born on the steppe',
+        text: 'Most of these endangered eagles were tagged as nestlings and followed by GPS for up to seven years. This dataset holds their autumn journeys, August to December. You are watching {animals} of them, from {years}.',
+        view: 'species', at: '08-25', speed: 3,
+      },
+      {
+        title: 'Waiting for the right wind',
+        text: 'The researchers split each journey into migratory flights and stopovers. Winds blowing the way the birds were heading made an eagle more likely to leave a stopover; winds from ahead held it back.',
+        view: 'heads', at: '09-20', speed: 3,
+      },
+      {
+        title: 'Young and bold',
+        text: 'Experience changed how they flew. Juveniles chose stronger tailwinds and more direct routes than older eagles. Young birds were also drawn to land shaped by people, which adults avoided. The overlay shows the human footprint.',
+        view: 'heads', at: '10-15', speed: 3, overlay: 'footprint',
+      },
+      {
+        title: 'Into Arabia and Africa',
+        text: 'By December the tracks reach Arabia and north-east Africa. Stronger tailwinds let the birds cover more ground, both on migration and while stopping over.',
+        view: 'heads', at: '11-25', speed: 3,
+      },
+      {
+        title: 'One eagle, every autumn',
+        text: 'Follow {longestId}, the eagle that covered the most ground: {longestKm} tracked.',
+        view: 'species', at: '08-25', speed: 5, follow: 'longest',
+      },
+    ],
+  },
+
+  'egyptian-vulture': {
+    title: 'Pylons, dumps and highways',
+    scenes: [
+      {
+        title: 'The most endangered guild',
+        text: 'Vultures that feed on carrion are the most endangered group of birds, and losing them can ripple through whole ecosystems. Researchers tracked 16 Egyptian vultures by satellite across the Middle East and East Africa.',
+        view: 'species', at: '04-15', speed: 4,
+      },
+      {
+        title: 'Summer in the uplands',
+        text: 'In summer most of these birds are in the uplands around eastern Turkey and the Caucasus. Their combined summer range covered about 210,000 km², but the core areas they really used were only around 900 km².',
+        view: 'heads', at: '07-01', speed: 3,
+      },
+      {
+        title: 'Drawn to people',
+        text: 'The birds strongly favoured places near highways, power lines and towns. Pylons give them roosts and rubbish dumps give them food. The overlay shows the human footprint.',
+        view: 'heads', at: '09-20', speed: 3, overlay: 'footprint',
+      },
+      {
+        title: 'Winter in the Horn of Africa',
+        text: 'They winter in Ethiopia, Sudan and Yemen. Here too, a few feeding and roosting sites carried most of the use: about 3,100 km² of a 274,000 km² range. Those are the places where protection would help most, as pylons and dumps can also be traps, through electrocution and poisoning.',
+        view: 'heads', at: '12-15', speed: 3,
+      },
+      {
+        title: 'One vulture’s years',
+        text: 'Follow {longestId}, the vulture that travelled farthest: {longestKm} tracked.',
+        view: 'species', at: '08-20', speed: 6, follow: 'longest',
+      },
+    ],
+  },
+
+  'turkey-vulture': {
+    title: 'Two continents, many strategies',
+    scenes: [
+      {
+        title: 'Four populations',
+        text: 'Researchers followed turkey vultures from four populations on two continents for nearly ten years: the west coast, interior and east coast of North America, and the interior of South America. You are watching {animals} of them.',
+        view: 'species', at: '04-01', speed: 4,
+      },
+      {
+        title: 'The long-distance westerners',
+        text: 'Birds from western North America made the longest journeys, flying south through Mexico and Central America to northern South America for the winter.',
+        view: { center: [-95, 22], zoom: 2.4, pitch: 15, bearing: 0 }, at: '10-15', speed: 3,
+      },
+      {
+        title: 'Staying put in the east',
+        text: 'Others hardly migrated at all. The study found an enormous amount of variation in how the populations move.',
+        view: { center: [-77, 39], zoom: 4.6, pitch: 30, bearing: 0 }, at: '01-15', speed: 3,
+      },
+      {
+        title: 'Following food and thermals',
+        text: 'How far they needed to travel to find food was linked to vegetation, shown here as greenness. How fast they could travel depended on thermals and temperature.',
+        view: { center: [-63, -22], zoom: 2.9, pitch: 15, bearing: 0 }, at: '06-15', speed: 3, overlay: 'vegetation',
+      },
+      {
+        title: 'Built to adapt',
+        text: 'Soaring on rising warm air costs these birds little energy, so the authors expect them to cope well with modest climate change. Follow {longestId}: {longestKm} tracked.',
+        view: 'species', at: '09-15', speed: 6, follow: 'longest',
+      },
+    ],
+  },
+
   'bar-tailed-godwit': {
     title: 'Across the Pacific without stopping',
     scenes: [
@@ -411,6 +504,37 @@ export const STORIES = {
         title: 'Why it matters',
         text: 'Correcting for wind seems crucial to godwits, a sign of how risky these crossings are as winds change. Follow {longestId}: {longestKm}.',
         view: 'species', at: '04-01', speed: 3, follow: 'longest',
+      },
+    ],
+  },
+
+  'far-eastern-curlew': {
+    title: 'From Australia to Asia',
+    scenes: [
+      {
+        title: 'Half a year on the coast',
+        text: 'Far eastern curlews spend more than half of each year on Australia’s coasts. Researchers tagged them at Broome, Darwin, Moreton Bay and Western Port, and tracked them for several years. You are watching {animals} of them.',
+        view: 'species', at: '02-01', speed: 4,
+      },
+      {
+        title: 'Heading north',
+        text: 'In March they set off for Asia. Birds from south-east Australia started their northward migration earlier than birds from the north-west.',
+        view: 'heads', at: '03-25', speed: 3,
+      },
+      {
+        title: 'Breeding grounds',
+        text: 'South-east birds also reached their breeding grounds earlier, and bred farther south, than birds from the north-west.',
+        view: 'heads', at: '06-01', speed: 3,
+      },
+      {
+        title: 'Pressure at both ends',
+        text: 'Birds from south-east Australia met more land changed by people, at both their breeding and their non-breeding grounds. Those are the populations declining fastest. The overlay shows the human footprint.',
+        view: 'heads', at: '08-10', speed: 3, overlay: 'footprint',
+      },
+      {
+        title: 'A whole year',
+        text: 'Protecting these curlews means caring for their Australian coasts and their breeding grounds alike. Follow {longestId}: {longestKm} tracked.',
+        view: 'species', at: '02-15', speed: 6, follow: 'longest',
       },
     ],
   },

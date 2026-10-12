@@ -5,7 +5,7 @@ import { STORIES } from './stories.js';
 import { colorFor } from './palette.js';
 import { settings, updateSettings } from './settings.js';
 import { map, frameBounds, frameSpecies, headBounds, viewPadding } from './globe.js';
-import { state, emit, speciesById, fmtDist, esc, iconHtml, year, dur, isVisible } from './store.js';
+import { state, emit, speciesById, fmtDist, esc, iconHtml, year, dur, isVisible, t } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 let ctl = null;   // { select, setMode, setPlaying, frame, follow, stopFollow, setSpeed }
@@ -43,7 +43,7 @@ export async function startStory(id, scene = 0) {
   STORIES[id].scenes.forEach((sc, i) => {
     const b = document.createElement('button');
     b.className = 'dot';
-    b.setAttribute('aria-label', `Scene ${i + 1}: ${sc.title}`);
+    b.setAttribute('aria-label', t('Scene {n}: {title}', { n: i + 1, title: sc.title }));
     b.addEventListener('click', () => go(i));
     dots.append(b);
   });
@@ -101,7 +101,7 @@ async function go(i) {
   $('#story-text').innerHTML = fill(sc.text, id);
   $('#story-count').textContent = `${i + 1} / ${scenes.length}`;
   $('#story-prev').disabled = i === 0;
-  $('#story-next').textContent = i === scenes.length - 1 ? 'Finish' : 'Next';
+  $('#story-next').textContent = t(i === scenes.length - 1 ? 'Finish' : 'Next');
   [...$('#story-dots').children].forEach((d, k) => d.setAttribute('aria-current', String(k === i)));
 
   // Overlay and speed

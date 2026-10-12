@@ -3,6 +3,7 @@
 // MediaRecorder and handed to the viewer as a download. Nothing is uploaded.
 
 import { map } from './globe.js';
+import { t } from './i18n.js';
 
 // WebM first (Chrome, Firefox); MP4 for Safari, which has no WebM recorder.
 const TYPES = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4;codecs=avc1', 'video/mp4'];
@@ -56,7 +57,7 @@ export function record({ seconds = 12, getText, onTick, onDone }) {
     g.fillText(text.subtitle || '', W - 40 * u, H - 50 * u);
     g.font = font(400, 13, 'Inter, system-ui, sans-serif');
     g.fillStyle = 'rgba(255,255,255,0.6)';
-    g.fillText('Track the Migration · tracks: Movebank Data Repository · imagery: Sentinel-2 cloudless by EOX', W - 40 * u, H - 24 * u);
+    g.fillText(t('Track the Migration · tracks: Movebank Data Repository · imagery: Sentinel-2 cloudless by EOX'), W - 40 * u, H - 24 * u);
     g.textAlign = 'left';
     onTick?.(Math.max(0, seconds - (performance.now() - t0) / 1000));
     if (rec.state !== 'inactive') raf = requestAnimationFrame(draw);

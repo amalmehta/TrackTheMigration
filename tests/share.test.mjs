@@ -47,3 +47,10 @@ test('malformed links are ignored rather than breaking the clock', () => {
   assert.equal(v.mode, null);
   assert.equal(v.species, 'zebra');
 });
+
+test('a who-passed-near link', () => {
+  const v = decodeView('#near=36.817,-1.286,100&nm=Nairobi%2C%20Kenya');
+  assert.deepEqual(v.near, { lon: 36.817, lat: -1.286, r: 100, name: 'Nairobi, Kenya' });
+  assert.equal(decodeView('#near=1,2').near, null);
+  assert.equal(decodeView('#near=1,95,100').near, null);
+});

@@ -7,7 +7,7 @@ import { colorFor } from './palette.js';
 import { settings } from './settings.js';
 import { colorMode, refreshRoutes, refreshSites, frameBounds } from './globe.js';
 import {
-  state, emit, speciesById, fmtDist, esc, iconHtml, MAX_RACERS, fullAnimal,
+  state, emit, speciesById, fmtDist, esc, iconHtml, MAX_RACERS, fullAnimal, t, num,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -31,7 +31,7 @@ export function initRace(controller) {
     r.maxDay = full ? r.fullDays : r.fairDays;
     r.day = Math.min(r.day, r.maxDay);
     $('#race-length').setAttribute('aria-pressed', String(full));
-    $('#race-length').textContent = full ? `First ${Math.round(r.fairDays).toLocaleString()} days only` : `Show all ${Math.round(r.fullDays).toLocaleString()} days`;
+    $('#race-length').textContent = full ? t('First {n} days only', { n: num(Math.round(r.fairDays)) }) : t('Show all {n} days', { n: num(Math.round(r.fullDays)) });
     drawChart();
     emit('race', r);
     ctl.frame();
@@ -67,13 +67,13 @@ export function renderTray() {
     chip.className = 'racer-chip';
     chip.style.setProperty('--sp', colorFor(c.species, colorMode()));
     chip.innerHTML = `${iconHtml(c.species, 'sil sil-sm')}<span><b>${esc(sp.name)}</b> ${esc(c.animal.id)}</span>
-      <button class="icon-btn tiny" aria-label="Remove ${esc(sp.name)} ${esc(c.animal.id)}">×</button>`;
+      <button class="icon-btn tiny" aria-label="${esc(t('Remove {name} {id}', { name: sp.name, id: c.animal.id }))}">×</button>`;
     chip.querySelector('button').addEventListener('click', () => { state.compare.splice(i, 1); renderTray(); emit('compare'); });
     list.append(chip);
   });
   const n = state.compare.length;
   $('#race-start').disabled = n < 2;
-  $('#race-hint').textContent = n < 2 ? 'Add one more animal to race. Shift-click a dot, or use + Compare.' : `${n} racers, each from the day it set off`;
+  $('#race-hint').textContent = n < 2 ? t('Add one more animal to race. Shift-click a dot, or use + Race.') : t('{n} racers, each from the day it set off', { n });
 }
 
 // ---------- racing ----------
@@ -114,7 +114,7 @@ export async function startRace() {
   state.race = { racers, day: 0, maxDay: fairDays, fullDays, fairDays, split: false };
   $('#race-length').hidden = fairDays === fullDays;
   $('#race-length').setAttribute('aria-pressed', 'false');
-  $('#race-length').textContent = `Show all ${Math.round(fullDays).toLocaleString()} days`;
+  $('#race-length').textContent = t('Show all {n} days', { n: num(Math.round(fullDays)) });
   state.instances = racers.map((r) => ({ species: r.species, animal: r.animal, pts: r.animal.pts, start: r.start, gap: r.gap, color: r.color }));
   document.body.classList.add('racing');
   $('#compare-tray').hidden = true;
@@ -151,7 +151,7 @@ export function stopRace() {
 
 export function raceLabel() {
   const r = state.race;
-  return { label: `Day ${Math.floor(r.day) + 1}`, sub: 'since each set off' };
+  return { label: t('Day {n}', { n: Math.floor(r.day) + 1 }), sub: t('since each set off') };
 }
 
 // Called every frame while racing.
@@ -166,12 +166,12 @@ export function raceFrame() {
 function standings() {
   const r = state.race;
   return r.racers.map((x) => {
-    const t = x.start + r.day * 24;
-    const done = t > x.end;
-    const km = distanceAt(x.animal.pts, x.animal.cum, Math.min(t, x.end));
-    const tracked = !!positionAt(x.animal.pts, t, x.gap);
-    const stop = x.animal.stops?.find(([, , a, b]) => t >= a && t <= b);
-    const status = done ? `tag ended on day ${Math.round((x.end - x.start) / 24) + 1}` : !tracked ? 'not tracked' : stop ? 'staying put' : 'on the move';
+    const now = x.start + r.day * 24;
+    const done = now > x.end;
+    const km = distanceAt(x.animal.pts, x.animal.cum, Math.min(now, x.end));
+    const tracked = !!positionAt(x.animal.pts, now, x.gap);
+    const stop = x.animal.stops?.find(([, , a, b]) => now >= a && now <= b);
+    const status = done ? t('tag ended on day {n}', { n: Math.round((x.end - x.start) / 24) + 1 }) : t(!tracked ? 'not tracked' : stop ? 'staying put' : 'on the move');
     return { x, km, status, done };
   }).sort((a, b) => b.km - a.km);
 }
@@ -179,7 +179,7 @@ function standings() {
 function renderBoard() {
   const board = $('#race-board');
   const rows = standings();
-  $('#race-day').textContent = `Day ${Math.floor(state.race.day) + 1}`;
+  $('#race-day').textContent = t('Day {n}', { n: Math.floor(state.race.day) + 1 });
   board.innerHTML = rows.map((s, i) => `
     <li style="--sp:${s.x.color}" class="${s.done ? 'done' : ''}">
       <span class="rank">${i + 1}</span>
@@ -210,7 +210,7 @@ function drawChart() {
   const kmIn = (k) => (settings.units === 'mi' ? k * 0.621371 : k);
   const yS = d3.scaleLinear().domain([0, kmIn(d3.max(series, (s) => s.pts[s.pts.length - 1][1])) || 1]).nice(4).range([H - m.b, m.t]);
   const svg = d3.select(el).append('svg').attr('class', 'chart').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
-    .attr('role', 'img').attr('aria-label', 'Distance travelled by each racer, by days since it set off');
+    .attr('role', 'img').attr('aria-label', t('Distance travelled by each racer, by days since it set off'));
   const yg = svg.append('g').attr('class', 'axis');
   yg.selectAll('line').data(yS.ticks(4)).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', yS).attr('y2', yS);
   yg.selectAll('text').data(yS.ticks(4)).join('text').attr('x', m.l - 6).attr('y', (v) => yS(v) + 3).attr('text-anchor', 'end').text(d3.format('~s'));
@@ -234,7 +234,7 @@ function drawChart() {
       cross.attr('x1', px).attr('x2', px).style('opacity', 1);
       const rows = r.racers.map((x) => ({ x, km: distanceAt(x.animal.pts, x.animal.cum, Math.min(x.start + d * 24, x.end)) })).sort((a, b) => b.km - a.km);
       tip.html('');
-      tip.append('div').attr('class', 'tip-date').text(`Day ${Math.floor(d) + 1}`);
+      tip.append('div').attr('class', 'tip-date').text(t('Day {n}', { n: Math.floor(d) + 1 }));
       for (const row of rows) {
         const div = tip.append('div').attr('class', 'tip-row');
         div.append('i').style('background', row.x.color);

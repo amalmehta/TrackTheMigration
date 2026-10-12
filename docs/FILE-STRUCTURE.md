@@ -22,6 +22,14 @@ TrackTheMigration/
 │   │   ├── sharing.js         Address-bar link, Share menu, embed mode, video recording
 │   │   ├── ui.js              Toast, icons, feedback tab, starfield
 │   │   ├── atlas.js           Journey atlas: a small map per animal
+│   │   ├── near.js            Who passed near a place
+│   │   ├── poster.js          Print-ready journey posters
+│   │   ├── diary.js           The Diary tab and place-name formatting
+│   │   ├── thisweek.js        This week in migration
+│   │   ├── perf.js            Auto quality and the frame-rate meter
+│   │   ├── land.js            Land outline shared by the atlas and posters
+│   │   ├── i18n.js            Languages: t(), dates and numbers, page translation
+│   │   ├── lang/es.js, fr.js  Spanish and French, keyed by the English text
 │   │   ├── store.js           Shared state, event bus, data loading, formatting
 │   │   ├── globe.js           Map, terrain, night, NASA overlays, trails/heads, camera
 │   │   ├── follow.js          Ride-along camera, readout, journey profile, 3D flight close-up
@@ -57,6 +65,13 @@ TrackTheMigration/
 │   ├── footprint.mjs          Human Footprint under every fix (NASA GIBS tiles)
 │   ├── conditions.mjs         Greenness / sea temperature under every fix (NASA GIBS)
 │   ├── elevation.mjs          Ground height under flying birds (Terrain Tiles)
+│   ├── wind.mjs               Wind 100 m up along bird routes (Open-Meteo ERA5)
+│   ├── places.mjs             Place names from Natural Earth (offline gazetteer)
+│   ├── barriers.mjs           Sea, desert and mountain crossings
+│   ├── diary.mjs              Each animal's journey diary
+│   ├── seasons.mjs            This week in migration, per half-month
+│   ├── i18n-keys.mjs          Every string to translate; what each language misses
+│   ├── i18n-add.mjs           Add or update translations
 │   ├── topojson.mjs           TopoJSON → rings, for the land outline
 │   ├── png.mjs                Small PNG decoder for those tiles
 │   ├── smoke.mjs              Browser smoke test (headless Chrome, no dependencies)
@@ -71,6 +86,10 @@ TrackTheMigration/
 │   ├── share.test.mjs         Share-link decoding, month ranges
 │   ├── png.test.mjs           PNG decoding, footprint pixel maths
 │   ├── tiles.test.mjs         Tile pixel maths and decoders
+│   ├── wind.test.mjs          Tailwind maths and travel steps
+│   ├── barriers.test.mjs      Point in polygon, track sampling, crossings
+│   ├── diary.test.mjs         Fastest day, milestones, diary order
+│   ├── i18n.test.mjs          Spanish and French cover every string
 │   └── topojson.test.mjs      TopoJSON decoding
 │
 ├── docs/
@@ -79,5 +98,5 @@ TrackTheMigration/
 │   ├── FILE-STRUCTURE.md      This file
 │   └── images/                README screenshots
 │
-└── data/raw/                  (git-ignored) Downloaded CSVs, metadata and tile caches (hf, gibs, dem)
+└── data/raw/                  (git-ignored) Downloaded CSVs, metadata and caches (hf, gibs, dem tiles; wind; Natural Earth in ne/)
 ```

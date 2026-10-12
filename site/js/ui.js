@@ -2,6 +2,7 @@
 // tab and the starfield behind the globe.
 
 import { state, speciesById } from './store.js';
+import { lang } from './i18n.js';
 
 const REPO = 'amalmehta/TrackTheMigration';
 const $ = (s) => document.querySelector(s);
@@ -20,21 +21,32 @@ export const followIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle c
 export const atlasIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>';
 export const gameIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3"/></svg>';
 export const chartIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
+export const pinIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
+
+// Save a blob as a file.
+export function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+}
 
 // Feedback opens a pre-filled GitHub issue (no server needed).
 export function initFeedback() {
-const fb = $('#feedback-dialog');
-$('#feedback-tab').addEventListener('click', () => fb.showModal());
-$('#feedback-form').addEventListener('submit', (e) => {
-  if (e.submitter?.value !== 'send') return;
-  const text = $('#fb-text').value.trim();
-  if (!text) return;
-  const view = state.selected === 'all' ? 'All migrations' : speciesById(state.selected).name;
-  const body = `${text}\n\n---\nView: ${view} · ${state.mode} mode`;
-  const url = `https://github.com/${REPO}/issues/new?title=${encodeURIComponent('Feedback: ' + text.slice(0, 60))}&body=${encodeURIComponent(body)}`;
-  window.open(url, '_blank', 'noopener');
-  $('#fb-text').value = '';
-});
+  const fb = $('#feedback-dialog');
+  $('#feedback-tab').addEventListener('click', () => fb.showModal());
+  $('#feedback-form').addEventListener('submit', (e) => {
+    if (e.submitter?.value !== 'send') return;
+    const text = $('#fb-text').value.trim();
+    if (!text) return;
+    const view = state.selected === 'all' ? 'All migrations' : speciesById(state.selected).name;
+    const body = `${text}\n\n---\nView: ${view} · ${state.mode} mode · ${lang}`;
+    const url = `https://github.com/${REPO}/issues/new?title=${encodeURIComponent('Feedback: ' + text.slice(0, 60))}&body=${encodeURIComponent(body)}`;
+    window.open(url, '_blank', 'noopener');
+    $('#fb-text').value = '';
+  });
 }
 
 // ---------- starfield ----------

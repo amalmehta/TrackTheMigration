@@ -6,7 +6,7 @@ import { positionAt, recentHeading, compassWord } from './tracks.js';
 import { map } from './globe.js';
 import { inGame } from './game.js';
 import {
-  state, speciesById, instanceTime, fmtDate, fmtSeason, fmtDist, fmtSpeed, reducedMotion,
+  state, speciesById, instanceTime, fmtDate, fmtSeason, fmtDist, fmtSpeed, reducedMotion, t as tr,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -29,10 +29,10 @@ export function announce(text) {
   live.textContent = '';
   // A fresh text node after a tick so screen readers notice the change.
   setTimeout(() => { live.textContent = text; }, 50);
-  map.getCanvas().setAttribute('aria-label', `Globe. ${text}`);
+  map.getCanvas().setAttribute('aria-label', tr('Globe. {text}', { text }));
 }
 
-const when = () => (state.race ? `Day ${Math.floor(state.race.day) + 1} of the race`
+const when = () => (state.race ? tr('Day {n} of the race', { n: Math.floor(state.race.day) + 1 })
   : state.mode === 'season' ? fmtSeason(state.frac) : fmtDate(state.t));
 
 export function describe() {
@@ -57,16 +57,16 @@ export function describe() {
   const total = [...bySpecies.values()].reduce((a, s) => a + s.n, 0);
   const parts = [...bySpecies].sort((a, b) => (b[1].km / Math.max(1, b[1].k)) - (a[1].km / Math.max(1, a[1].k))).slice(0, 4).map(([id, s]) => {
     const name = speciesById(id).name;
-    if (!s.k) return `${name}: ${s.n} staying put`;
+    if (!s.k) return tr('{name}: {n} staying put', { name, n: s.n });
     const perDay = s.km / s.k / 7;
     const net = Math.hypot(s.x, s.y) / s.km; // 1 = all heading the same way
-    const dir = compassWord((Math.atan2(s.x, s.y) * 180) / Math.PI);
+    const dir = tr(compassWord((Math.atan2(s.x, s.y) * 180) / Math.PI));
     return net > 0.45
-      ? `${name}: ${s.n} moving, mostly ${dir}, about ${fmtSpeed(perDay)}`
-      : `${name}: ${s.n} moving in different directions, about ${fmtSpeed(perDay)}`;
+      ? tr('{name}: {n} moving, mostly {dir}, about {speed}', { name, n: s.n, dir, speed: fmtSpeed(perDay) })
+      : tr('{name}: {n} moving in different directions, about {speed}', { name, n: s.n, speed: fmtSpeed(perDay) });
   });
-  const where = state.selected === 'all' ? 'All migrations' : speciesById(state.selected).name;
-  return `${where}, ${when()}. ${total} ${total === 1 ? 'animal' : 'animals'} tracked right now. ${parts.join('. ')}.`;
+  const where = state.selected === 'all' ? tr('All migrations') : speciesById(state.selected).name;
+  return `${where}, ${when()}. ${tr(total === 1 ? '{n} animal tracked right now.' : '{n} animals tracked right now.', { n: total })} ${parts.join('. ')}.`;
 }
 
 function describeFollow() {
@@ -76,9 +76,9 @@ function describeFollow() {
   const note = $('#hud-speed-note').textContent;
   const dist = $('#hud-dist').textContent;
   const h = recentHeading(animal.pts, state.t, 168, state.follow.gap);
-  const heading = h && h.km > 1 ? ` Over the last week it went ${fmtDist(h.km)} ${compassWord(h.bearing)}.` : '';
-  const hf = $('#hud-hf').hidden ? '' : ` Human footprint here: ${$('#hud-hf-val').textContent}.`;
-  return `Following ${sp.name} ${animal.id}, ${fmtDate(state.t)}. Speed ${speed}, ${note}. Travelled ${dist} so far.${heading}${hf}`;
+  const heading = h && h.km > 1 ? ` ${tr('Over the last week it went {d} {dir}.', { d: fmtDist(h.km), dir: tr(compassWord(h.bearing)) })}` : '';
+  const hf = $('#hud-hf').hidden ? '' : ` ${tr('Human footprint here: {v}.', { v: $('#hud-hf-val').textContent })}`;
+  return tr('Following {name} {id}, {date}. Speed {speed}, {note}. Travelled {dist} so far.', { name: sp.name, id: animal.id, date: fmtDate(state.t), speed, note, dist }) + heading + hf;
 }
 
 function describeRace() {
@@ -103,14 +103,14 @@ function visibleHeads() {
 
 function focusAnimal(step) {
   const heads = visibleHeads();
-  if (!heads.length) return announce('No animals are being tracked at this moment.');
+  if (!heads.length) return announce(tr('No animals are being tracked at this moment.'));
   focusIdx = (focusIdx + step + heads.length) % heads.length;
   const { inst, p } = heads[focusIdx];
   state.kbdFocus = { species: inst.species, animal: inst.animal };
   map.getSource('focus')?.setData({ type: 'Point', coordinates: p });
   map.easeTo({ center: p, duration: reducedMotion() ? 0 : 600 });
   const sp = speciesById(inst.species);
-  announce(`${focusIdx + 1} of ${heads.length}: ${sp.name} ${inst.animal.id}, ${fmtDist(inst.animal.km)} tracked. Enter to follow, R to race.`);
+  announce(tr('{n} of {total}: {name} {id}, {d} tracked. Enter to follow, R to race.', { n: focusIdx + 1, total: heads.length, name: sp.name, id: inst.animal.id, d: fmtDist(inst.animal.km) }));
 }
 
 function onKey(e) {
@@ -141,13 +141,14 @@ function onKey(e) {
       if (inGame() || state.race) return;
       if (state.kbdFocus) {
         ctl.toggleCompare(state.kbdFocus.species, state.kbdFocus.animal);
-        announce(`${speciesById(state.kbdFocus.species).name} ${state.kbdFocus.animal.id} toggled in the race.`);
+        announce(tr('{name} {id} toggled in the race.', { name: speciesById(state.kbdFocus.species).name, id: state.kbdFocus.animal.id }));
       }
       return;
     case 'd': e.preventDefault(); return describeNow();
     case 'c': return ctl.toggleCharts();
     case 'l': return ctl.openLayers();
     case 'a': e.preventDefault(); return inGame() || state.race ? undefined : ctl.openAtlas();
+    case 'm': e.preventDefault(); return inGame() || state.race ? undefined : ctl.openNear();
     case '?': e.preventDefault(); return $('#keys-dialog').open ? $('#keys-dialog').close() : $('#keys-dialog').showModal();
     default:
   }

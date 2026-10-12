@@ -7,12 +7,14 @@ import { colorMode, refreshRoutes, refreshSites } from './globe.js';
 import { startGame } from './game.js';
 import { startTour } from './tour.js';
 import { openAtlas } from './atlas.js';
+import { openNear } from './near.js';
+import { thisWeekHtml, wireThisWeek } from './thisweek.js';
 import { startFollow, stopFollow } from './follow.js';
 import { renderCharts, setOpen as setChartsOpen } from './charts.js';
 import { startStory, hasStory } from './story.js';
-import { playIcon, followIcon, atlasIcon, gameIcon, chartIcon } from './ui.js';
+import { playIcon, followIcon, atlasIcon, gameIcon, chartIcon, pinIcon } from './ui.js';
 import {
-  state, emit, speciesById, fmtDist, esc, iconHtml, year, isVisible, facetsOf, facetShades,
+  state, emit, speciesById, fmtDist, esc, iconHtml, year, isVisible, facetsOf, facetShades, t, num,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -41,7 +43,7 @@ export function renderSpeciesList() {
       b.innerHTML = `${iconHtml(sp.id, 'sil row-icon')}
         <span class="row-text"><strong>${esc(sp.name)}</strong><small>${esc(sp.region)}</small></span>
         <span class="row-dist">${esc(fmtDist(sp.stats.longestKm))}</span>`;
-      b.title = `Longest track: ${fmtDist(sp.stats.longestKm)}`;
+      b.title = t('Longest track: {d}', { d: fmtDist(sp.stats.longestKm) });
       b.addEventListener('click', () => ctl.select(sp.id));
       list.append(b);
     }
@@ -59,28 +61,30 @@ export function renderInfo() {
     const sp = state.index.species;
     const animals = sp.reduce((n, s) => n + s.stats.animalsShown, 0);
     info.style.removeProperty('--sp');
-    info.innerHTML = `
-      <p class="kicker">Real tracking data · ${sp.length} migrations</p>
-      <h2 class="hero-title">${animals} animals, one planet</h2>
-      <p>Each glowing dot is one tagged animal; its tail is where it went over the last ${settings.trailDays} days.
-      In <b>Season</b> view every year an animal was tracked plays over one calendar year, so you can see who moves when.</p>
+    info.innerHTML = `${thisWeekHtml()}
+      <p class="kicker">${t('Real tracking data · {n} migrations', { n: sp.length })}</p>
+      <h2 class="hero-title">${t('{n} animals, one planet', { n: num(animals) })}</h2>
+      <p>${t('Each glowing dot is one tagged animal; its tail is where it went over the last {n} days. In <b>Season</b> view every year an animal was tracked plays over one calendar year, so you can see who moves when.', { n: settings.trailDays })}</p>
       <div class="actions-row">
-        <button class="btn primary" data-act="tour">${playIcon} A year on Earth</button>
-        <button class="btn" data-act="calendar">${chartIcon} Migration calendar</button>
-        <button class="btn" data-act="game">${gameIcon} Guess where</button>
-        <button class="btn" data-act="atlas">${atlasIcon} Journey atlas</button>
+        <button class="btn primary" data-act="tour">${playIcon} ${t('A year on Earth')}</button>
+        <button class="btn" data-act="calendar">${chartIcon} ${t('Migration calendar')}</button>
+        <button class="btn" data-act="game">${gameIcon} ${t('Guess where')}</button>
+        <button class="btn" data-act="atlas">${atlasIcon} ${t('Journey atlas')}</button>
+        <button class="btn" data-act="near">${pinIcon} ${t('Who passed near…')}</button>
       </div>
-      <p class="hint">Pick a migration for its story, or click any dot to ride along with that animal.
-      <b>Shift-click</b> dots from any species to race them against each other.</p>
-      <details class="credits"><summary>About the data</summary>
-        <p>All tracks are real GPS, Argos satellite or geolocator fixes from published, openly licensed data packages in the
-        <a href="https://datarepository.movebank.org" target="_blank" rel="noopener">Movebank Data Repository</a>.
-        Each migration lists its citation. Silhouettes from <a href="https://www.phylopic.org" target="_blank" rel="noopener">PhyloPic</a>;
-        overlays from <a href="https://earthdata.nasa.gov/gibs" target="_blank" rel="noopener">NASA GIBS</a>.</p></details>`;
+      <p class="hint">${t('Pick a migration for its story, or click any dot to ride along with that animal. <b>Shift-click</b> dots from any species to race them against each other.')}</p>
+      <details class="credits"><summary>${t('About the data')}</summary>
+        <p>${t('All tracks are real GPS, Argos satellite or geolocator fixes from published, openly licensed data packages in the {movebank}. Each migration lists its citation. Silhouettes from {phylopic}; overlays from {gibs}.', {
+    movebank: '<a href="https://datarepository.movebank.org" target="_blank" rel="noopener">Movebank Data Repository</a>',
+    phylopic: '<a href="https://www.phylopic.org" target="_blank" rel="noopener">PhyloPic</a>',
+    gibs: '<a href="https://earthdata.nasa.gov/gibs" target="_blank" rel="noopener">NASA GIBS</a>',
+  })}</p></details>`;
     info.querySelector('[data-act="calendar"]').addEventListener('click', () => setChartsOpen(true));
     info.querySelector('[data-act="game"]').addEventListener('click', () => startGame());
     info.querySelector('[data-act="tour"]').addEventListener('click', () => startTour());
     info.querySelector('[data-act="atlas"]').addEventListener('click', () => openAtlas());
+    info.querySelector('[data-act="near"]').addEventListener('click', () => openNear());
+    wireThisWeek(info);
     return;
   }
   const s = speciesById(state.selected);
@@ -88,7 +92,7 @@ export function renderInfo() {
   const src = s.source;
   const icon = state.assets?.icons?.[s.id];
   const span = year(st.start) === year(st.end) ? year(st.start) : `${year(st.start)}–${year(st.end)}`;
-  const thin = s.processing.thinHours ? `at most one position per ${s.processing.thinHours} h, ` : '';
+  const thin = s.processing.thinHours ? t('at most one position per {h} h, ', { h: s.processing.thinHours }) : '';
   info.style.setProperty('--sp', colorFor(s.id, isDark() ? 'dark' : 'light'));
   info.innerHTML = `
     <div class="species-hero">
@@ -101,26 +105,26 @@ export function renderInfo() {
     </div>
     <p>${esc(s.blurb)}</p>
     <div class="actions-row">
-      ${hasStory(s.id) ? `<button class="btn primary" data-act="story">${playIcon} Tell me the story</button>` : ''}
-      <button class="btn" data-act="follow">${followIcon} Follow the farthest</button>
-      <button class="btn" data-act="charts">${chartIcon} Charts</button>
-      <button class="btn" data-act="atlas">${atlasIcon} Atlas</button>
+      ${hasStory(s.id) ? `<button class="btn primary" data-act="story">${playIcon} ${t('Tell me the story')}</button>` : ''}
+      <button class="btn" data-act="follow">${followIcon} ${t('Follow the farthest')}</button>
+      <button class="btn" data-act="charts">${chartIcon} ${t('Charts')}</button>
+      <button class="btn" data-act="atlas">${atlasIcon} ${t('Atlas')}</button>
     </div>
     <div class="stats">
-      <div class="stat"><b>${st.animalsShown}${st.animalsShown < st.animalsInStudy ? `<small> of ${st.animalsInStudy}</small>` : ''}</b><span>animals shown</span></div>
-      <div class="stat"><b>${span}</b><span>tracked</span></div>
-      <div class="stat"><b>${fmtDist(st.medianKm)}</b><span>typical distance per animal</span></div>
-      <div class="stat"><b>${fmtDist(st.longestKm)}</b><span>longest track</span></div>
+      <div class="stat"><b>${st.animalsShown}${st.animalsShown < st.animalsInStudy ? `<small> ${t('of {n}', { n: st.animalsInStudy })}</small>` : ''}</b><span>${t('animals shown')}</span></div>
+      <div class="stat"><b>${span}</b><span>${t('tracked')}</span></div>
+      <div class="stat"><b>${fmtDist(st.medianKm)}</b><span>${t('typical distance per animal')}</span></div>
+      <div class="stat"><b>${fmtDist(st.longestKm)}</b><span>${t('longest track')}</span></div>
     </div>
     <section id="who" class="who"></section>
-    <details class="credits"><summary>Data &amp; credits</summary>
-      <p><b>Data:</b> ${esc(src.dataCitation)}
+    <details class="credits"><summary>${t('Data & credits')}</summary>
+      <p><b>${t('Data:')}</b> ${esc(src.dataCitation)}
       ${src.doiUrl ? `<a href="${esc(src.doiUrl)}" target="_blank" rel="noopener">${esc(src.doi)}</a>` : ''}
       <span class="license">${src.licenseUrl ? `<a href="${esc(src.licenseUrl)}" target="_blank" rel="noopener">${esc(src.license)}</a>` : esc(src.license)}</span></p>
-      ${src.paperCitation ? `<p><b>Study:</b> ${esc(src.paperCitation)}</p>` : ''}
-      <p class="muted">Shown: the ${st.animalsShown} longest-tracked animals; ${thin}implausibly fast jumps removed; straight lines between fixes.</p>
-      ${s.facets?.length ? `<p class="muted">Sex, age, tagging site and handling come from the study's reference data.</p>` : ''}
-      ${icon ? `<p class="muted">Silhouette: ${esc(icon.attribution)}, <a href="${esc(icon.sourceUrl)}" target="_blank" rel="noopener">PhyloPic</a> (${esc(icon.license)}).</p>` : ''}
+      ${src.paperCitation ? `<p><b>${t('Study:')}</b> ${esc(src.paperCitation)}</p>` : ''}
+      <p class="muted">${t('Shown: the {n} longest-tracked animals; {thin}implausibly fast jumps removed; straight lines between fixes.', { n: st.animalsShown, thin })}</p>
+      ${s.facets?.length ? `<p class="muted">${t('Sex, age, tagging site and handling come from the study\'s reference data.')}</p>` : ''}
+      ${icon ? `<p class="muted">${t('Silhouette:')} ${esc(icon.attribution)}, <a href="${esc(icon.sourceUrl)}" target="_blank" rel="noopener">PhyloPic</a> (${esc(icon.license)}).</p>` : ''}
     </details>`;
   renderWho();
   info.querySelector('[data-act="story"]')?.addEventListener('click', () => startStory(s.id));
@@ -147,25 +151,25 @@ export function renderWho() {
   const facets = facetsOf(id);
   let html = '';
   if (facets.length) {
-    html += `<div class="who-head"><span class="kicker">Who they are</span>
-      <label class="cb-select">Colour by <select id="color-by" aria-label="Colour animals by">
-        <option value="">species</option>
-        ${facets.map((f) => `<option value="${f.key}" ${state.colorBy === f.key ? 'selected' : ''}>${esc(f.label.toLowerCase())}</option>`).join('')}
+    html += `<div class="who-head"><span class="kicker">${t('Who they are')}</span>
+      <label class="cb-select">${t('Colour by')} <select id="color-by" aria-label="${t('Colour animals by')}">
+        <option value="">${t('species')}</option>
+        ${facets.map((f) => `<option value="${f.key}" ${state.colorBy === f.key ? 'selected' : ''}>${esc(t(f.label).toLowerCase())}</option>`).join('')}
       </select></label></div>`;
     for (const f of facets) {
       const shades = state.colorBy === f.key ? facetShades(id, f.key, colorMode()) : null;
-      html += `<div class="facet"><span class="facet-label">${esc(f.label)}</span><div class="chips">${f.values.map((v) => {
+      html += `<div class="facet"><span class="facet-label">${esc(t(f.label))}</span><div class="chips">${f.values.map((v) => {
         const on = !state.hidden.has(`${f.key}=${v.value}`);
-        return `<button class="chip facet-chip" aria-pressed="${on}" data-k="${esc(f.key)}" data-v="${esc(v.value)}" title="${on ? 'Hide' : 'Show'} ${esc(v.value)}">${
-          shades ? `<i class="swatch-dot" style="background:${shades.get(v.value)}"></i>` : ''}${esc(cap(v.value))} <small>${v.count}</small></button>`;
+        return `<button class="chip facet-chip" aria-pressed="${on}" data-k="${esc(f.key)}" data-v="${esc(v.value)}" title="${esc(t(on ? 'Hide {v}' : 'Show {v}', { v: t(v.value) }))}">${
+          shades ? `<i class="swatch-dot" style="background:${shades.get(v.value)}"></i>` : ''}${esc(cap(t(v.value)))} <small>${v.count}</small></button>`;
       }).join('')}</div></div>`;
     }
   }
   if (d?.sites?.length) {
     const stop = sp.processing.stop;
-    html += `<div class="facet"><span class="facet-label">Places they stayed</span>
-      <p class="small muted">${d.sites.length} places where an animal stayed at least ${stop.days} days within ${stop.km} km.
-      ${settings.showStops ? 'Rings on the globe; brighter when in use at this time of year. Click one to see who used it.' : 'Switch on <b>Stopovers</b> in Layers to see them.'}</p></div>`;
+    html += `<div class="facet"><span class="facet-label">${t('Places they stayed')}</span>
+      <p class="small muted">${t('{n} places where an animal stayed at least {days} days within {km} km.', { n: d.sites.length, days: stop.days, km: stop.km })}
+      ${settings.showStops ? t('Rings on the globe; brighter when in use at this time of year. Click one to see who used it.') : t('Switch on <b>Stopovers</b> in Layers to see them.')}</p></div>`;
   }
   el.innerHTML = html;
   el.querySelectorAll('.facet-chip').forEach((b) => b.addEventListener('click', () => toggleFacet(b.dataset.k, b.dataset.v)));

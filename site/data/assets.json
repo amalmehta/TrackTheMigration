@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-11T21:46:17.170Z",
+  "generated": "2026-10-12T04:50:45.671Z",
   "icons": {
     "wildebeest": {
       "file": "icons/wildebeest.svg",
@@ -91,6 +91,34 @@
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "sourceUrl": "https://www.phylopic.org/images/91973860-8980-4c6f-a146-58ff0cf33cf7"
+    },
+    "steppe-eagle": {
+      "file": "icons/steppe-eagle.svg",
+      "attribution": "Andy Wilson",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/c9f94d9a-2e84-4d27-a4fd-ee4ae9b94ff6"
+    },
+    "egyptian-vulture": {
+      "file": "icons/egyptian-vulture.svg",
+      "attribution": "Andy Wilson",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/284766ad-99e2-477a-bf60-9da687b0bc51"
+    },
+    "turkey-vulture": {
+      "file": "icons/turkey-vulture.svg",
+      "attribution": "Andy Wilson",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/1e537d9c-2aa8-4f8e-ad52-cc4841fe4214"
+    },
+    "far-eastern-curlew": {
+      "file": "icons/far-eastern-curlew.svg",
+      "attribution": "Unknown author",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://www.phylopic.org/images/b3f43d07-a214-4859-82fc-7eec69eeb6fe"
     }
   },
   "layers": {

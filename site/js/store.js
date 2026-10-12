@@ -3,6 +3,11 @@
 import { seasonToHours, splitByYear, cumulativeKm } from './tracks.js';
 import { settings } from './settings.js';
 import { colorFor } from './palette.js';
+import {
+  t, num, MONTHS, MONTHS_LONG, fmtDayMonthYear, fmtDayMonth, fmtMonthYearDate,
+} from './i18n.js';
+
+export { MONTHS, MONTHS_LONG, t, num };
 
 export const state = {
   index: null,          // site/data/index.json
@@ -25,6 +30,7 @@ export const state = {
   race: null,           // { racers, day, maxDay, split } while racing
   only: null,           // "species/animal" key: show just this animal (the guessing game)
   tour: false,          // true during A year on Earth
+  near: null,           // { name, lon, lat, r, private } while "who passed near" is open
 };
 
 export const MAX_RACERS = 4;
@@ -137,8 +143,6 @@ export const currentHours = () => {
 
 // ---------- formatting ----------
 
-export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // "Mar–Apr" from days-per-month: the months at ≥ 60% of the peak, as ranges.
 export function busiestMonths(months) {
@@ -160,18 +164,12 @@ export function busiestMonths(months) {
   return ranges.map(([a, b]) => (a === b ? MONTHS[a] : `${MONTHS[a]}–${MONTHS[b]}`)).join(', ');
 }
 
-export const fmtDate = (h) => {
-  const d = new Date(h * 3.6e6);
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-};
-export const fmtSeason = (f) => {
-  const d = new Date(seasonToHours(2001, f) * 3.6e6); // a non-leap year
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-};
-export const fmtMonthYear = (iso) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+export const fmtDate = (h) => fmtDayMonthYear(new Date(h * 3.6e6));
+export const fmtSeason = (f) => fmtDayMonth(new Date(seasonToHours(2001, f) * 3.6e6)); // a non-leap year
+export const fmtMonthYear = (iso) => fmtMonthYearDate(new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, 15)));
 export const kmIn = (km) => (settings.units === 'mi' ? km * 0.621371 : km);
-export const fmtDist = (km) => `${Math.round(kmIn(km)).toLocaleString()} ${settings.units}`;
-export const fmtSpeed = (kmPerDay) => `${kmIn(kmPerDay) < 10 ? kmIn(kmPerDay).toFixed(1) : Math.round(kmIn(kmPerDay)).toLocaleString()} ${settings.units}/day`;
+export const fmtDist = (km) => `${num(Math.round(kmIn(km)))} ${settings.units}`;
+export const fmtSpeed = (kmPerDay) => t('{v} {u}/day', { v: kmIn(kmPerDay) < 10 ? num(+kmIn(kmPerDay).toFixed(1)) : num(Math.round(kmIn(kmPerDay))), u: settings.units });
 export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 export const year = (iso) => iso.slice(0, 4);
 

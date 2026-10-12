@@ -3,10 +3,11 @@
 
 import { positionAt, distanceAt, speedAt, mainAxis, haversineKm, indexAtOrBefore, seasonToHours } from './tracks.js';
 import { colorFor } from './palette.js';
+import { diaryFrame, crossingNow } from './diary.js';
 import { settings } from './settings.js';
 import { map, colorMode, refreshRoutes, viewPadding, setCurtain } from './globe.js';
 import {
-  state, emit, speciesById, fmtDate, fmtDist, fmtSpeed, esc, iconHtml, kmIn, fullAnimal, reducedMotion, dur,
+  state, emit, speciesById, fmtDate, fmtDist, fmtSpeed, esc, iconHtml, kmIn, fullAnimal, reducedMotion, dur, t as tr, num,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -79,7 +80,7 @@ export async function startFollow(speciesId, animal, { fromStory = false } = {})
   flyToAnimal(2600);
   emit('follow', state.follow);
   const sp = speciesById(speciesId);
-  document.getElementById('sr-live').textContent = `Following ${sp.name} ${animal.id}. Press D to hear where it is, Escape to stop.`;
+  document.getElementById('sr-live').textContent = tr('Following {name} {id}. Press D to hear where it is, Escape to stop.', { name: sp.name, id: animal.id });
   ctl.frame();
 }
 
@@ -106,7 +107,7 @@ export function stopFollow() {
 function setCloseUp(on, move = true) {
   closeUp = on;
   $('#hud-alt-3d').setAttribute('aria-pressed', String(on));
-  $('#hud-alt-3d').textContent = on ? 'Back out' : 'See it in 3D';
+  $('#hud-alt-3d').textContent = tr(on ? 'Back out' : 'See it in 3D');
   if (!move || !state.follow) return;
   const alt = state.follow.animal.alt;
   if (on && alt && !nearestAlt(alt, state.t)) {
@@ -161,6 +162,7 @@ export function followFrame() {
     }
   }
   updateHud(head);
+  diaryFrame();
 }
 
 // ---------- the readout ----------
@@ -173,7 +175,8 @@ function renderHud() {
   hud.style.setProperty('--sp', color);
   $('#hud-icon').innerHTML = iconHtml(species, 'sil sil-lg');
   $('#hud-title').textContent = sp.name;
-  $('#hud-sub').textContent = `Animal ${animal.id}`;
+  $('#hud-title').title = sp.name;
+  $('#hud-sub').textContent = tr('Animal {id}', { id: animal.id });
   hud.hidden = false;
   drawProfile();
 }
@@ -188,14 +191,15 @@ function updateHud(head) {
   const moving = !!positionAt(pts, t, gap);
   $('#hud-speed').textContent = v == null ? '—' : fmtSpeed(v);
   const stop = animal.stops?.find(([, , a, b]) => t >= a && t <= b);
-  $('#hud-speed-note').textContent = !moving ? 'not tracked right now'
-    : stop ? `staying put · day ${Math.floor((t - stop[2]) / 24) + 1} of ${Math.max(1, Math.round((stop[3] - stop[2]) / 24))} here`
-      : 'over the last day';
+  const crossing = moving && crossingNow();
+  $('#hud-speed-note').textContent = !moving ? tr('not tracked right now') : crossing ? crossing
+    : stop ? tr('staying put · day {n} of {total} here', { n: Math.floor((t - stop[2]) / 24) + 1, total: Math.max(1, Math.round((stop[3] - stop[2]) / 24)) })
+      : tr('over the last day');
   $('#hud-dist').textContent = fmtDist(distanceAt(pts, animal.cum, t));
-  $('#hud-dist-note').textContent = `of ${fmtDist(animal.km)}`;
+  $('#hud-dist-note').textContent = tr('of {n}', { n: fmtDist(animal.km) });
   const day = Math.max(0, Math.floor((t - pts[0][2]) / 24)) + 1;
-  $('#hud-day').textContent = `Day ${Math.min(day, animal.days + 1).toLocaleString()}`;
-  $('#hud-day-note').textContent = `of ${(animal.days + 1).toLocaleString()} tracked`;
+  $('#hud-day').textContent = tr('Day {n}', { n: num(Math.min(day, animal.days + 1)) });
+  $('#hud-day-note').textContent = tr('of {n} tracked', { n: num(animal.days + 1) });
   // Ground height under the animal (land) or the straight-line distance from the start.
   let place = '—';
   let note = '';
@@ -203,13 +207,13 @@ function updateHud(head) {
     const z = map.queryTerrainElevation(head);
     if (z) { // 0 or null: terrain tiles not loaded yet
       const m = z / (settings.exaggeration || 1);
-      place = settings.units === 'mi' ? `${Math.round(m * 3.28084).toLocaleString()} ft` : `${Math.round(m).toLocaleString()} m`;
-      note = 'ground height';
+      place = settings.units === 'mi' ? `${num(Math.round(m * 3.28084))} ft` : `${num(Math.round(m))} m`;
+      note = tr('ground height');
     }
   }
   if (note === '' && head) {
     place = fmtDist(haversineKm(pts[0], head));
-    note = 'from where it started';
+    note = tr('from where it started');
   }
   $('#hud-place').textContent = place;
   $('#hud-place-note').textContent = note;
@@ -219,31 +223,48 @@ function updateHud(head) {
   $('#hud-hf').hidden = hfv < 0;
   if (hfv >= 0) {
     $('#hud-hf-mark').style.left = `${hfv}%`;
-    $('#hud-hf-val').textContent = `${hfv} / 100${animal.hfSummary ? ` · its median ${animal.hfSummary.median}` : ''}`;
+    $('#hud-hf-val').textContent = `${hfv} / 100${animal.hfSummary ? ` · ${tr('its median {n}', { n: animal.hfSummary.median })}` : ''}`;
   }
   // Conditions at the nearest fix (NASA greenness on land, sea temperature at sea).
   const condKey = state.data.get(species)?.condKey;
   const cv = animal.cond && hi >= 0 ? animal.cond[hi] : null;
   $('#hud-cond').hidden = cv == null;
   if (cv != null) {
-    $('#hud-cond-label').textContent = condKey === 'sst' ? 'Sea temperature here' : 'Greenness here (NDVI)';
-    $('#hud-cond-val').textContent = condKey === 'sst' ? `${cv.toFixed(1)} °C` : cv.toFixed(2);
+    $('#hud-cond-label').textContent = tr(condKey === 'sst' ? 'Sea temperature here' : 'Greenness here (NDVI)');
+    $('#hud-cond-val').textContent = condKey === 'sst' ? `${num(+cv.toFixed(1))} °C` : num(+cv.toFixed(2));
     const frac = condKey === 'sst' ? cv / 32 : cv;
     $('#hud-cond-mark').style.left = `${Math.max(0, Math.min(1, frac)) * 100}%`;
     $('#hud-cond-bar').style.background = `linear-gradient(90deg, ${(state.assets?.layers?.[condKey]?.stops || []).join(',')})`;
+  }
+  // Wind 100 m up along its heading, for the travelling step it's on.
+  $('#hud-wind').hidden = !animal.wind;
+  if (animal.wind) {
+    const w = windAt(animal.wind, t);
+    const kmh = (v) => `${Math.round(settings.units === 'mi' ? v * 0.621371 : v)} ${settings.units === 'mi' ? 'mph' : 'km/h'}`;
+    $('#hud-wind-val').textContent = !w ? tr('resting, or no reading')
+      : Math.abs(w[2]) >= Math.abs(w[3]) ? tr(w[2] >= 0 ? '{v} tailwind' : '{v} headwind', { v: kmh(Math.abs(w[2])) })
+        : tr(w[3] >= 0 ? '{v} crosswind from the left' : '{v} crosswind from the right', { v: kmh(Math.abs(w[3])) });
   }
   // Flight height above the ground, from the in-flight GPS reading nearest now (within 3 h).
   const alt = animal.alt ? nearestAlt(animal.alt, t) : null;
   $('#hud-alt').hidden = !animal.alt;
   if (animal.alt) {
     $('#hud-alt-val').textContent = alt && alt[4] != null
-      ? `${settings.units === 'mi' ? `${Math.round(alt[4] * 3.28084).toLocaleString()} ft` : `${alt[4].toLocaleString()} m`} above the ground`
-      : 'not flying right now';
+      ? tr('{h} above the ground', { h: settings.units === 'mi' ? `${num(Math.round(alt[4] * 3.28084))} ft` : `${num(alt[4])} m` })
+      : tr('not flying right now');
   }
   profile?.move(t);
 }
 
 // ---------- the journey profile (two small multiples sharing time) ----------
+
+// The wind step [t0, t1, tail, cross, kmDay] the animal is on at t, if travelling.
+function windAt(wind, t) {
+  let lo = 0, hi = wind.length - 1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (wind[mid][0] <= t) lo = mid; else hi = mid - 1; }
+  const w = wind[lo];
+  return w && t >= w[0] && t <= w[1] ? w : null;
+}
 
 function nearestAlt(alt, t) {
   let lo = 0, hi = alt.length - 1;
@@ -265,8 +286,9 @@ function drawProfile() {
   const m = { l: 38, r: 8, t: 18, b: 18 };
   // A third row when we have conditions (land/sea) or flight heights (birds).
   const condKey = state.data.get(species)?.condKey;
-  const third = animal.cond ? { kind: 'cond', label: condKey === 'sst' ? 'Sea temperature (°C)' : 'Greenness (NDVI)' }
-    : animal.alt ? { kind: 'alt', label: `Height above ground (${settings.units === 'mi' ? 'ft' : 'm'})` } : null;
+  const third = animal.cond ? { kind: 'cond', label: tr(condKey === 'sst' ? 'Sea temperature (°C)' : 'Greenness (NDVI)') }
+    : animal.alt ? { kind: 'alt', label: tr('Height above ground ({u})', { u: settings.units === 'mi' ? 'ft' : 'm' }) }
+      : animal.wind ? { kind: 'wind', label: tr('Tailwind 100 m up (km/h)') } : null;
   const H = m.t + rowH * (third ? 3 : 2) + 22 * (third ? 2 : 1) + m.b;
   const x = d3.scaleTime().domain([pts[0][2] * 3.6e6, pts[pts.length - 1][2] * 3.6e6]).range([m.l, W - m.r]);
 
@@ -283,7 +305,7 @@ function drawProfile() {
   const ySpd = d3.scaleLinear().domain([0, speedMax]).nice(3).range([m.t + rowH * 2 + 22, m.t + rowH + 22]);
 
   const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
-    .attr('role', 'img').attr('aria-label', `Journey profile for animal ${animal.id}: ${axis === 'lat' ? 'latitude' : 'longitude'} and speed over time`);
+    .attr('role', 'img').attr('aria-label', tr(axis === 'lat' ? 'Journey profile for animal {id}: latitude and speed over time' : 'Journey profile for animal {id}: longitude and speed over time', { id: animal.id }));
 
   const grid = (y, label, fmt = d3.format('~s')) => {
     const g = svg.append('g').attr('class', 'axis');
@@ -293,12 +315,12 @@ function drawProfile() {
       .attr('x', m.l - 5).attr('y', (d) => y(d) + 3).attr('text-anchor', 'end').text(fmt);
     svg.append('text').attr('class', 'row-label').attr('x', W - m.r).attr('y', y.range()[1] - 6).attr('text-anchor', 'end').text(label);
   };
-  const deg = axis === 'lat' ? 'Latitude' : 'Longitude';
+  const deg = tr(axis === 'lat' ? 'Latitude' : 'Longitude');
   grid(yPos, deg, (v) => {
     const w = axis === 'lon' ? ((v + 540) % 360) - 180 : v;
     return `${Math.abs(+w.toFixed(1))}°${axis === 'lat' ? (w >= 0 ? 'N' : 'S') : (w >= 0 ? 'E' : 'W')}`;
   });
-  grid(ySpd, `Speed (${settings.units}/day)`);
+  grid(ySpd, tr('Speed ({u}/day)', { u: settings.units }));
 
   const line = (y) => d3.line().defined((d) => d.v != null && !d.gap).x((d) => x(d.t * 3.6e6)).y((d) => y(d.v)).curve(d3.curveMonotoneX);
   svg.append('path').datum(posSeries).attr('class', 'series').attr('stroke', color).attr('d', line(yPos));
@@ -314,6 +336,16 @@ function drawProfile() {
       grid(y3, third.label, condKey === 'sst' ? d3.format('.0f') : d3.format('.1f'));
       svg.append('path').datum(series).attr('class', 'series').attr('stroke', color).attr('stroke-dasharray', null)
         .attr('d', d3.line().defined((d) => d.v != null).x((d) => x(d.t * 3.6e6)).y((d) => y3(d.v)).curve(d3.curveMonotoneX));
+    } else if (third.kind === 'wind') {
+      // One bar per travelling step, from the zero line: up for tailwind, down for headwind.
+      const lim = Math.max(10, d3.max(animal.wind, (w) => Math.abs(w[2])) || 10);
+      const y3 = d3.scaleLinear().domain([-lim, lim]).nice(2).range([top + rowH, top]);
+      grid(y3, third.label, d3.format('d'));
+      svg.append('g').selectAll('rect').data(animal.wind).join('rect')
+        .attr('x', (w) => x(w[0] * 3.6e6)).attr('width', (w) => Math.max(1, x(w[1] * 3.6e6) - x(w[0] * 3.6e6)))
+        .attr('y', (w) => y3(Math.max(0, w[2]))).attr('height', (w) => Math.abs(y3(w[2]) - y3(0)))
+        .attr('fill', color).attr('opacity', (w) => (w[2] >= 0 ? 0.9 : 0.4));
+      svg.append('line').attr('class', 'zero').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y3(0)).attr('y2', y3(0));
     } else {
       const f = settings.units === 'mi' ? 3.28084 : 1;
       const series = animal.alt.filter((a) => a[4] != null).map((a) => ({ t: a[0], v: Math.max(0, a[4]) * f }));

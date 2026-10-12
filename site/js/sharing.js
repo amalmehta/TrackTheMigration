@@ -9,9 +9,10 @@ import { record, canRecord } from './record.js';
 import { startTour } from './tour.js';
 import { startFollow } from './follow.js';
 import { startStory } from './story.js';
+import { openNear } from './near.js';
 import { applyFilter } from './panel.js';
-import { toast } from './ui.js';
-import { state, on, speciesById, facetsOf } from './store.js';
+import { toast, download } from './ui.js';
+import { state, on, speciesById, facetsOf, t } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 let ctl = null; // { select, setMode, setPlaying, frame }
@@ -26,24 +27,24 @@ export function initSharing(controller) {
     sharePop.hidden = !sharePop.hidden;
     $('#share-btn').setAttribute('aria-expanded', String(!sharePop.hidden));
     $('#share-record').disabled = !canRecord();
-    if (!canRecord()) $('#share-record').title = 'This browser can\u2019t record video';
+    if (!canRecord()) $('#share-record').title = t('This browser can\u2019t record video');
   });
   document.addEventListener('pointerdown', (e) => {
     if (!sharePop.hidden && !sharePop.contains(e.target) && !$('#share-btn').contains(e.target)) sharePop.hidden = true;
   });
   const copy = async (text, ok) => {
-    try { await navigator.clipboard.writeText(text); toast(ok); } catch { toast(`Copy this: ${text}`); }
+    try { await navigator.clipboard.writeText(text); toast(ok); } catch { toast(t('Copy this: {text}', { text })); }
     sharePop.hidden = true;
   };
-  $('#share-link').addEventListener('click', () => { writeHash(true); copy(fullUrl(), 'Link copied. It opens at this exact moment.'); });
+  $('#share-link').addEventListener('click', () => { writeHash(true); copy(fullUrl(), t('Link copied. It opens at this exact moment.')); });
   $('#share-embed').addEventListener('click', () => {
     writeHash(true);
     const src = fullUrl().replace(/(#|$)/, (m) => `${location.search ? '&' : '?'}embed=1${m}`);
     copy(`<iframe src="${src}" width="960" height="560" style="border:0;border-radius:12px" title="Track the Migration" allow="fullscreen" loading="lazy"></iframe>`,
-      'Embed code copied. Paste it into any web page.');
+      t('Embed code copied. Paste it into any web page.'));
   });
   $('#share-record').addEventListener('click', () => { sharePop.hidden = true; startRecording(); });
-  for (const ev of ['selection', 'mode', 'follow', 'story', 'story-scene', 'filter', 'overlay']) on(ev, () => writeHash());
+  for (const ev of ['selection', 'mode', 'follow', 'story', 'story-scene', 'filter', 'overlay', 'near']) on(ev, () => writeHash());
   map.on('moveend', () => writeHash());
 }
 
@@ -98,6 +99,7 @@ export async function applySharedView(view) {
       if (view.mode === 'season' && view.frac != null) state.frac = view.frac;
     }
     if (view.camera && !animal) map.jumpTo({ ...view.camera, padding: viewPadding() });
+    if (view.near) openNear(view.near, { frame: !animal && !view.camera });
     ctl.frame();
     return true;
   } finally {
@@ -118,8 +120,8 @@ function startRecording() {
     seconds: 12,
     getText: () => {
       const sp = state.follow ? speciesById(state.follow.species) : state.selected !== 'all' ? speciesById(state.selected) : null;
-      const title = state.race ? 'The race' : sp ? `${sp.name}${state.follow ? ` · ${state.follow.animal.id}` : ''}` : 'Every migration';
-      const subtitle = state.story ? $('#story-title').textContent : sp ? sp.region : `${state.index.species.length} species, real tracking data`;
+      const title = state.race ? t('The race') : sp ? `${sp.name}${state.follow ? ` · ${state.follow.animal.id}` : ''}` : t('Every migration');
+      const subtitle = state.story ? $('#story-title').textContent : sp ? sp.region : t('{n} species, real tracking data', { n: state.index.species.length });
       return { title, subtitle, date: $('#time-label').textContent, year: $('#time-year').textContent };
     },
     onTick: (left) => { $('#rec-left').textContent = `${Math.ceil(left)} s`; },
@@ -127,13 +129,8 @@ function startRecording() {
       recording = null;
       $('#rec').hidden = true;
       const name = `track-the-migration-${state.selected}-${new Date().toISOString().slice(0, 10)}.${ext}`;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = name;
-      document.body.append(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
-      toast(`Saved ${name}`);
+      download(blob, name);
+      toast(t('Saved {name}', { name }));
     },
   });
   btn.onclick = () => recording?.stop();

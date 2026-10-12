@@ -90,6 +90,44 @@ export function flightFixes(pts, { maxGapHours = 2, minKmh = 15, max = 2500 } = 
   return runs.filter((_, r) => r % k === 0).flat();
 }
 
+// Every time a track came within `radiusKm` of a place: the closest approach
+// along each straight line between fixes (skipping tracking gaps), merged
+// into visits; a new visit starts after `revisitDays` out of range.
+// Returns [{ t, km, lon, lat }] in time order, one per visit, at its closest.
+export function passesNear(pts, [lon0, lat0], radiusKm, { maxGapHours = Infinity, revisitDays = 14 } = {}) {
+  const kx = 111.32 * Math.cos((lat0 * Math.PI) / 180);
+  const ky = 110.57;
+  const local = (p) => {
+    let dLon = (p[0] - lon0) % 360;
+    if (dLon > 180) dLon -= 360;
+    if (dLon < -180) dLon += 360;
+    return [dLon * kx, (p[1] - lat0) * ky];
+  };
+  const visits = [];
+  let lastIn = -Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    const [ax, ay] = local(a);
+    let [x, y, t] = [ax, ay, a[2]];
+    if (b && b[2] - a[2] <= maxGapHours) { // closest point on the line to the next fix
+      const [bx, by] = local(b);
+      const dx = bx - ax;
+      const dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      const u = len2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0;
+      [x, y, t] = [ax + u * dx, ay + u * dy, a[2] + u * (b[2] - a[2])];
+    }
+    const km = Math.hypot(x, y);
+    if (km > radiusKm) continue;
+    const here = { t, km, lon: lon0 + x / kx, lat: lat0 + y / ky };
+    const v = visits[visits.length - 1];
+    if (v && t - lastIn <= revisitDays * 24) { if (km < v.km) visits[visits.length - 1] = here; } else visits.push(here);
+    lastIn = t;
+  }
+  return visits;
+}
+
 // Index of the last point with time <= t (binary search), or -1.
 export function indexAtOrBefore(pts, t) {
   let lo = 0;
@@ -232,6 +270,51 @@ export function mainAxis(tracks) {
     lon += (maxLon - minLon) * Math.cos(toRad((minLat + maxLat) / 2));
   }
   return lon > lat ? 'lon' : 'lat';
+}
+
+// --- Timing across years ---
+
+// When an animal crosses the halfway line between the two ends of its range
+// (10th and 90th percentile along `axis`), and stays across it for at least
+// `minStayDays`. A robust "mid-migration date" that works for any species.
+// Needs a range of at least `minSpan` degrees. Returns [{ t, dir: +1 | -1 }].
+export function halfwayCrossings(pts, axis = 'lat', { minStayDays = 10, minSpan = 4, maxGapHours = Infinity } = {}) {
+  const k = axis === 'lat' ? 1 : 0;
+  const v = pts.map((p) => p[k]).sort((a, b) => a - b);
+  if (v.length < 10) return [];
+  const lo = v[Math.floor(v.length * 0.1)];
+  const hi = v[Math.floor(v.length * 0.9)];
+  if (hi - lo < minSpan) return [];
+  const mid = (lo + hi) / 2;
+  const out = [];
+  let side = Math.sign(pts[0][k] - mid) || -1;
+  for (let i = 1; i < pts.length; i++) {
+    const s = Math.sign(pts[i][k] - mid) || side;
+    if (s === side) continue;
+    if (pts[i][2] - pts[i - 1][2] > maxGapHours) { side = s; continue; } // crossed during a gap: date unknown
+    // Must stay on the new side for a while, or it's just wandering near the line.
+    let j = i;
+    while (j + 1 < pts.length && (Math.sign(pts[j + 1][k] - mid) || s) === s) j++;
+    if (pts[j][2] - pts[i][2] >= minStayDays * 24 || j === pts.length - 1) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const u = (mid - a[k]) / (b[k] - a[k] || 1);
+      out.push({ t: a[2] + u * (b[2] - a[2]), dir: s });
+      side = s;
+    }
+  }
+  return out;
+}
+
+// Least-squares slope of y on x, or null with fewer than `minPoints`.
+export function slope(xs, ys, minPoints = 6) {
+  if (xs.length < minPoints) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length;
+  const my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < xs.length; i++) { num += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) ** 2; }
+  return den ? num / den : null;
 }
 
 // --- Stopovers: places an animal stayed for a while ---
