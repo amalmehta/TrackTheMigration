@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-12T03:52:52.058Z",
+  "generated": "2026-10-12T05:55:22.818Z",
   "groups": {
     "land": "Land mammals",
     "marine": "Marine animals",
@@ -74,7 +74,352 @@
           "n": 32206
         },
         "condition": "vegetation",
-        "flyingAnimals": 0
+        "flyingAnimals": 0,
+        "windSteps": 0,
+        "crossings": 0
+      },
+      "weeks": {
+        "names": [
+          [
+            "Machakos",
+            "Machakos",
+            "Machakos"
+          ],
+          [
+            "Kenya",
+            "Kenia",
+            "Kenya"
+          ]
+        ],
+        "bins": [
+          {
+            "n": 54,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 48,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 48,
+            "kmDay": 4,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 47,
+            "kmDay": 4,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 20,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 44,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 42,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 42,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 42,
+            "kmDay": 2,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 40,
+            "kmDay": 2,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 51,
+            "kmDay": 2,
+            "heading": null,
+            "at": [
+              35.7,
+              -1.3
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 48,
+            "kmDay": 2,
+            "heading": null,
+            "at": [
+              35.7,
+              -1.3
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 47,
+            "kmDay": 2,
+            "heading": null,
+            "at": [
+              35.5,
+              -1.4
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 47,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              35.4,
+              -1.3
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 47,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              35.4,
+              -1.3
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 45,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              35.6,
+              -1.3
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 46,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              35.7,
+              -1.3
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 44,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              35.4,
+              -1.4
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 42,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              35.5,
+              -1.4
+            ],
+            "place": [
+              "country",
+              1
+            ]
+          },
+          {
+            "n": 58,
+            "kmDay": 4,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 57,
+            "kmDay": 4,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 56,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.9,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 55,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          },
+          {
+            "n": 54,
+            "kmDay": 3,
+            "heading": null,
+            "at": [
+              36.8,
+              -1.8
+            ],
+            "place": [
+              "near",
+              0,
+              1
+            ]
+          }
+        ]
       },
       "processing": {
         "maxKmh": 20,
@@ -427,7 +772,403 @@
         "sites": 36,
         "footprint": null,
         "condition": "sst",
-        "flyingAnimals": 0
+        "flyingAnimals": 0,
+        "windSteps": 0,
+        "crossings": 0
+      },
+      "weeks": {
+        "names": [
+          [
+            "Pacific Ocean",
+            "océano Pacífico",
+            "océan Pacifique"
+          ],
+          [
+            "Cabo San Lucas",
+            "Cabo San Lucas",
+            "Cabo San Lucas"
+          ],
+          [
+            "Mexico",
+            "México",
+            "Mexique"
+          ],
+          [
+            "Ciudad Constitución",
+            "Ciudad Constitución",
+            "Ciudad Constitución"
+          ],
+          [
+            "Guerrero Negro",
+            "Guerrero Negro",
+            "Guerrero Negro"
+          ],
+          [
+            "Ensenada",
+            "Ensenada",
+            "Ensenada"
+          ],
+          [
+            "Santa Barbara",
+            "Santa Barbara",
+            "Santa Barbara"
+          ],
+          [
+            "United States",
+            "Estados Unidos",
+            "États-Unis"
+          ],
+          [
+            "Monterey",
+            "Monterey",
+            "Monterey"
+          ],
+          [
+            "Santa Rosa",
+            "Santa Rosa",
+            "Santa Rosa"
+          ],
+          [
+            "Arcata",
+            "Arcata",
+            "Arcata"
+          ],
+          [
+            "Vicente Guerrero",
+            "Vicente Guerrero",
+            "Vicente Guerrero"
+          ]
+        ],
+        "bins": [
+          {
+            "n": 21,
+            "kmDay": 34,
+            "heading": null,
+            "at": [
+              -112.8,
+              21
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 19,
+            "kmDay": 37,
+            "heading": null,
+            "at": [
+              -110.9,
+              22
+            ],
+            "place": [
+              "off",
+              1,
+              2
+            ]
+          },
+          {
+            "n": 18,
+            "kmDay": 34,
+            "heading": null,
+            "at": [
+              -114.6,
+              18.8
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 15,
+            "kmDay": 31,
+            "heading": null,
+            "at": [
+              -111.8,
+              24.2
+            ],
+            "place": [
+              "off",
+              3,
+              2
+            ]
+          },
+          {
+            "n": 13,
+            "kmDay": 38,
+            "heading": null,
+            "at": [
+              -109.7,
+              22.7
+            ],
+            "place": [
+              "off",
+              1,
+              2
+            ]
+          },
+          {
+            "n": 15,
+            "kmDay": 31,
+            "heading": 301,
+            "at": [
+              -113,
+              26.1
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 11,
+            "kmDay": 44,
+            "heading": null,
+            "at": [
+              -110.4,
+              22.3
+            ],
+            "place": [
+              "off",
+              1,
+              2
+            ]
+          },
+          {
+            "n": 12,
+            "kmDay": 44,
+            "heading": null,
+            "at": [
+              -113.6,
+              26
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 9,
+            "kmDay": 43,
+            "heading": null,
+            "at": [
+              -113.1,
+              25.1
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 8,
+            "kmDay": 46,
+            "heading": 316,
+            "at": [
+              -114.3,
+              27.1
+            ],
+            "place": [
+              "off",
+              4,
+              2
+            ]
+          },
+          {
+            "n": 7,
+            "kmDay": 22,
+            "heading": null,
+            "at": [
+              -118.7,
+              31.8
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 6,
+            "kmDay": 24,
+            "heading": 319,
+            "at": [
+              -117.6,
+              31.8
+            ],
+            "place": [
+              "off",
+              5,
+              2
+            ]
+          },
+          {
+            "n": 4,
+            "kmDay": 41,
+            "heading": 329,
+            "at": [
+              -114.9,
+              27.5
+            ],
+            "place": [
+              "off",
+              4,
+              2
+            ]
+          },
+          {
+            "n": 4,
+            "kmDay": 22,
+            "heading": null,
+            "at": [
+              -120,
+              34.1
+            ],
+            "place": [
+              "off",
+              6,
+              7
+            ]
+          },
+          {
+            "n": 11,
+            "kmDay": 31,
+            "heading": null,
+            "at": [
+              -119.9,
+              34.1
+            ],
+            "place": [
+              "off",
+              6,
+              7
+            ]
+          },
+          {
+            "n": 16,
+            "kmDay": 46,
+            "heading": 324,
+            "at": [
+              -122,
+              36.1
+            ],
+            "place": [
+              "off",
+              8,
+              7
+            ]
+          },
+          {
+            "n": 23,
+            "kmDay": 30,
+            "heading": null,
+            "at": [
+              -122.9,
+              36.2
+            ],
+            "place": [
+              "off",
+              8,
+              7
+            ]
+          },
+          {
+            "n": 24,
+            "kmDay": 33,
+            "heading": null,
+            "at": [
+              -123.3,
+              38
+            ],
+            "place": [
+              "off",
+              9,
+              7
+            ]
+          },
+          {
+            "n": 32,
+            "kmDay": 38,
+            "heading": null,
+            "at": [
+              -124.4,
+              41.3
+            ],
+            "place": [
+              "off",
+              10,
+              7
+            ]
+          },
+          {
+            "n": 29,
+            "kmDay": 42,
+            "heading": 139,
+            "at": [
+              -117.2,
+              30.5
+            ],
+            "place": [
+              "off",
+              11,
+              2
+            ]
+          },
+          {
+            "n": 29,
+            "kmDay": 49,
+            "heading": 146,
+            "at": [
+              -114.8,
+              28.2
+            ],
+            "place": [
+              "off",
+              4,
+              2
+            ]
+          },
+          {
+            "n": 23,
+            "kmDay": 58,
+            "heading": 148,
+            "at": [
+              -110.8,
+              21.9
+            ],
+            "place": [
+              "off",
+              1,
+              2
+            ]
+          },
+          {
+            "n": 20,
+            "kmDay": 55,
+            "heading": 133,
+            "at": [
+              -102.5,
+              15.2
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          },
+          {
+            "n": 16,
+            "kmDay": 34,
+            "heading": 141,
+            "at": [
+              -117.3,
+              22.8
+            ],
+            "place": [
+              "sea",
+              0
+            ]
+          }
+        ]
       },
       "processing": {
         "maxKmh": 15,
@@ -832,6 +1573,233 @@
       }
     },
     {
+      "id": "steppe-eagle",
+      "name": "Steppe Eagle",
+      "scientific": "Aquila nipalensis",
+      "group": "birds",
+      "region": "Russian and Kazakh steppe to Arabia and East Africa",
+      "blurb": "Endangered steppe eagles followed by GPS for up to seven years between the steppe and their wintering grounds. The study found young eagles chose stronger tailwinds and more direct routes than experienced ones, and that winds blowing the right way prompted the birds to set off.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Age-dependent response to anthropogenic habitat during migration of an endangered raptor",
+        "paperCitation": "",
+        "authors": [
+          "Efrat, Ron",
+          "Lehnardt, Yael",
+          "Bragin, Alexander",
+          "Bragin, Evgeny",
+          "Avgar, Tal",
+          "Katzner, Todd",
+          "Sapir, Nir"
+        ],
+        "issued": "2025-07-26",
+        "doi": "10.5441/001/1.695",
+        "doiUrl": "https://doi.org/10.5441/001/1.695",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.3548",
+        "dataCitation": "Efrat, Ron; Lehnardt, Yael; Bragin, Alexander; Bragin, Evgeny; Avgar, Tal; Katzner, Todd; Sapir, Nir (2025) Data from: Age-dependent response to anthropogenic habitat during migration of an endangered raptor. Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/3eda5fa0-7266-4d03-91d1-a1f67129775b/content"
+        ]
+      },
+      "facets": [
+        {
+          "key": "stage",
+          "label": "Age when tagged"
+        },
+        {
+          "key": "handling",
+          "label": "Handling"
+        }
+      ],
+      "stats": {
+        "rawFixes": 517997,
+        "usableFixes": 517997,
+        "animalsInStudy": 21,
+        "animalsShown": 21,
+        "pointsShown": 16067,
+        "start": "2018-09-20T02:30:00.000Z",
+        "end": "2024-12-31T17:12:00.000Z",
+        "medianKm": 36353,
+        "longestKm": 106812,
+        "bbox": [
+          19.561,
+          7.799,
+          71.824,
+          56.142
+        ],
+        "sites": 40,
+        "footprint": {
+          "median": 22,
+          "bands": [
+            17,
+            52,
+            28,
+            3
+          ],
+          "n": 16035
+        },
+        "condition": null,
+        "flyingAnimals": 0
+      },
+      "processing": {
+        "maxKmh": 90,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
+      }
+    },
+    {
+      "id": "egyptian-vulture",
+      "name": "Egyptian Vulture",
+      "scientific": "Neophron percnopterus",
+      "group": "birds",
+      "region": "Eastern Turkey and the Caucasus to Ethiopia, Sudan and Yemen",
+      "blurb": "Sixteen endangered Egyptian vultures tracked by satellite across the Middle East and East Africa. They spent most of their time in small core areas, and strongly favoured highways, power lines and towns, which offer roosts and food but also risks.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Satellite tracking a wide‐ranging endangered vulture species to target conservation actions in the Middle East and East Africa",
+        "paperCitation": "Buechley ER, McGrady MJ, Çoban E, Şekercioğlu ÇH (2018) Satellite tracking a wide‐ranging endangered vulture species to target conservation actions in the Middle East and East Africa. Biodiversity and Conservation 27(9): 2293-2310. doi:10.1007/s10531-018-1538-6",
+        "authors": [
+          "Buechley, Evan R.",
+          "Şekercioğlu, Çağan H."
+        ],
+        "issued": "2019-12-02",
+        "doi": "10.5441/001/1.385gk270",
+        "doiUrl": "https://doi.org/10.5441/001/1.385gk270",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1006",
+        "dataCitation": "Buechley, Evan R.; Şekercioğlu, Çağan H. (2019) Data from: Satellite tracking a wide‐ranging endangered vulture species to target conservation actions in the Middle East and East Africa. Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/63385ce4-d174-4f08-89cf-fa8d37785073/content"
+        ]
+      },
+      "facets": [],
+      "stats": {
+        "rawFixes": 577466,
+        "usableFixes": 575489,
+        "animalsInStudy": 16,
+        "animalsShown": 16,
+        "pointsShown": 12872,
+        "start": "2012-08-18T13:00:00.000Z",
+        "end": "2019-07-01T18:00:00.000Z",
+        "medianKm": 19587,
+        "longestKm": 61648,
+        "bbox": [
+          32.175,
+          1.508,
+          50.622,
+          41.614
+        ],
+        "sites": 40,
+        "footprint": {
+          "median": 29,
+          "bands": [
+            3,
+            44,
+            46,
+            7
+          ],
+          "n": 12859
+        },
+        "condition": null,
+        "flyingAnimals": 6
+      },
+      "processing": {
+        "maxKmh": 90,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
+      }
+    },
+    {
+      "id": "turkey-vulture",
+      "name": "Turkey Vulture",
+      "scientific": "Cathartes aura",
+      "group": "birds",
+      "region": "North America to northern South America, and within Argentina",
+      "blurb": "Turkey vultures from four populations on two continents, tracked for up to nearly ten years. Some fly from western North America to northern South America; others barely move. They soar on thermals, so warm, sunny weather lets them travel fast for little effort.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Environmental drivers of variability in the movement ecology of turkey vultures (Cathartes aura) in North and South America",
+        "paperCitation": "Dodge S, Bohrer G, Bildstein K, Davidson SC, Weinzierl R, Mechard MJ, Barber D, Kays R, Brandes D, Han J (2014) Environmental drivers of variability in the movement ecology of turkey vultures (Cathartes aura) in North and South America. Philosophical Transactions of the Royal Society B 20130195. doi:10.1098/rstb.2013.0195",
+        "authors": [
+          "Bildstein, Keith L.",
+          "Barber, David",
+          "Bechard, Marc J."
+        ],
+        "issued": "2014-04-14",
+        "doi": "10.5441/001/1.46ft1k05",
+        "doiUrl": "https://doi.org/10.5441/001/1.46ft1k05",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.362",
+        "dataCitation": "Bildstein, Keith L.; Barber, David; Bechard, Marc J. (2014) Data from: Environmental drivers of variability in the movement ecology of turkey vultures (Cathartes aura) in North and South America. Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/d6a353a9-2291-4e2e-9323-5a39ed6976c2/content"
+        ]
+      },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        }
+      ],
+      "stats": {
+        "rawFixes": 215719,
+        "usableFixes": 215719,
+        "animalsInStudy": 19,
+        "animalsShown": 19,
+        "pointsShown": 20996,
+        "start": "2003-11-14T16:00:00.000Z",
+        "end": "2013-03-19T03:00:00.000Z",
+        "medianKm": 18995,
+        "longestKm": 79787,
+        "bbox": [
+          -123.766,
+          -39.821,
+          -48.579,
+          54.018
+        ],
+        "sites": 40,
+        "footprint": {
+          "median": 29,
+          "bands": [
+            7,
+            31,
+            45,
+            16
+          ],
+          "n": 20596
+        },
+        "condition": null,
+        "flyingAnimals": 0
+      },
+      "processing": {
+        "maxKmh": 90,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
+      }
+    },
+    {
       "id": "bar-tailed-godwit",
       "name": "Bar-tailed Godwit",
       "scientific": "Limosa lapponica",
@@ -980,6 +1948,93 @@
         "thinHours": 6,
         "maxGapHours": 240,
         "maxAnimals": 25,
+        "maxPoints": 1500,
+        "stop": {
+          "km": 30,
+          "days": 3
+        }
+      }
+    },
+    {
+      "id": "far-eastern-curlew",
+      "name": "Far Eastern Curlew",
+      "scientific": "Numenius madagascariensis",
+      "group": "birds",
+      "region": "Australia to north-east China and Russia",
+      "blurb": "Endangered far eastern curlews tracked from Australia, where they spend over half of each year, to breeding grounds in north-east Asia. Birds from south-east Australia set off earlier, arrived earlier and bred farther south than birds from the north-west.",
+      "groupName": "Birds",
+      "source": {
+        "title": "Data from: Study \"Full annual cycle tracking of Far Eastern Curlew (Numenius madagascariensis)\"",
+        "paperCitation": "Morrick ZN, Lilleyman A, Fuller RA, Bush R, Coleman JT, Garnett ST, Gerasimov YN, Jessop R, Ma Z, Maglio G, Minton CDT, Syroechkovskiy E, Woodworth BK. 2021. Differential population trends align with migratory connectivity in an endangered shorebird. Conserv Sci Pract. doi:10.1111/csp2.594",
+        "authors": [
+          "Lilleyman, Amanda",
+          "Coleman, Jonathan T.",
+          "Maglio, Grace",
+          "Bush, Robert",
+          "Jessop, Roz",
+          "O'Brien, Gavin",
+          "Stanioch, Damien",
+          "Minton, Clive D.T.",
+          "Fuller, Richard A.",
+          "Garnett, Stephen T.",
+          "Woodworth, Bradley K."
+        ],
+        "issued": "2021-12-03",
+        "doi": "10.5441/001/1.v8r49083",
+        "doiUrl": "https://doi.org/10.5441/001/1.v8r49083",
+        "license": "CC0 1.0 Universal",
+        "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/",
+        "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.1313",
+        "dataCitation": "Lilleyman, Amanda; Coleman, Jonathan T.; Maglio, Grace; Bush, Robert; Jessop, Roz; O'Brien, Gavin; Stanioch, Damien; Minton, Clive D.T.; Fuller, Richard A.; Garnett, Stephen T.; Woodworth, Bradley K. (2021) Data from: Study \"Full annual cycle tracking of Far Eastern Curlew (Numenius madagascariensis)\". Movebank Data Repository.",
+        "fileUrls": [
+          "https://datarepository.movebank.org/server/api/core/bitstreams/7208165e-8015-4929-9a51-9c8d93bb2177/content"
+        ]
+      },
+      "facets": [
+        {
+          "key": "site",
+          "label": "Tagged at"
+        },
+        {
+          "key": "sex",
+          "label": "Sex"
+        }
+      ],
+      "stats": {
+        "rawFixes": 41301,
+        "usableFixes": 41301,
+        "animalsInStudy": 17,
+        "animalsShown": 17,
+        "pointsShown": 9844,
+        "start": "2017-11-21T20:24:00.000Z",
+        "end": "2021-10-31T21:18:00.000Z",
+        "medianKm": 11487,
+        "longestKm": 74722,
+        "bbox": [
+          113.907,
+          -38.739,
+          156.104,
+          56.359
+        ],
+        "sites": 40,
+        "footprint": {
+          "median": 19,
+          "bands": [
+            10,
+            47,
+            36,
+            7
+          ],
+          "n": 4521
+        },
+        "condition": null,
+        "flyingAnimals": 0
+      },
+      "processing": {
+        "maxKmh": 100,
+        "thinHours": 12,
+        "maxGapHours": 240,
+        "maxAnimals": 40,
         "maxPoints": 1500,
         "stop": {
           "km": 30,
