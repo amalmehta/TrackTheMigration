@@ -118,7 +118,7 @@ function installLayers() {
     paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 2, 1, 4.5, 0.55, 6.5, 0], 'raster-fade-duration': 0 },
   });
 
-  for (const id of ['routes', 'sites', 'trails', 'heads', 'focus', 'guess']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
+  for (const id of ['routes', 'sites', 'curtain', 'trails', 'heads', 'focus', 'guess']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
 
   map.addLayer({
     id: 'routes', type: 'line', source: 'routes',
@@ -157,6 +157,17 @@ function installLayers() {
       'circle-stroke-width': 1.4,
       'circle-stroke-opacity': ['+', 0.35, ['*', ['get', 'now'], 0.65]],
       'circle-pitch-alignment': 'map',
+    },
+  });
+  // Flight height under a followed bird: thin walls as tall as it flew above the ground (×CURTAIN_EXAGGERATION).
+  map.addLayer({
+    id: 'curtain', type: 'fill-extrusion', source: 'curtain', minzoom: 6,
+    paint: {
+      'fill-extrusion-color': ['get', 'color'],
+      'fill-extrusion-height': ['get', 'h'],
+      'fill-extrusion-base': 0,
+      'fill-extrusion-opacity': 0.6,
+      'fill-extrusion-vertical-gradient': true,
     },
   });
   for (const sp of SPECIES) {
@@ -472,6 +483,39 @@ function updateOverlayDate() {
 }
 
 // ---------- camera ----------
+
+// alt: [[hours, lon, lat, heightSea, heightGround], …] → extruded segments.
+// Real flight heights (tens to hundreds of metres) would be a pixel or two
+// tall at any zoom that shows the route, so the walls are exaggerated.
+export const CURTAIN_EXAGGERATION = 6;
+export function setCurtain(alt, color) {
+  const src = map.getSource('curtain');
+  if (!src) return;
+  if (!alt) { src.setData(EMPTY); return; }
+  const features = [];
+  const half = 70; // wall half-width in metres
+  for (let i = 1; i < alt.length; i++) {
+    const a = alt[i - 1];
+    const b = alt[i];
+    if (b[0] - a[0] > 2 || a[4] == null || b[4] == null) continue; // only continuous flight readings
+    const h = Math.max(0, (a[4] + b[4]) / 2);
+    if (h < 5) continue; // on (or near) the ground
+    const lat = (a[2] + b[2]) / 2;
+    const kx = 1 / (111320 * Math.cos((lat * Math.PI) / 180));
+    const ky = 1 / 110540;
+    const dx = (b[1] - a[1]) / kx;
+    const dy = (b[2] - a[2]) / ky;
+    const len = Math.hypot(dx, dy) || 1;
+    const ox = (-dy / len) * half * kx;
+    const oy = (dx / len) * half * ky;
+    features.push({
+      type: 'Feature',
+      properties: { color, h: h * CURTAIN_EXAGGERATION },
+      geometry: { type: 'Polygon', coordinates: [[[a[1] + ox, a[2] + oy], [b[1] + ox, b[2] + oy], [b[1] - ox, b[2] - oy], [a[1] - ox, a[2] - oy], [a[1] + ox, a[2] + oy]]] },
+    });
+  }
+  src.setData({ type: 'FeatureCollection', features });
+}
 
 export function setGuess(features) {
   map.getSource('guess')?.setData({ type: 'FeatureCollection', features });

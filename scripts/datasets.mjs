@@ -16,6 +16,7 @@
 //   ref           the study's reference data (sex, age, tagging site…) for filters
 //   files         several tracking CSVs instead of one, as [suffix, uuid] pairs
 //   stop          { km, days }: what counts as a stopover (defaults per group)
+//   altAnimals    birds only: also include up to this many animals with recorded flight height
 
 const ARGOS_GOOD = ['3', '2', '1', 'A', 'G', ''];
 
@@ -136,9 +137,11 @@ export const DATASETS = [
     blurb:
       'Satellite-tracked white storks from nine countries, some followed for a decade, flying to Africa by the western route over Gibraltar or the eastern route over the Bosphorus and Israel.',
     package: 'aae5d565-fd19-4fd4-8e2c-b6b5ca88ac5a',
-    file: 'f0147626-8366-4b23-9a55-b2a76e75acbc',
+    // Argos for the long tracks, plus the study's GPS file, which records flight height.
+    files: [['', 'f0147626-8366-4b23-9a55-b2a76e75acbc'], ['-gps', '84f0b4f6-360c-4f4a-930a-f3b1ee17ccb0']],
     ref: '4076248b-11f8-4e2c-8e3c-4187e1f8b68b',
     argosClasses: ARGOS_GOOD,
+    altAnimals: 10,
     maxKmh: 80, thinHours: 12, maxGapHours: 24 * 10, maxAnimals: 40, maxPoints: 1200,
   },
   {

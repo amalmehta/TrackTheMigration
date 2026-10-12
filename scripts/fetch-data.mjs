@@ -17,12 +17,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATASETS, GROUPS } from './datasets.mjs';
 import {
-  speedFilter, thinByTime, capPoints, unwrapLongitudes, trackLengthKm, findStops, clusterStops,
+  speedFilter, thinByTime, capPoints, flightFixes, unwrapLongitudes, trackLengthKm, findStops, clusterStops,
 } from '../site/js/tracks.js';
 import { buildFacets } from './reference.mjs';
 import { footprintSampler, footprintSummary } from './footprint.mjs';
+import { conditionsSampler } from './conditions.mjs';
+import { groundSampler } from './elevation.mjs';
 
 let sampleFootprint = null; // created on first use (fetches NASA's palette)
+let groundAt = null;        // ground-height sampler, created on first use
 
 // Where an animal counts as having "stopped": within km for at least days.
 const STOP_DEFAULTS = { land: { km: 6, days: 10 }, marine: { km: 40, days: 7 }, birds: { km: 30, days: 3 } };
@@ -104,7 +107,7 @@ async function readCsvRows(file) {
   return rows;
 }
 
-async function readFixes(file, ds, animals = new Map()) {
+async function readFixes(file, ds, animals = new Map(), heights = new Map()) {
   const rl = createInterface({ input: createReadStream(file), crlfDelay: Infinity });
   let col = null;
   let rows = 0;
@@ -129,6 +132,14 @@ async function readFixes(file, ds, animals = new Map()) {
     const id = get('individual-local-identifier') || get('tag-local-identifier');
     if (!animals.has(id)) animals.set(id, []);
     animals.get(id).push([lon, lat, ts / 3.6e6]);
+    // Flight height (birds only: collars on land animals record the ground).
+    if (ds.group === 'birds') {
+      const h = parseFloat(get('height-raw') || get('height-above-msl'));
+      if (Number.isFinite(h) && h > -500 && h < 9000) {
+        if (!heights.has(id)) heights.set(id, []);
+        heights.get(id).push([ts / 3.6e6, lon, lat, h]);
+      }
+    }
     if (ds.stopovers) {
       const te = Date.parse(get('end-timestamp').replace(' ', 'T') + 'Z');
       if (Number.isFinite(te) && te > ts) animals.get(id).push([lon, lat, te / 3.6e6]);
@@ -167,10 +178,11 @@ async function build(ds) {
   }
   const meta = await packageMeta(ds);
   const animals = new Map();
+  const heights = new Map();
   let rows = 0;
   let kept = 0;
   for (const { path } of files) {
-    const r = await readFixes(path, ds, animals);
+    const r = await readFixes(path, ds, animals, heights);
     rows += r.rows;
     kept += r.kept;
   }
@@ -185,6 +197,18 @@ async function build(ds) {
   }
   tracks.sort((a, b) => b.km - a.km);
   const chosen = tracks.slice(0, ds.maxAnimals);
+  // Make room for birds that recorded flight height, even if their tracks are shorter.
+  // Height fixes as track points [lon, lat, hours, height], in time order.
+  const heightPts = (id) => (heights.get(id) || []).map(([time, lon, lat, alt]) => [lon, lat, time, alt]).sort((a, b) => a[2] - b[2]);
+  if (ds.altAnimals) {
+    const extra = tracks.slice(ds.maxAnimals)
+      .map((t) => ({ t, n: flightFixes(heightPts(t.id)).length }))
+      .filter(({ n }) => n >= 50)
+      .sort((a, b) => b.n - a.n)
+      .map(({ t }) => t)
+      .slice(0, ds.altAnimals);
+    chosen.push(...extra);
+  }
   if (chosen.length === 0) throw new Error(`no usable tracks for ${ds.id}`);
 
   // Who each animal is (from the study's reference data), and the groupings worth filtering by.
@@ -211,11 +235,33 @@ async function build(ds) {
       hfAll = hfAll.concat(v);
     }
   }
+  // Real conditions at each fix: greenness under land animals, sea temperature under marine ones.
+  const condBy = new Map();
+  let condKey = null;
+  const cond = await conditionsSampler(RAW, ds.group);
+  if (cond) {
+    condKey = cond.key;
+    for (const t of chosen) condBy.set(t.id, await cond.sample(t.pts));
+  }
+
+  // Flight height: GPS height minus the ground under it, for birds that recorded it.
+  const altBy = new Map();
+  for (const t of chosen) {
+    // Only fixes taken in flight, kept as whole flights so the curtain is continuous.
+    const pts = flightFixes(heightPts(t.id));
+    if (pts.length < 20) continue;
+    const ground = await (groundAt ??= groundSampler(RAW))(pts);
+    altBy.set(t.id, pts.map((p, i) => [round(p[2], 1), round(p[0], 4), round(p[1], 4), Math.round(p[3]), ground[i] == null ? null : Math.round(p[3] - ground[i])]));
+  }
+
   const animalsOut = chosen.map(({ stops, ...t }) => ({
     ...t,
     attrs: attrs.get(t.id) || {},
     stops: stops.map((st) => [round(st.lon, 3), round(st.lat, 3), round(st.start, 1), round(st.end, 1)]),
     ...(hfByAnimal.has(t.id) ? { hf: hfByAnimal.get(t.id), hfSummary: footprintSummary(hfByAnimal.get(t.id)) } : {}),
+    ...(condBy.has(t.id) ? { cond: condBy.get(t.id) } : {}),
+    // [hours, lon, lat, height above sea (m), height above ground (m) or null]
+    ...(altBy.has(t.id) ? { alt: altBy.get(t.id) } : {}),
   }));
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -232,11 +278,11 @@ async function build(ds) {
 
   await writeFile(
     join(OUT, `${ds.id}.json`),
-    JSON.stringify({ id: ds.id, maxGapHours: ds.maxGapHours, facets, sites, animals: animalsOut }),
+    JSON.stringify({ id: ds.id, maxGapHours: ds.maxGapHours, facets, sites, condKey, animals: animalsOut }),
   );
 
   const {
-    package: _p, file: _f, files: _fs, ref: _r, stop: _st, argosClasses: _a, stopovers: _s, minPoints: _m,
+    package: _p, file: _f, files: _fs, ref: _r, stop: _st, argosClasses: _a, stopovers: _s, minPoints: _m, altAnimals: _aa,
     maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, ...info
   } = ds;
   return {
@@ -257,6 +303,8 @@ async function build(ds) {
       bbox: [minLon, minLat, maxLon, maxLat].map((v) => round(v, 3)),
       sites: sites.length,
       footprint: ds.group === 'marine' ? null : footprintSummary(hfAll),
+      condition: condKey,
+      flyingAnimals: altBy.size,
     },
     processing: { maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, stop },
     _abstract: meta.abstract,
@@ -276,6 +324,7 @@ async function writeOverview(ids) {
       sites: d.sites.slice(0, 15),
       animals: d.animals.map((a) => ({
         id: a.id, km: a.km, days: a.days,
+        attrs: a.attrs, hfMedian: a.hfSummary?.median ?? null, flies: !!a.alt,
         pts: capPoints(a.pts, OVERVIEW_POINTS).map(([lon, lat, t]) => [round(lon, 3), round(lat, 3), Math.round(t)]),
       })),
     };

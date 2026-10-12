@@ -43,7 +43,7 @@ export function decodeView(hash) {
   if (![...p.keys()].length) return null;
   const view = {
     species: p.get('s') || 'all',
-    story: p.has('st') ? Math.max(0, Number(p.get('st')) - 1) : null,
+    story: /^\d+$/.test(p.get('st') || '') ? Math.max(0, Number(p.get('st')) - 1) : null,
     follow: p.get('f'),
     overlay: p.get('ov'),
     colorBy: p.get('cb'),
@@ -55,12 +55,13 @@ export function decodeView(hash) {
     t: null,
   };
   const t = p.get('t');
-  if (t && /^\d{4}-\d{2}-\d{2}$/.test(t)) {
+  const th = t && /^\d{4}-\d{2}-\d{2}$/.test(t) ? Date.parse(`${t}T12:00:00Z`) / 3.6e6 : NaN;
+  if (Number.isFinite(th)) {
     view.mode = 'dates';
-    view.t = Date.parse(`${t}T12:00:00Z`) / 3.6e6;
+    view.t = th;
   }
   const d = p.get('d');
-  if (d && /^\d{2}-\d{2}$/.test(d)) {
+  if (d && /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(d)) {
     const [mm, dd] = d.split('-').map(Number);
     view.mode = 'season';
     view.frac = (Date.UTC(2001, mm - 1, dd, 12) - Date.UTC(2001, 0, 1)) / (365 * 86400000);

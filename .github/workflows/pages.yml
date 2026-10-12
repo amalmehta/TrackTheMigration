@@ -24,8 +24,18 @@ jobs:
           node-version: 22
       - run: npm test
 
+  smoke:
+    # Load the site in headless Chrome (preinstalled on the runner) and click through the main flows.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run smoke
+
   deploy:
-    needs: test
+    needs: [test, smoke]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

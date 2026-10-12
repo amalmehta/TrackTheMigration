@@ -91,7 +91,7 @@ export async function startTour() {
   ctl.setMode('season');
   state.frac = 0;
   if (!activity) buildActivity();
-  tour = { current: null, recent: [], counts: new Map(), segStart: -Infinity, ended: false };
+  tour = { current: null, recent: [], counts: new Map(), segStart: -Infinity, ended: false, speed: tour?.speed ?? $('#speed-select').value };
   state.tour = true;
   document.body.classList.add('touring');
   $('#tour').hidden = false;
@@ -105,6 +105,7 @@ export async function startTour() {
 
 export function stopTour() {
   if (!tour) return;
+  ctl.setSpeed(tour.speed);
   tour = null;
   state.tour = false;
   document.body.classList.remove('touring');

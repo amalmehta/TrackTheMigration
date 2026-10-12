@@ -72,6 +72,24 @@ export function capPoints(pts, max) {
   return out;
 }
 
+// The fixes taken in flight: both ends of every step no more than
+// `maxGapHours` apart and faster than `minKmh`. Over `max`, every k-th
+// flight is kept whole rather than thinning all of them.
+export function flightFixes(pts, { maxGapHours = 2, minKmh = 15, max = 2500 } = {}) {
+  const runs = [];
+  let last = -1; // index of the last fix added to the current run
+  for (let i = 1; i < pts.length; i++) {
+    const dt = pts[i][2] - pts[i - 1][2];
+    if (dt <= 0 || dt > maxGapHours || haversineKm(pts[i - 1], pts[i]) / dt <= minKmh) continue;
+    if (last !== i - 1) runs.push([pts[i - 1]]);
+    runs[runs.length - 1].push(pts[i]);
+    last = i;
+  }
+  const total = runs.reduce((n, r) => n + r.length, 0);
+  const k = Math.max(1, Math.ceil(total / max));
+  return runs.filter((_, r) => r % k === 0).flat();
+}
+
 // Index of the last point with time <= t (binary search), or -1.
 export function indexAtOrBefore(pts, t) {
   let lo = 0;

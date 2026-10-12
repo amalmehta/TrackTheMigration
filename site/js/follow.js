@@ -1,10 +1,10 @@
 // Follow one animal: the camera rides along, a readout shows where it is and
 // how fast it's going, and a profile of the whole journey can be scrubbed.
 
-import { positionAt, distanceAt, speedAt, mainAxis, haversineKm, indexAtOrBefore } from './tracks.js';
+import { positionAt, distanceAt, speedAt, mainAxis, haversineKm, indexAtOrBefore, seasonToHours } from './tracks.js';
 import { colorFor } from './palette.js';
 import { settings } from './settings.js';
-import { map, colorMode, refreshRoutes, viewPadding } from './globe.js';
+import { map, colorMode, refreshRoutes, viewPadding, setCurtain } from './globe.js';
 import {
   state, emit, speciesById, fmtDate, fmtDist, fmtSpeed, esc, iconHtml, kmIn, fullAnimal, reducedMotion, dur,
 } from './store.js';
@@ -16,9 +16,11 @@ let userMoved = false;
 let flying = false;
 let profile = null;      // the drawn profile chart (for the playhead)
 let panelWasTucked = false;
+let closeUp = false;     // the low, steep camera for seeing a bird's flight in 3D
 
 const ZOOM = { land: 9.2, marine: 4.6, birds: 4.4 };
 const PITCH = { land: 58, marine: 35, birds: 35 };
+const CLOSE_UP = { zoom: 9.5, pitch: 72 };
 
 export function initFollow(controller) {
   ctl = controller;
@@ -28,6 +30,7 @@ export function initFollow(controller) {
     $('#hud-recenter').hidden = true;
     flyToAnimal(1200);
   });
+  $('#hud-alt-3d').addEventListener('click', () => setCloseUp(!closeUp));
   // Any drag or rotate by the person pauses the camera ride (zooming doesn't).
   for (const ev of ['dragstart', 'rotatestart', 'pitchstart']) {
     map.on(ev, (e) => {
@@ -48,18 +51,25 @@ export async function startFollow(speciesId, animal, { fromStory = false } = {})
   if (!animal) return;
   const d = state.data.get(speciesId);
   if (!state.follow) prevMode = state.mode;
+  setCloseUp(false, false);
   state.follow = { species: speciesId, animal, gap: d.maxGapHours };
   state.highlight = null;
   const [t0, t1] = [animal.pts[0][2], animal.pts[animal.pts.length - 1][2]];
-  if (!(state.t >= t0 && state.t <= t1)) {
-    // In Season view, carry the time of year over to the animal's first year.
+  if (state.mode === 'season') {
+    // Carry the time of year over to the animal's first year that has it.
     state.t = t0;
-  }
+    const [y0, y1] = [t0, t1].map((h) => new Date(h * 3.6e6).getUTCFullYear());
+    for (let y = y0; y <= y1; y++) {
+      const h = seasonToHours(y, state.frac);
+      if (h >= t0 && h <= t1) { state.t = h; break; }
+    }
+  } else if (!(state.t >= t0 && state.t <= t1)) state.t = t0;
   ctl.setMode('dates');
   refreshRoutes();
   userMoved = false;
   $('#hud-recenter').hidden = true;
   renderHud();
+  setCurtain(animal.alt || null, colorFor(speciesId, 'dark'));
   document.body.classList.add('following');
   // On narrower screens the panel and the readout would squeeze the view: tuck the panel away.
   if (!panelWasTucked && window.innerWidth < 1400 && window.innerWidth >= 720 && !$('#panel').classList.contains('collapsed')) {
@@ -75,8 +85,10 @@ export async function startFollow(speciesId, animal, { fromStory = false } = {})
 
 export function stopFollow() {
   if (!state.follow) return;
+  setCloseUp(false, false);
   state.follow = null;
   profile = null;
+  setCurtain(null);
   $('#hud').hidden = true;
   document.body.classList.remove('following');
   if (panelWasTucked) {
@@ -87,6 +99,25 @@ export function stopFollow() {
   refreshRoutes();
   emit('follow', null);
   ctl.frame();
+}
+
+// Dive in to see the flight as walls of height (jumping ahead to the next
+// flight if it's on the ground), or climb back out.
+function setCloseUp(on, move = true) {
+  closeUp = on;
+  $('#hud-alt-3d').setAttribute('aria-pressed', String(on));
+  $('#hud-alt-3d').textContent = on ? 'Back out' : 'See it in 3D';
+  if (!move || !state.follow) return;
+  const alt = state.follow.animal.alt;
+  if (on && alt && !nearestAlt(alt, state.t)) {
+    const next = alt.find((a) => a[0] > state.t) || alt[0];
+    state.t = next[0];
+    ctl.frame();
+  }
+  if (on) ctl.setPlaying(false); // even at 1 day/s a stork crosses the close-up view in a blink
+  userMoved = false;
+  $('#hud-recenter').hidden = true;
+  flyToAnimal(2400);
 }
 
 function headNow() {
@@ -108,7 +139,7 @@ function flyToAnimal(duration) {
   const group = speciesById(state.follow.species).group;
   flying = true;
   map.flyTo({
-    center: p, zoom: ZOOM[group], pitch: PITCH[group], bearing: map.getBearing(),
+    center: p, zoom: closeUp ? CLOSE_UP.zoom : ZOOM[group], pitch: closeUp ? CLOSE_UP.pitch : PITCH[group], bearing: map.getBearing(),
     padding: viewPadding(), duration: dur(duration), essential: true,
   }, { follow: true });
   map.once('moveend', () => { flying = false; });
@@ -190,10 +221,37 @@ function updateHud(head) {
     $('#hud-hf-mark').style.left = `${hfv}%`;
     $('#hud-hf-val').textContent = `${hfv} / 100${animal.hfSummary ? ` · its median ${animal.hfSummary.median}` : ''}`;
   }
+  // Conditions at the nearest fix (NASA greenness on land, sea temperature at sea).
+  const condKey = state.data.get(species)?.condKey;
+  const cv = animal.cond && hi >= 0 ? animal.cond[hi] : null;
+  $('#hud-cond').hidden = cv == null;
+  if (cv != null) {
+    $('#hud-cond-label').textContent = condKey === 'sst' ? 'Sea temperature here' : 'Greenness here (NDVI)';
+    $('#hud-cond-val').textContent = condKey === 'sst' ? `${cv.toFixed(1)} °C` : cv.toFixed(2);
+    const frac = condKey === 'sst' ? cv / 32 : cv;
+    $('#hud-cond-mark').style.left = `${Math.max(0, Math.min(1, frac)) * 100}%`;
+    $('#hud-cond-bar').style.background = `linear-gradient(90deg, ${(state.assets?.layers?.[condKey]?.stops || []).join(',')})`;
+  }
+  // Flight height above the ground, from the in-flight GPS reading nearest now (within 3 h).
+  const alt = animal.alt ? nearestAlt(animal.alt, t) : null;
+  $('#hud-alt').hidden = !animal.alt;
+  if (animal.alt) {
+    $('#hud-alt-val').textContent = alt && alt[4] != null
+      ? `${settings.units === 'mi' ? `${Math.round(alt[4] * 3.28084).toLocaleString()} ft` : `${alt[4].toLocaleString()} m`} above the ground`
+      : 'not flying right now';
+  }
   profile?.move(t);
 }
 
 // ---------- the journey profile (two small multiples sharing time) ----------
+
+function nearestAlt(alt, t) {
+  let lo = 0, hi = alt.length - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (alt[mid][0] < t) lo = mid + 1; else hi = mid; }
+  const cands = [alt[lo], alt[lo - 1]].filter(Boolean);
+  const best = cands.sort((a, b) => Math.abs(a[0] - t) - Math.abs(b[0] - t))[0];
+  return best && Math.abs(best[0] - t) <= 3 ? best : null;
+}
 
 function drawProfile() {
   const { species, animal, gap } = state.follow;
@@ -205,7 +263,11 @@ function drawProfile() {
   const W = el.clientWidth || 300;
   const rowH = 56;
   const m = { l: 38, r: 8, t: 18, b: 18 };
-  const H = m.t + rowH * 2 + 22 + m.b;
+  // A third row when we have conditions (land/sea) or flight heights (birds).
+  const condKey = state.data.get(species)?.condKey;
+  const third = animal.cond ? { kind: 'cond', label: condKey === 'sst' ? 'Sea temperature (°C)' : 'Greenness (NDVI)' }
+    : animal.alt ? { kind: 'alt', label: `Height above ground (${settings.units === 'mi' ? 'ft' : 'm'})` } : null;
+  const H = m.t + rowH * (third ? 3 : 2) + 22 * (third ? 2 : 1) + m.b;
   const x = d3.scaleTime().domain([pts[0][2] * 3.6e6, pts[pts.length - 1][2] * 3.6e6]).range([m.l, W - m.r]);
 
   // Series: position along the main axis, and speed per leg (km/day).
@@ -243,6 +305,24 @@ function drawProfile() {
   svg.append('path').datum(speedSeries).attr('class', 'area').attr('fill', color)
     .attr('d', d3.area().defined((d) => d.v != null).x((d) => x(d.t * 3.6e6)).y0(ySpd(0)).y1((d) => ySpd(d.v)).curve(d3.curveMonotoneX));
   svg.append('path').datum(speedSeries).attr('class', 'series').attr('stroke', color).attr('d', line(ySpd));
+  if (third) {
+    const top = m.t + rowH * 2 + 44;
+    if (third.kind === 'cond') {
+      const series = pts.map((p, i) => ({ t: p[2], v: animal.cond[i], gap: false }));
+      const ext = d3.extent(series.filter((d) => d.v != null), (d) => d.v);
+      const y3 = d3.scaleLinear().domain(ext[0] == null ? [0, 1] : ext).nice(3).range([top + rowH, top]);
+      grid(y3, third.label, condKey === 'sst' ? d3.format('.0f') : d3.format('.1f'));
+      svg.append('path').datum(series).attr('class', 'series').attr('stroke', color).attr('stroke-dasharray', null)
+        .attr('d', d3.line().defined((d) => d.v != null).x((d) => x(d.t * 3.6e6)).y((d) => y3(d.v)).curve(d3.curveMonotoneX));
+    } else {
+      const f = settings.units === 'mi' ? 3.28084 : 1;
+      const series = animal.alt.filter((a) => a[4] != null).map((a) => ({ t: a[0], v: Math.max(0, a[4]) * f }));
+      const y3 = d3.scaleLinear().domain([0, d3.quantile(series.map((d) => d.v).sort(d3.ascending), 0.98) || 100]).nice(3).range([top + rowH, top]);
+      grid(y3, third.label);
+      svg.append('g').selectAll('circle').data(series).join('circle').attr('r', 1.6).attr('fill', color).attr('opacity', 0.7)
+        .attr('cx', (d) => x(d.t * 3.6e6)).attr('cy', (d) => y3(Math.min(d.v, y3.domain()[1])));
+    }
+  }
 
   // Time axis
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b + 2})`)

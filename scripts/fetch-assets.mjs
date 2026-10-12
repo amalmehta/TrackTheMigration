@@ -11,6 +11,7 @@ import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENV_LAYERS } from '../site/js/environment.js';
+import { topologyRings } from './topojson.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ICONS = join(ROOT, 'site', 'icons');
@@ -88,6 +89,19 @@ async function legends() {
   return out;
 }
 
+// World land outline for the atlas mini-maps (Natural Earth 1:110m, public
+// domain, via the world-atlas package). Rounded to 0.1°: small and plenty.
+async function land() {
+  const topo = await json('https://unpkg.com/world-atlas@2/land-110m.json');
+  const rings = topologyRings(topo, 'land')
+    .map((r) => r.map(([lon, lat]) => [Math.round(lon * 10) / 10, Math.round(lat * 10) / 10]))
+    .filter((r) => r.length >= 4);
+  await writeFile(join(ROOT, 'site', 'data', 'land.json'), JSON.stringify(rings));
+  console.log(`  ${rings.length} land rings`);
+}
+
+console.log('▸ Land outline (Natural Earth via world-atlas)');
+await land();
 console.log('▸ Silhouettes (PhyloPic)');
 const icons = await silhouettes();
 console.log('▸ Overlay legends (NASA Worldview)');

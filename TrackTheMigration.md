@@ -143,6 +143,19 @@ Decided without asking (v5):
 - Sound is off by default. Pitch follows latitude (pentatonic; marine low, land middle, birds high) and loudness follows speed relative to the group.
 - Frame rate on a real GPU couldn't be measured here (the browser pane stayed hidden), so per-frame CPU time was measured instead.
 
+Asked and answered (2026-10-11, fourth "keep going"):
+- Build the Journey atlas, Conditions along the route, Flight altitude in 3D, and a Code health pass.
+
+Decided without asking (v6):
+- Conditions: one NASA layer per group, sampled at build time per fix. Land animals get vegetation greenness and marine animals get sea surface temperature. Birds get flight height instead.
+- Flight height comes from the white stork study's GPS file (heights recorded per fix). Only fixes taken in flight are kept: steps of 2 h or less, faster than 15 km/h. Two storks qualify (93412A, 54983B); the rest were sampled too sparsely.
+- 3D walls are exaggerated ×6 and the button's tooltip says so. Readout numbers are real heights above the ground.
+- The atlas uses the overview file and a 110 m land outline. Cards are canvases drawn lazily, not maps. It opens with the **a** key.
+- Code health:
+  - app.js split into panel, layers, map-input, sharing and ui modules.
+  - A review found 12 bugs, all fixed.
+  - A dependency-free headless-Chrome smoke test now gates every deploy.
+
 CHANGELOG:
 
 - 2026-10-09 — created
@@ -168,3 +181,4 @@ CHANGELOG:
 - 2026-10-11 — v3: shareable links (URL hash, Share button); who-they-are filters and colour-by from study reference data; stopover detection, stopover rings, a 'Places they stayed' chart and 'staying put' in the readout; four more migrations (pronghorn, elk, white-fronted goose, Hudsonian godwit) with stories and silhouettes; palette re-optimised for 13 species; 56 tests
 - 2026-10-11 — v4: compare & race (split screen, leaderboard, distance chart); human impact layers (footprint, population, night lights) plus footprint per fix in the readout and charts; guess-where game; embed mode and 12-second video export from the Share menu; 61 tests
 - 2026-10-11 — v5: faster first load (overview file, on-demand species); keyboard control, spoken descriptions, reduced-motion setting, shortcuts dialog; A year on Earth guided tour; Listen to the migration (Web Audio sonification); 63 tests
+- 2026-10-11 — v6: journey atlas (a small map of every animal, filter, sort, search); conditions along the route (NASA greenness or sea temperature per fix: readout, profile, monthly chart); white stork flight heights with a 3D curtain close-up; code health (app.js split into modules, 12 review fixes, browser smoke test in CI); 72 tests

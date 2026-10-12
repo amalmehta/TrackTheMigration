@@ -5,7 +5,7 @@ import { STORIES } from './stories.js';
 import { colorFor } from './palette.js';
 import { settings, updateSettings } from './settings.js';
 import { map, frameBounds, frameSpecies, headBounds, viewPadding } from './globe.js';
-import { state, emit, speciesById, fmtDist, esc, iconHtml, year, dur } from './store.js';
+import { state, emit, speciesById, fmtDist, esc, iconHtml, year, dur, isVisible } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 let ctl = null;   // { select, setMode, setPlaying, frame, follow, stopFollow, setSpeed }
@@ -29,7 +29,8 @@ export function initStory(controller) {
 export async function startStory(id, scene = 0) {
   if (state.follow) ctl.stopFollow();
   if (state.selected !== id) await ctl.select(id, { frame: false });
-  saved = { overlay: settings.overlay, speed: $('#speed-select').value, mode: state.mode };
+  // Restarting mid-story keeps the settings from before the first start.
+  if (!state.story) saved = { overlay: settings.overlay, speed: $('#speed-select').value, mode: state.mode };
   state.story = { species: id, index: -1 };
   document.body.classList.add('in-story');
   const sp = speciesById(id);
@@ -110,7 +111,8 @@ async function go(i) {
 
   // Follow an animal, or set the time and frame the view.
   if (sc.follow === 'longest') {
-    const longest = [...state.data.get(id).animals].sort((a, b) => b.km - a.km)[0];
+    const longest = state.data.get(id).animals.filter(isVisible).sort((a, b) => b.km - a.km)[0]
+      || [...state.data.get(id).animals].sort((a, b) => b.km - a.km)[0];
     await ctl.follow(id, longest, { fromStory: true });
     ctl.setPlaying(true);
     return;

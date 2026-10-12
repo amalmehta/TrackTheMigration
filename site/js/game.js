@@ -62,7 +62,7 @@ export async function startGame() {
   if (state.story) ctl.stopStory();
   if (state.follow) ctl.stopFollow();
   if (state.race) ctl.stopRace();
-  game = { round: 0, total: 0, used: new Set(), results: [], phase: 'idle' };
+  game = { round: 0, total: 0, used: new Set(), results: [], phase: 'idle', mode: state.mode };
   document.body.classList.add('gaming');
   $('#game').hidden = false;
   emit('game', true);
@@ -71,6 +71,7 @@ export async function startGame() {
 
 export function stopGame() {
   if (!game) return;
+  const { mode } = game;
   game = null;
   state.only = null;
   setGuess([]);
@@ -78,7 +79,7 @@ export function stopGame() {
   $('#game').hidden = true;
   ctl.setPlaying(false);
   emit('game', false);
-  ctl.select('all');
+  ctl.select('all').then(() => ctl.setMode(mode));
 }
 
 async function nextRound() {

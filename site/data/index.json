@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-11T21:53:09.999Z",
+  "generated": "2026-10-12T03:52:52.058Z",
   "groups": {
     "land": "Land mammals",
     "marine": "Marine animals",
@@ -72,7 +72,9 @@
             0
           ],
           "n": 32206
-        }
+        },
+        "condition": "vegetation",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 20,
@@ -139,7 +141,9 @@
             0
           ],
           "n": 5954
-        }
+        },
+        "condition": "vegetation",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 20,
@@ -207,7 +211,9 @@
             0
           ],
           "n": 40249
-        }
+        },
+        "condition": "vegetation",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 20,
@@ -275,7 +281,9 @@
             0
           ],
           "n": 32876
-        }
+        },
+        "condition": "vegetation",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 25,
@@ -346,7 +354,9 @@
             0
           ],
           "n": 41024
-        }
+        },
+        "condition": "vegetation",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 20,
@@ -415,7 +425,9 @@
           53.118
         ],
         "sites": 36,
-        "footprint": null
+        "footprint": null,
+        "condition": "sst",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 15,
@@ -486,7 +498,9 @@
           -15.825
         ],
         "sites": 19,
-        "footprint": null
+        "footprint": null,
+        "condition": "sst",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 15,
@@ -559,7 +573,9 @@
           41.719
         ],
         "sites": 27,
-        "footprint": null
+        "footprint": null,
+        "condition": "sst",
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 10,
@@ -602,7 +618,8 @@
         "repositoryUrl": "https://datarepository.movebank.org/handle/10255/move.743",
         "dataCitation": "Berthold, Peter; Kaatz, Christoph; Kaatz, Michael; Querner, Ulrich; van den Bossche, Willem; Chernetsov, Nikita; Fiedler, Wolfgang; Wikelski, Martin (2022) Data from: Study \"MPIAB Argos white stork tracking (1991-2017)\". Movebank Data Repository.",
         "fileUrls": [
-          "https://datarepository.movebank.org/server/api/core/bitstreams/f0147626-8366-4b23-9a55-b2a76e75acbc/content"
+          "https://datarepository.movebank.org/server/api/core/bitstreams/f0147626-8366-4b23-9a55-b2a76e75acbc/content",
+          "https://datarepository.movebank.org/server/api/core/bitstreams/84f0b4f6-360c-4f4a-930a-f3b1ee17ccb0/content"
         ]
       },
       "facets": [
@@ -620,14 +637,14 @@
         }
       ],
       "stats": {
-        "rawFixes": 222661,
-        "usableFixes": 51362,
+        "rawFixes": 301925,
+        "usableFixes": 130618,
         "animalsInStudy": 204,
         "animalsShown": 40,
-        "pointsShown": 14805,
+        "pointsShown": 22240,
         "start": "1993-07-30T17:24:00.000Z",
         "end": "2017-01-21T18:18:00.000Z",
-        "medianKm": 19792,
+        "medianKm": 20923,
         "longestKm": 180458,
         "bbox": [
           -16.335,
@@ -637,15 +654,17 @@
         ],
         "sites": 40,
         "footprint": {
-          "median": 31,
+          "median": 30,
           "bands": [
-            6,
-            30,
-            54,
-            11
+            7,
+            31,
+            52,
+            10
           ],
-          "n": 14705
-        }
+          "n": 22072
+        },
+        "condition": null,
+        "flyingAnimals": 2
       },
       "processing": {
         "maxKmh": 80,
@@ -714,7 +733,9 @@
             7
           ],
           "n": 4558
-        }
+        },
+        "condition": null,
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 100,
@@ -794,7 +815,9 @@
             32
           ],
           "n": 6015
-        }
+        },
+        "condition": null,
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 80,
@@ -867,7 +890,9 @@
             0
           ],
           "n": 157
-        }
+        },
+        "condition": null,
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 120,
@@ -946,7 +971,9 @@
             7
           ],
           "n": 485
-        }
+        },
+        "condition": null,
+        "flyingAnimals": 0
       },
       "processing": {
         "maxKmh": 120,

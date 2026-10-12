@@ -1,6 +1,6 @@
 # Track the Migration
 
-Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, turtles, storks, geese and godwits, replayed on a living 3D globe from published tracking data. Press **A year on Earth** for a three-minute guided tour of the whole year. Or dig in: guided stories, linked charts, live NASA nature and human-impact layers, filters for who each animal is, the places they stopped, a camera that rides along with any animal, races between animals, a "guess where" game, sound you can listen to, full keyboard and screen-reader support, embeds and video export, and links that open at the exact moment you share.
+Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, turtles, storks, geese and godwits, replayed on a living 3D globe from published tracking data. Press **A year on Earth** for a three-minute guided tour of the whole year. Or dig in: a journey atlas of every animal, the real conditions each one met along the way, white storks' flight heights in 3D, guided stories, linked charts, live NASA nature and human-impact layers, filters for who each animal is, the places they stopped, a camera that rides along with any animal, races between animals, a "guess where" game, sound you can listen to, full keyboard and screen-reader support, embeds and video export, and links that open at the exact moment you share.
 
 **[Open the live site →](https://amalmehta.github.io/TrackTheMigration/)**
 
@@ -14,6 +14,10 @@ Thirteen real animal migrations, from wildebeest, elk and pronghorn to whales, t
 |---|---|
 | ![Stopover sites as rings, brighter when in use](docs/images/stopovers-goose.jpg) | ![Ospreys coloured by East, Midwest and West flyway, with a matching chart legend](docs/images/filters-osprey.jpg) |
 
+| Journey atlas: every tracked animal, sortable and searchable | A white stork's flight heights in 3D (heights ×6) |
+|---|---|
+| ![The journey atlas: small maps of each animal's whole route, farthest first](docs/images/atlas.jpg) | ![Following white stork 93412A over Africa in March 2010, 518 m above the ground, with its in-flight heights drawn as a wall](docs/images/flight-curtain.jpg) |
+
 ![A race: a bar-tailed godwit, a humpback whale and Prinzesschen the stork from the day each set off, with a split screen, leaderboard and distance-over-time chart](docs/images/race.jpg)
 
 ![Linked charts: white stork latitude through the year, distance by month and per animal](docs/images/charts-white-stork.jpg)
@@ -23,6 +27,7 @@ flowchart LR
   MDR[(Movebank Data<br>Repository)] -->|npm run fetch| P[Clean · thin · cap]
   PP[(PhyloPic · NASA<br>Worldview)] -->|npm run assets| A[Silhouettes · legends]
   P -->|+ who · stopovers| J[site/data/*.json]
+  G -->|sampled at build time:<br>footprint · greenness · sea temp · ground height| P
   A --> J
   J --> S[Static site<br>MapLibre globe + D3]
   G[(NASA GIBS tiles)] -->|by date| S

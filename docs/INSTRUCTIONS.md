@@ -43,6 +43,16 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - For land animals and birds, every fix was matched at build time with the Human Footprint index underneath it. While you follow one, the readout shows **Human footprint here**, with that animal's median.
 - The species charts include **Human footprint where they went**: the share of fixes in wild, light, moderate and heavy footprint. It's split by group, so the three wildebeest populations line up side by side.
 
+### Conditions along the way
+- Every fix was also matched at build time with NASA's satellite record for that date: **vegetation greenness** (NDVI) under land animals, and **sea surface temperature** under whales and turtles.
+- While you follow one, the readout shows **Greenness here** or **Sea temperature here** on a colour bar matching the overlay. The journey profile adds a third row with the whole trip.
+- The species charts include **Greenness (or sea temperature) by month**: the typical value where the animals were, with a band for the middle half.
+
+### Journey atlas
+- **Journey atlas** on the All migrations card (or **Atlas** on a species card, or **a**) opens a small map of every tracked animal's whole journey.
+- Pick a species, narrow it to a group (sex, age, where tagged) and sort by distance, time tracked, human footprint or date. Search by an animal's name or number.
+- Hover a card to replay the journey; click it to fly to that animal and ride along. Cards tagged **height** have flight heights.
+
 ### Share a moment, embed it, record it
 - **Share** (in the time bar) opens a menu:
   - **Copy link** gives a link to exactly what you're looking at:
@@ -77,6 +87,8 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
   - which day of its tracking this is
   - the ground height under it (land animals with 3D terrain on), or its distance from where it started
 - The **journey profile** under the readout has two small charts of the whole trip: latitude (or longitude) and speed. Hover for values, or click and drag on it to scrub through time.
+- The readout also shows the human footprint and the conditions there (see above).
+- **Flight height** (two white storks with frequent GPS heights, 93412A and 54983B): the readout shows how high above the ground it is flying, and the profile's third row shows every in-flight reading. **See it in 3D** pauses, skips to the next flight if it's on the ground, and dives in close: its flights are drawn as walls as tall as it flew, **six times taller than life** so they're visible. **Back out** returns to the normal view.
 - Dragging the map pauses the ride. **Recentre** picks it back up. **Esc** or **×** stops following.
 
 ### Stories
@@ -122,7 +134,7 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
   - **,** and **.**: step a day (**<** and **>**: a week)
   - **n** and **p**: move between the animals on screen
   - **Enter** follows the selected animal; **r** adds it to a race
-  - **c**: charts · **l**: layers · **d**: describe
+  - **c**: charts · **l**: layers · **a**: atlas · **d**: describe
 - **d** describes the globe in plain words: the date, how many animals are tracked, and for the most active species which way they're heading and how fast.
   - Example: "White Stork: 42 moving, mostly north, about 93 km/day."
   - While following: the animal's speed, what it's doing, how far it went in the last week and in which direction, and the human footprint there.
@@ -155,12 +167,15 @@ Everything in `site/data/` and `site/icons/` is committed, so the site works wit
 npm run fetch
 ```
 
-This rebuilds the tracks from the Movebank Data Repository, plus `overview.json`: a light copy of every species for the All migrations view, at most 180 points per animal, about 0.3 MB compressed. The first run downloads about 300 MB into the git-ignored `data/raw/`.
+This rebuilds the tracks from the Movebank Data Repository, plus `overview.json`: a light copy of every species for the All migrations view, at most 180 points per animal, about 0.3 MB compressed. The first run downloads about 600 MB of tracking data into the git-ignored `data/raw/`.
 - `--refresh` re-downloads everything.
 - `npm run fetch -- zebra osprey` rebuilds only those species.
 - `SHOW_ABSTRACTS=1` prints each study's abstract.
 
-Land animals and birds also get a Human Footprint value for every fix. NASA GIBS tiles are cached in `data/raw/hf/`, about 700 small PNGs on the first run.
+Each fix is also matched with what's underneath it. The first run downloads about 3,100 small map tiles (about 100 MB), cached so later runs are quick:
+- the Human Footprint for land animals and birds (`data/raw/hf/`)
+- greenness or sea temperature for land and marine animals (`data/raw/gibs/`)
+- the ground height under flying storks (`data/raw/dem/`)
 
 ```bash
 npm run assets
@@ -194,18 +209,25 @@ This re-downloads the PhyloPic silhouettes with their credits, and rebuilds the 
 npm test
 ```
 
-This runs 63 unit tests:
+This runs 72 unit tests:
 - the track maths, analysis helpers and sun position
 - stopover detection and clustering
 - the night shading and the NASA date handling
 - reference-data facets and share-link parsing
-- the PNG decoder and footprint sampling maths
+- the PNG decoder, tile pixel maths and palette or elevation decoding, and TopoJSON
+- picking in-flight fixes for flight height
 - the people overlays' nearest-year logic
 - bearings and compass words for the spoken descriptions, and the sound's pitch and loudness mapping
 - the colour rules for all 13 species and the story content
+
+```bash
+npm run smoke
+```
+
+This serves the site and clicks through nine flows in headless Chrome: home, a species and its charts, following with conditions, a shared stork link with flight height and the 3D close-up, a story, the atlas, the tour, embed mode and the phone layout. Any page error fails it. It finds Chrome itself; set `CHROME_PATH` to choose another browser.
 
 See [System design → Testing](SYSTEM-DESIGN.md#testing) for what's checked by hand.
 
 ## Deploying
 
-Every push to `main` runs the tests. If they pass, it publishes `site/` to GitHub Pages (`.github/workflows/pages.yml`). The repo's Pages source is set to **GitHub Actions**.
+Every push to `main` runs the unit tests and the browser smoke test. If both pass, it publishes `site/` to GitHub Pages (`.github/workflows/pages.yml`). The repo's Pages source is set to **GitHub Actions**.

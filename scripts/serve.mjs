@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 // Tiny static server for site/ — no dependencies.  node scripts/serve.mjs [port]
+// Also imported by the smoke test (serve(port) → the http.Server).
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'site');
-const PORT = Number(process.argv[2] || process.env.PORT || 8080);
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon',
 };
 
-createServer(async (req, res) => {
+export const serve = (port) => createServer(async (req, res) => {
   let path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
   let file = join(ROOT, path);
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
@@ -25,4 +25,9 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
   }
-}).listen(PORT, () => console.log(`Track the Migration → http://localhost:${PORT}`));
+}).listen(port);
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const port = Number(process.argv[2] || process.env.PORT || 8080);
+  serve(port).on('listening', () => console.log(`Track the Migration → http://localhost:${port}`));
+}

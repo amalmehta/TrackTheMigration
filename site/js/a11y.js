@@ -4,6 +4,7 @@
 
 import { positionAt, recentHeading, compassWord } from './tracks.js';
 import { map } from './globe.js';
+import { inGame } from './game.js';
 import {
   state, speciesById, instanceTime, fmtDate, fmtSeason, fmtDist, fmtSpeed, reducedMotion,
 } from './store.js';
@@ -133,9 +134,11 @@ function onKey(e) {
     case 'n': e.preventDefault(); return focusAnimal(1);
     case 'p': e.preventDefault(); return focusAnimal(-1);
     case 'Enter':
+      if (inGame() || state.race) return; // like clicks, no following mid-game or mid-race
       if (state.kbdFocus && !e.target?.closest?.('button, a')) { e.preventDefault(); ctl.follow(state.kbdFocus.species, state.kbdFocus.animal); }
       return;
     case 'r':
+      if (inGame() || state.race) return;
       if (state.kbdFocus) {
         ctl.toggleCompare(state.kbdFocus.species, state.kbdFocus.animal);
         announce(`${speciesById(state.kbdFocus.species).name} ${state.kbdFocus.animal.id} toggled in the race.`);
@@ -144,6 +147,7 @@ function onKey(e) {
     case 'd': e.preventDefault(); return describeNow();
     case 'c': return ctl.toggleCharts();
     case 'l': return ctl.openLayers();
+    case 'a': e.preventDefault(); return inGame() || state.race ? undefined : ctl.openAtlas();
     case '?': e.preventDefault(); return $('#keys-dialog').open ? $('#keys-dialog').close() : $('#keys-dialog').showModal();
     default:
   }

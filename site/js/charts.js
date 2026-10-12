@@ -204,6 +204,51 @@ function speciesCharts(body, sp) {
   distanceColumns(c, sp, d);
   if (d.sites?.length) siteBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
   if (d.animals.some((a) => a.hf)) footprintBars(grid.append('figure').attr('class', 'chart-card'), sp, d);
+  if (d.animals.some((a) => a.cond)) conditionsByMonth(grid.append('figure').attr('class', 'chart-card'), sp, d);
+}
+
+// The conditions they met, month by month: median, and the middle half of fixes as a band.
+function conditionsByMonth(fig, sp, d) {
+  const sst = d.condKey === 'sst';
+  fig.append('figcaption').text(sst ? 'Sea temperature where they were' : 'Greenness where they were')
+    .append('small').text(sst ? ' · °C, by month' : ' · NDVI, by month');
+  const months = Array.from({ length: 12 }, () => []);
+  for (const a of d.animals) {
+    if (!a.cond) continue;
+    a.pts.forEach((p, i) => { if (a.cond[i] != null) months[new Date(p[2] * 3.6e6).getUTCMonth()].push(a.cond[i]); });
+  }
+  const stats = months.map((v, i) => {
+    if (v.length < 5) return { i, n: v.length };
+    v.sort(d3.ascending);
+    return { i, n: v.length, q1: d3.quantile(v, 0.25), med: d3.quantile(v, 0.5), q3: d3.quantile(v, 0.75) };
+  });
+  const ok = stats.filter((s) => s.med != null);
+  const node = fig.node();
+  const W = node.clientWidth || 260;
+  const H = 168;
+  const m = { l: 34, r: 8, t: 12, b: 20 };
+  const x = d3.scaleLinear().domain([0, 1]).range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain([d3.min(ok, (s) => s.q1), d3.max(ok, (s) => s.q3)]).nice(4).range([H - m.b, m.t]);
+  const color = colorFor(sp.id, uiMode());
+  const svg = fig.append('svg').attr('class', 'chart').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
+    .attr('role', 'img').attr('aria-label', `${sp.name}: ${sst ? 'sea temperature' : 'vegetation greenness'} where they were, by month`);
+  const yg = svg.append('g').attr('class', 'axis');
+  yg.selectAll('line').data(y.ticks(4)).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
+  yg.selectAll('text').data(y.ticks(4)).join('text').attr('x', m.l - 6).attr('y', (v) => y(v) + 3).attr('text-anchor', 'end').text(sst ? d3.format('.0f') : d3.format('.1f'));
+  monthAxis(svg, x, H - 5);
+  const cx = (s) => x((s.i + 0.5) / 12);
+  svg.append('path').datum(ok).attr('fill', color).attr('fill-opacity', 0.14)
+    .attr('d', d3.area().x(cx).y0((s) => y(s.q1)).y1((s) => y(s.q3)).curve(d3.curveMonotoneX));
+  svg.append('path').datum(ok).attr('fill', 'none').attr('stroke', color).attr('stroke-width', 2)
+    .attr('d', d3.line().x(cx).y((s) => y(s.med)).curve(d3.curveMonotoneX));
+  svg.append('g').selectAll('circle').data(ok).join('circle').attr('cx', cx).attr('cy', (s) => y(s.med)).attr('r', 4)
+    .attr('fill', color).attr('stroke', 'var(--surface)').attr('stroke-width', 2)
+    .on('pointermove', (event, s) => showTip(event, [[null, MONTHS_LONG[s.i], 'tip-date'],
+      [sst ? `${s.med.toFixed(1)} °C` : s.med.toFixed(2), 'median'],
+      [null, `middle half ${sst ? `${s.q1.toFixed(1)}–${s.q3.toFixed(1)} °C` : `${s.q1.toFixed(2)}–${s.q3.toFixed(2)}`}`],
+      [`${s.n.toLocaleString()}`, 'fixes']]))
+    .on('pointerleave', hideTip);
+  playheads.push((f) => svg.selectAll('circle').attr('r', (s) => (s.i === Math.min(11, Math.floor(f * 12)) ? 6 : 4)));
 }
 
 // Share of time spent at each level of human footprint, per group (the
@@ -404,7 +449,6 @@ function distanceColumns(fig, sp, d) {
   const m = { l: 40, r: 6, t: 14, b: 20 };
   const y = d3.scaleLinear().domain([0, kmIn(animals[0].km)]).nice(4).range([H - m.b, m.t]);
   const x = d3.scaleBand().domain(animals.map((a) => a.id)).range([m.l, W - m.r]).paddingInner(0.2);
-  const color = colorFor(sp.id, uiMode());
   const svg = fig.append('svg').attr('class', 'chart').attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H)
     .attr('role', 'img').attr('aria-label', `${sp.name}: distance tracked for each animal, longest first`);
   const yg = svg.append('g').attr('class', 'axis');

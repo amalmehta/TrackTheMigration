@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  haversineKm, trackLengthKm, unwrapLongitudes, speedFilter, thinByTime, capPoints,
+  haversineKm, trackLengthKm, unwrapLongitudes, speedFilter, thinByTime, capPoints, flightFixes,
   indexAtOrBefore, positionAt, trailAt, splitByYear, yearStartHours, seasonToHours,
 } from '../site/js/tracks.js';
 
@@ -81,4 +81,17 @@ test('season fraction maps to the right calendar day', () => {
   const h = seasonToHours(2020, 0.5);
   const d = new Date(h * 3.6e6);
   assert.equal(d.getUTCMonth(), 6); // early July in a leap year
+});
+
+test('flight fixes keep only fast, closely spaced steps', () => {
+  // Resting, then one hour flying ~55 km east, then a 10-hour gap that also moves.
+  const pts = [[0, 0, 0, 10], [0.001, 0, 1, 10], [0.5, 0, 2, 400], [1, 0, 3, 600], [1, 0, 4, 20], [3, 0, 14, 20]];
+  assert.deepEqual(flightFixes(pts).map((p) => p[2]), [1, 2, 3]);
+});
+
+test('flight fixes trim by whole flights', () => {
+  const pts = [];
+  for (let f = 0; f < 4; f++) for (let i = 0; i < 3; i++) pts.push([f * 10 + i * 0.5, 0, f * 24 + i, 100]);
+  const out = flightFixes(pts, { max: 6 });
+  assert.deepEqual(out.map((p) => p[2]), [0, 1, 2, 48, 49, 50]);
 });

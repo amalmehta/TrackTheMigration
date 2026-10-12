@@ -38,3 +38,12 @@ test('busiest months read as ranges, wrapping the new year', async () => {
   assert.equal(busiestMonths([0, 0, 5, 10, 0, 0, 0, 0, 9, 0, 0, 0]), 'Apr, Sep');
   assert.equal(busiestMonths([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), '—');
 });
+
+test('malformed links are ignored rather than breaking the clock', () => {
+  const v = decodeView('#s=zebra&st=abc&t=2003-13-01&d=14-40');
+  assert.equal(v.story, null);
+  assert.equal(v.t, null);
+  assert.equal(v.frac, null);
+  assert.equal(v.mode, null);
+  assert.equal(v.species, 'zebra');
+});

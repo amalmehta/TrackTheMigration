@@ -99,6 +99,14 @@
       <div><b id="hud-day"></b><span id="hud-day-note"></span></div>
       <div><b id="hud-place"></b><span id="hud-place-note"></span></div>
     </div>
+    <div id="hud-alt" class="hud-hf" hidden>
+      <span>Flight height</span><span><button id="hud-alt-3d" class="chip" type="button" aria-pressed="false" title="Dive in close and show its flight heights as walls, six times taller than life">See it in 3D</button></span><b id="hud-alt-val"></b>
+    </div>
+    <div id="hud-cond" class="hud-hf" hidden>
+      <span id="hud-cond-label"></span>
+      <div id="hud-cond-bar" class="hf-bar"><i id="hud-cond-mark"></i></div>
+      <b id="hud-cond-val"></b>
+    </div>
     <div id="hud-hf" class="hud-hf" hidden>
       <span>Human footprint here</span>
       <div class="hf-bar"><i id="hud-hf-mark"></i></div>
@@ -159,6 +167,23 @@
     </div>
   </section>
   <div id="split" class="split" hidden></div>
+
+  <!-- Journey atlas -->
+  <section id="atlas" class="atlas glass" hidden aria-label="Journey atlas">
+    <header class="atlas-head">
+      <div><h2>Journey atlas</h2><p id="atlas-count" class="muted"></p></div>
+      <div class="atlas-filters">
+        <label><span class="sr-only">Species</span><select id="atlas-species"></select></label>
+        <label><span class="sr-only">Group</span><select id="atlas-group"></select></label>
+        <label><span class="sr-only">Sort</span><select id="atlas-sort"></select></label>
+        <label><span class="sr-only">Search by animal or species</span><input id="atlas-search" type="search" placeholder="Search an animal…"></label>
+      </div>
+      <button id="atlas-close" class="icon-btn" aria-label="Close the atlas">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <div id="atlas-grid" class="atlas-grid"></div>
+  </section>
 
   <!-- A year on Earth -->
   <section id="tour" class="tour glass" hidden aria-label="A year on Earth" aria-live="polite">
@@ -280,7 +305,7 @@
         <dt><kbd>Enter</kbd></dt><dd>Follow that animal</dd>
         <dt><kbd>r</kbd></dt><dd>Add or remove it from a race</dd>
         <dt><kbd>d</kbd></dt><dd>Describe what's happening (for screen readers)</dd>
-        <dt><kbd>c</kbd> <kbd>l</kbd></dt><dd>Charts · Layers</dd>
+        <dt><kbd>c</kbd> <kbd>l</kbd> <kbd>a</kbd></dt><dd>Charts · Layers · Journey atlas</dd>
         <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Story scenes</dd>
         <dt><kbd>Esc</kbd></dt><dd>Stop following, leave a story</dd>
         <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>Settings</dd>

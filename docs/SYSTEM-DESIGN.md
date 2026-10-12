@@ -10,7 +10,9 @@ flowchart TB
     REG[datasets.mjs<br>which packages, how to clean]
     FETCH[fetch-data.mjs]
     REF[reference.mjs<br>who each animal is]
-    FP[footprint.mjs + png.mjs<br>human footprint per fix]
+    TILES_B[tiles.mjs + png.mjs<br>read values out of map tiles]
+    FP[footprint.mjs · conditions.mjs · elevation.mjs<br>footprint · greenness / sea temp · ground height]
+    TILES_B --> FP
     REF --> FETCH
     FP --> FETCH
     ASSETS[fetch-assets.mjs]
@@ -21,12 +23,16 @@ flowchart TB
   MDR[(Movebank Data Repository)] -->|CSV + metadata| FETCH
   PHY[(PhyloPic API)] -->|silhouettes + credits| ASSETS
   WV[(NASA Worldview palettes)] -->|legend colours| ASSETS
+  GIBSB[(NASA GIBS + Terrain Tiles)] -->|tiles, cached| TILES_B
+  WA[(world-atlas land)] -->|outline| ASSETS
   FETCH --> DATA[(site/data/*.json)]
   ASSETS --> DATA
   ASSETS --> ICONS[(site/icons/*.svg)]
 
   subgraph Browser["Browser (site/js/)"]
-    APP[app.js<br>wiring · clock · panel · layers menu]
+    APP[app.js<br>clock · selection · startup]
+    UI[panel.js · layers.js · map-input.js<br>sharing.js · ui.js]
+    ATLAS[atlas.js<br>journey atlas]
     STORE[store.js<br>shared state · events · formatting]
     GLOBE[globe.js<br>map · layers · frame · night · overlays · camera]
     FOLLOW[follow.js<br>ride-along · readout · profile]
@@ -41,7 +47,8 @@ flowchart TB
     SND[sound.js<br>sonification]
     PURE[tracks.js · solar.js · environment.js · palette.js<br>pure, unit-tested]
     SET[settings.js]
-    APP --> STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & SHARE & RACE & GAME & REC & A11Y & TOUR & SND
+    APP --> UI & STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & RACE & GAME & A11Y & TOUR & SND & ATLAS
+    UI --> SHARE & REC
     GLOBE & FOLLOW & CHARTS & STORY --> STORE
     GLOBE & FOLLOW & CHARTS --> PURE
   end
@@ -50,7 +57,7 @@ flowchart TB
   GIBS[(NASA GIBS WMTS<br>tiles by date)] --> GLOBE
   TILES[(Sentinel-2 · OpenFreeMap · Terrain Tiles)] --> GLOBE
   FETCH -. shares .-> PURE
-  GH[GitHub Actions] -->|npm test, then deploy site/| PAGES[GitHub Pages]
+  GH[GitHub Actions] -->|unit tests + browser smoke test,<br>then deploy site/| PAGES[GitHub Pages]
 ```
 
 ## Components
@@ -61,7 +68,18 @@ flowchart TB
 | `scripts/fetch-data.mjs` | Downloads each CSV (cached; several files per study allowed) and reads the package metadata. Then: <ul><li>filters bad fixes</li><li>finds each animal's stopovers on the full-resolution cleaned track</li><li>clusters them into shared sites</li><li>simplifies and caps tracks for display</li><li>attaches who-each-animal-is attributes</li></ul> Writes `site/data/<id>.json` and `index.json`. |
 | `scripts/reference.mjs` | Turns a study's reference data (one row per deployment) into normalised attributes: sex, age when tagged, tagging site, handling. Keeps only *facets* that split the shown animals into at least two groups of two or more. Tagging sites use the coarsest useful grouping: the site name, then a region in brackets, then the country. |
 | `scripts/footprint.mjs` | Samples the Human Footprint index (SEDAC 1995–2004, via NASA GIBS tiles at zoom 7, ~1.2 km) under every displayed fix of land animals and birds. Each palette pixel is matched to NASA Worldview's colour map to recover its value. Produces per-fix values, per-animal summaries and a species summary. Tiles are cached. |
+| `scripts/tiles.mjs` | The shared build-time tile sampler. Fetches and caches the 256-px Web-Mercator tiles under a set of points (optionally per date), decodes them, and turns each point's pixel into a number: through a NASA palette's colour table, or as Terrarium elevation. |
+| `scripts/conditions.mjs` | The conditions each animal met: vegetation greenness (NDVI, monthly, zoom 7) under every displayed fix of land animals, and sea surface temperature (daily, snapped to the 1st or 15th, zoom 4) under marine animals. Uses the same date snapping and nearest-year fallback as the live overlays. |
+| `scripts/elevation.mjs` | Ground height (AWS Terrain Tiles, zoom 10) under a bird's in-flight GPS fixes, so flight height = GPS height − ground. |
+| `scripts/topojson.mjs` | Decodes a TopoJSON object into rings; used for the land outline behind the atlas maps. |
+| `scripts/smoke.mjs` | The browser smoke test: serves `site/`, drives headless Chrome over the DevTools protocol and walks the main flows (home, species and charts, follow with conditions, a shared stork link with flight height and 3D, a story, the atlas, the tour, embed, phone layout). Any uncaught exception or console error fails it. |
 | `scripts/png.mjs` | A dependency-free PNG decoder (8-bit, non-interlaced: palette, grey, RGB, RGBA), using Node's zlib plus the five row filters. |
+| `site/js/atlas.js` | The journey atlas: a card per tracked animal with a small canvas map (equirectangular fit, land from `land.json`, the route fading in from its start). Cards draw lazily as they scroll into view; hovering replays the journey; clicking follows it. Filters by species and "who" group, sorts by distance, duration, footprint or date, and searches by name. |
+| `site/js/panel.js` | The side panel: the species list, the info card for the selection, and "who they are" (filter chips, colour-by, stopover summary). |
+| `site/js/layers.js` | The Layers popover (basemap, overlay, terrain, effects) and the overlay legend. |
+| `site/js/map-input.js` | Pointer input on the globe: hover tips, click to follow, shift-click to race, stopover-site tips and picking. |
+| `site/js/sharing.js` | Keeping the address bar's link in step with the view and applying a shared link on load; the Share menu (link, embed code, video recording); embed mode. |
+| `site/js/ui.js` | The toast, button icons, the feedback tab and the starfield. |
 | `site/js/race.js` | The compare tray and races. <ul><li>Racers replay from their own day 1 (`instanceTime` = start + day).</li><li>The leaderboard has statuses (moving, staying put, untracked, tag ended), and there's a distance-over-time chart with a scrubbing crosshair.</li><li>The race is sized to the field when one track is much longer.</li><li>Split screen creates one lightweight MapLibre globe per racer.</li></ul> |
 | `site/js/game.js` | Guess where. <ul><li>Picks random real moments with a meaningful 30-day move (land ≥ 12 km, marine ≥ 150 km, birds ≥ 250 km).</li><li>Hides routes, stopovers and the time bar so nothing gives the answer away.</li><li>Plays the answer forward and scores `1000·exp(−miss / max(25 km, move/2))`.</li></ul> |
 | `site/js/record.js` | Video export. Each frame it composites the map canvas (kept readable with `preserveDrawingBuffer`) with captions onto a 2D canvas. `MediaRecorder` turns that into WebM (or MP4 in Safari), stopped by a wall-clock timer. |
@@ -71,16 +89,16 @@ flowchart TB
 | `site/js/share.js` | Encodes the current view into the URL hash, and decodes it defensively (bad values ignored). Covers species, Season day or real date, followed animal, story scene, overlay, colour-by, hidden groups and camera. |
 | `scripts/fetch-assets.mjs` | Downloads the chosen PhyloPic silhouettes and records their credits and licences. Turns NASA Worldview's palettes into 24-stop legends for the overlays. Writes `assets.json` and `site/icons/`. |
 | `site/js/store.js` | Shared state (selection, clock, follow, story, chart selection, hidden groups, colour-by), a tiny event bus, data loading, and formatting helpers. Also holds the who-filter helpers: visibility, and facet shades (dark → light steps of the species hue, grey for unknown). |
-| `site/js/globe.js` | Owns the map. Responsibilities: <ul><li>base map and 3D terrain</li><li>seasonal night shading (a canvas source)</li><li>NASA overlays (tiles swapped by date)</li><li>routes, gradient trails with glow, pulsing heads and the focus ring</li><li>the per-frame update and camera framing</li></ul> |
-| `site/js/follow.js` | Ride-along mode. The camera eases toward the animal each frame, and pauses when the person drags. The readout shows speed, distance, day, and ground height or distance from start. A two-row D3 journey profile with a playhead can be hovered and scrubbed. |
-| `site/js/charts.js` | The charts drawer. <ul><li>All species: a migration calendar heatmap.</li><li>One species: latitude or longitude through the year, with a brush and click-to-follow; distance per day by month; distance per animal, with click-to-follow.</li><li>A table view of the same numbers.</li></ul> |
+| `site/js/globe.js` | Owns the map. Responsibilities: <ul><li>base map and 3D terrain</li><li>the flight-height curtain: extruded walls under a followed bird's in-flight fixes</li><li>seasonal night shading (a canvas source)</li><li>NASA overlays (tiles swapped by date)</li><li>routes, gradient trails with glow, pulsing heads and the focus ring</li><li>the per-frame update and camera framing</li></ul> |
+| `site/js/follow.js` | Ride-along mode. The camera eases toward the animal each frame, and pauses when the person drags. The readout shows speed, distance, day, ground height or distance from start, the human footprint, and the conditions here (greenness or sea temperature) or, for storks with GPS heights, the flight height. A D3 journey profile with a playhead can be hovered and scrubbed: latitude, speed, and a third row for conditions or flight height. "See it in 3D" dives the camera in close to the flight-height curtain. |
+| `site/js/charts.js` | The charts drawer. <ul><li>All species: a migration calendar heatmap.</li><li>One species: latitude or longitude through the year, with a brush and click-to-follow; distance per day by month; distance per animal, with click-to-follow; human footprint; greenness or sea temperature by month (median and middle half).</li><li>A table view of the same numbers.</li></ul> |
 | `site/js/stories.js` / `story.js` | Story content (scenes with time, camera, overlay and follow) and its player (card, progress, keyboard, and restoring the person's settings afterwards). |
 | `site/js/tracks.js` | Track maths shared by Node and the browser. <ul><li>Cleaning: distance, antimeridian unwrap, speed filter, thinning.</li><li>Playback: interpolation, trails, year splitting.</li><li>Analysis: cumulative distance, speed, seasonal movement, main axis of movement.</li></ul> |
 | `site/js/solar.js` | Subsolar point, sun altitude, a twilight darkness curve, and a fast night painter with cached per-row and per-column trig. |
 | `site/js/environment.js` | NASA overlay definitions, date snapping (monthly or weekly), and moving out-of-archive dates to the nearest covered year. |
 | `site/js/palette.js` | Species colours in hue families (land: warm, marine: blue, birds: green), with a light and a dark shade for each. |
 | `site/js/settings.js` | Every preference, saved in `localStorage`. Binds the Settings dialog and the ⌘, shortcut. |
-| `scripts/serve.mjs`, `.github/workflows/pages.yml` | Local static server; CI that tests, then deploys `site/`. |
+| `scripts/serve.mjs`, `.github/workflows/pages.yml` | Local static server (also used by the smoke test); CI that runs the unit tests and the browser smoke test, then deploys `site/`. |
 
 ## Main flows
 
@@ -102,6 +120,23 @@ The JavaScript work per frame is about 2 ms for all 645 instances, plus about 6 
 4. Then ease the camera toward it every frame, unless the person has dragged the map.
 
 On narrower screens the panel tucks away, and the camera padding reserves room for the readout.
+
+**Conditions along the route** (build time)
+
+1. For each displayed fix, pick the overlay date it falls in (`overlayDate`, the same rule as the live layers). Sea temperature is coarsened to the 1st or 15th of the month to keep the tile count sane.
+2. Group fixes by tile and date, fetch and cache each tile once, decode the palette PNG, and map each pixel's colour back to a value with NASA Worldview's colour table.
+3. Store one rounded number per fix (`cond`, with `condKey` saying which layer). The readout, profile and monthly chart read these directly.
+
+**Flight height** (build time and in the browser)
+
+1. The stork study's GPS file has a height for many fixes. Only fixes taken in flight are kept: both ends of each step at most 2 h apart and faster than 15 km/h (`flightFixes`). That keeps whole flights, so they can be drawn as continuous walls.
+2. The ground height under each one (Terrain Tiles, zoom 10) is subtracted to give height above the ground.
+3. Following such a bird shows the nearest in-flight height within 3 h, and draws every flight as a thin `fill-extrusion` wall. "See it in 3D" pauses, jumps to the next flight if needed, and dives to zoom 9.5 at a steep tilt. Walls are 6× taller than life, otherwise they'd be a few pixels high.
+
+**The journey atlas**
+
+1. Built from the overview file (≤ 180 points per animal) plus the `attrs`, `hfMedian` and `flies` fields written into it, so it needs no species files.
+2. Cards are created at once, but their canvases draw only as they scroll near view (`IntersectionObserver`). Land is drawn from a 110 m outline, with shifted copies across the antimeridian.
 
 **Who-they-are filters**
 
@@ -173,12 +208,15 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 | Data | Where | Committed? |
 |---|---|---|
-| Raw CSVs, reference data and metadata | `data/raw/` | No (about 600 MB; `npm run fetch`) |
-| Light all-species copy for the All view | `site/data/overview.json` (≈ 1.1 MB, ≈ 0.34 MB gzipped) | Yes |
-| Processed tracks, per-animal attributes and stops, stopover sites, facets | `site/data/<species>.json` (about 5.5 MB total for 13 species) | Yes |
+| Raw CSVs, reference data and metadata, tile caches | `data/raw/` | No (about 690 MB; `npm run fetch`) |
+| Light all-species copy for the All view and the atlas | `site/data/overview.json` (≈ 1.2 MB, ≈ 0.36 MB gzipped) | Yes |
+| Processed tracks, per-animal attributes and stops, stopover sites, facets | `site/data/<species>.json` (about 6.6 MB total for 13 species) | Yes |
 | Species list, stats, citations | `site/data/index.json` | Yes |
 | Silhouette credits, overlay legends | `site/data/assets.json`, `site/icons/*.svg` | Yes |
 | Human Footprint per fix (land and birds) | `hf` arrays in `site/data/<species>.json`; tile cache in `data/raw/hf/` | Data yes, tiles no |
+| Greenness or sea temperature per fix | `cond` arrays and `condKey` in `site/data/<species>.json`; tiles in `data/raw/gibs/` | Data yes, tiles no |
+| In-flight heights (two white storks) | `alt` arrays `[hours, lon, lat, m above sea, m above ground]`; ground tiles in `data/raw/dem/` | Data yes, tiles no |
+| Land outline for the atlas | `site/data/land.json` (from world-atlas 110 m, rounded to 0.1°) | Yes |
 | Story text | `site/js/stories.js` | Yes |
 | Viewer preferences | Browser `localStorage` key `ttm.settings` | n/a |
 | Imagery, maps, terrain, NASA overlays | Third-party tile servers, fetched at runtime | n/a |
@@ -200,6 +238,11 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Descriptions are computed, not written.** Direction and speed come from the tracks, so they're always true for the moment you're on. They're spoken on pause and on demand, not continuously, so a screen reader isn't flooded.
 - **The tour director is a simple, explainable score** rather than a script, so it adapts to all 13 species and any future ones. In testing it showed all 13 in one year, none more than three times.
 - **Sound stays consonant on purpose.** Notes are snapped to a pentatonic scale and spread across registers by group, so 13 voices blend instead of clashing. It's off by default.
+- **Conditions sampled at build time, from the same NASA layers as the overlays.** The readout and charts then agree with what the overlay shows, and the browser reads no tiles for them. One layer per group keeps it readable: greenness for land animals, sea temperature for marine ones. Birds get flight height instead, as it's what the GPS data adds for them.
+- **Flight heights only from in-flight fixes.** Spreading 1,500 height fixes evenly over years left them 8 h apart, with no flight continuous enough to draw. Keeping whole flights shows real ones. Only two storks were sampled often enough (1–2 h apart) to qualify, and the app says "not flying right now" between flights rather than guessing.
+- **Exaggerated walls, labelled as such.** True-scale walls would be a few pixels tall at any zoom that shows the route, so they're 6× taller, and the button's tooltip says so. The numbers in the readout and profile are real.
+- **The atlas draws with canvas, not more maps.** 368 small MapLibre maps would be far too heavy, so each card is a plain 2D canvas, drawn only when it scrolls into view.
+- **A browser smoke test in CI**, written against the DevTools protocol with no dependencies, so a broken page can't deploy. It runs with software rendering on the CI runner, which is slow but needs no GPU.
 - **Share state in the hash, not a server.** It works on static hosting, and links stay human-readable. The cost: the overlay in a link becomes the viewer's saved overlay setting.
 - **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
 - **NASA GIBS for live layers.** These are key-free and time-enabled.
@@ -215,23 +258,33 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 ## Testing
 
-`npm test` runs 63 `node:test` unit tests, and CI runs the same tests before every deploy.
+`npm test` runs 72 `node:test` unit tests. `npm run smoke` runs the browser smoke test (9 flows in headless Chrome). CI runs both before every deploy.
 
-- **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping.
+- **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping, in-flight fixes (fast, closely spaced steps; trimming by whole flights).
+- **Tiles** (`tiles.test.mjs`): Web-Mercator pixels, palette colour tables, paletted and Terrarium decoding.
+- **TopoJSON** (`topojson.test.mjs`): arc decoding and rings.
 - **Analysis** (`analysis.test.mjs`):
   - cumulative distance, speed over a window, year fraction, seasonal movement, main axis of movement
   - subsolar point at the solstices, sun altitude, the darkness curve, the night canvas
   - NASA date snapping, the nearest-year fallback, tile URLs
 - **Stopovers** (in `analysis.test.mjs`): finding a stay, not bridging tracking gaps, merging nearby stops into sites across the antimeridian.
 - **Reference** (`reference.test.mjs`): sex, age and handling normalisation; site grouping (osprey regions, stork countries); facets kept only when they split the animals.
-- **Share** (`share.test.mjs`): decoding dates, Season days, camera, colour-by and hidden groups; rejecting bad values; busiest-month ranges wrapping the new year.
+- **Share** (`share.test.mjs`): decoding dates, Season days, camera, colour-by and hidden groups; rejecting bad values (impossible dates, non-numeric scenes); busiest-month ranges wrapping the new year.
 - **PNG and footprint** (`png.test.mjs`): paletted and RGB decoding with sub, up and Paeth filters; rejecting non-PNGs; Web-Mercator pixel maths; footprint summaries and bands.
 - **Descriptions and sound** (in `analysis.test.mjs`): bearings, compass words and recent heading; latitude → pentatonic pitch by group; speed → level.
 - **People overlays** (in `analysis.test.mjs`): nearest census or lights year, the fixed footprint snapshot, URLs without a time dimension.
 - **Palette** (`palette.test.mjs`): all 13 species. Covers hue families, pairwise ΔE ≥ 20 (the shades were found by search; the smallest pair is 21.9) and contrast against the background, in light and dark.
 - **Stories** (`stories.test.mjs`): one per species, 4–6 scenes, valid dates, views, overlays and placeholders, each ending in a ride-along.
 
-Checked in a browser and with a headless Chrome driven over the DevTools protocol (a scratch script, not part of the repo):
+Checked by hand in headless Chrome for this round:
+
+- Atlas: 368 journeys, the stork filter with sex, age and handling groups, sorting, the "height" tag, click to follow.
+- Conditions: wildebeest greenness in the readout; spot values Mara 0.47 (April) and 0.33 (September), Amboseli 0.15; sea temperature 17 °C off California in August, 27.7 °C off Mexico in January.
+- Ground height: Kilimanjaro 5,740 m, London 4.7 m, Everest 8,663 m.
+- Flight height: stork 93412A at 518–571 m above the ground in flight; the curtain draws 412 walls and "See it in 3D" dives in and back out.
+- A code review of the app.js split and of every module, with all 12 findings fixed. These included: ticks out of step with the clock; the tour freezing in Dates view; following hidden animals; keyboard shortcuts getting round the game and race; overlapping selections; malformed links; duplicate animation loops; and modes not restoring speed or view.
+
+Earlier rounds, checked in a browser and with a headless Chrome driven over the DevTools protocol:
 
 - Overview loading.
 - Keyboard: n/p, step, Enter to follow, d to describe, ? for help.
@@ -261,6 +314,10 @@ Earlier rounds, checked by hand at desktop, 800 px and 375 px phone sizes, with 
 - Phone: bottom-sheet layout, no horizontal scroll.
 
 ## Known limits
+
+- **Flight heights for two storks only.** Most of the stork GPS data was sampled 3 h or more apart, too sparse to tell flights apart. GPS heights are themselves noisy (± tens of metres), so readings near the ground can be slightly negative and are shown as 0.
+- **Conditions are snapshots at the nearest NASA date.** Greenness is a monthly composite at ~1 km; sea temperature is taken on the 1st or 15th at ~10 km. Where the animal's year isn't in the archive (before 2000 for greenness, after 2020 for sea temperature), the same season in the nearest covered year is used, as with the overlays. Cloud and ice gaps are left empty.
+- **The smoke test checks that things work, not how they look.** It doesn't compare screenshots.
 
 - **Positions are approximate.** Argos fixes can be off by kilometres. Geolocator positions (godwit) are only stopovers, accurate to around 100–200 km. Lines between fixes are straight, not the real path, and long jumps are drawn straight in the map's projection rather than as great circles.
 - **Only a sample is shown.** These are the 30–40 longest-tracked animals per species, thinned. Speeds in the readout and charts come from these thinned fixes, so short bursts are smoothed out.

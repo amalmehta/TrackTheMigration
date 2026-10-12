@@ -20,7 +20,7 @@ const SPLIT_ZOOM = { land: 7.5, marine: 3.6, birds: 3.4 };
 export function initRace(controller) {
   ctl = controller;
   $('#race-start').addEventListener('click', () => startRace());
-  $('#race-clear').addEventListener('click', () => { state.compare = []; renderTray(); });
+  $('#race-clear').addEventListener('click', () => { state.compare = []; renderTray(); emit('compare'); });
   $('#race-close').addEventListener('click', () => stopRace());
   $('#race-together').addEventListener('click', () => setSplit(false));
   $('#race-split').addEventListener('click', () => setSplit(true));
@@ -68,7 +68,7 @@ export function renderTray() {
     chip.style.setProperty('--sp', colorFor(c.species, colorMode()));
     chip.innerHTML = `${iconHtml(c.species, 'sil sil-sm')}<span><b>${esc(sp.name)}</b> ${esc(c.animal.id)}</span>
       <button class="icon-btn tiny" aria-label="Remove ${esc(sp.name)} ${esc(c.animal.id)}">×</button>`;
-    chip.querySelector('button').addEventListener('click', () => { state.compare.splice(i, 1); renderTray(); });
+    chip.querySelector('button').addEventListener('click', () => { state.compare.splice(i, 1); renderTray(); emit('compare'); });
     list.append(chip);
   });
   const n = state.compare.length;
