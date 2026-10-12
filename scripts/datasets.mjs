@@ -173,6 +173,45 @@ export const DATASETS = [
     maxKmh: 80, thinHours: 12, maxGapHours: 24 * 10, maxAnimals: 40, maxPoints: 1200,
   },
   {
+    id: 'steppe-eagle',
+    name: 'Steppe Eagle',
+    scientific: 'Aquila nipalensis',
+    group: 'birds',
+    region: 'Russian and Kazakh steppe to Arabia and East Africa',
+    blurb:
+      'Endangered steppe eagles followed by GPS for up to seven years between the steppe and their wintering grounds. The study found young eagles chose stronger tailwinds and more direct routes than experienced ones, and that winds blowing the right way prompted the birds to set off.',
+    package: '9d8e2a5a-3c17-4898-8231-511beb8c044c',
+    file: '3eda5fa0-7266-4d03-91d1-a1f67129775b',
+    ref: '641f6dd5-851f-4f0f-937b-5099b6232e86',
+    maxKmh: 90, thinHours: 12, maxGapHours: 24 * 10, maxAnimals: 40, maxPoints: 1500,
+  },
+  {
+    id: 'egyptian-vulture',
+    name: 'Egyptian Vulture',
+    scientific: 'Neophron percnopterus',
+    group: 'birds',
+    region: 'Eastern Turkey and the Caucasus to Ethiopia, Sudan and Yemen',
+    blurb:
+      'Sixteen endangered Egyptian vultures tracked by satellite across the Middle East and East Africa. They spent most of their time in small core areas, and strongly favoured highways, power lines and towns, which offer roosts and food but also risks.',
+    package: '0efe73a7-b490-4a86-ba35-2517718f6920',
+    file: '63385ce4-d174-4f08-89cf-fa8d37785073',
+    ref: 'f11c1a4d-a52e-4379-9886-1db40abaaf8c',
+    maxKmh: 90, thinHours: 12, maxGapHours: 24 * 10, maxAnimals: 40, maxPoints: 1500,
+  },
+  {
+    id: 'turkey-vulture',
+    name: 'Turkey Vulture',
+    scientific: 'Cathartes aura',
+    group: 'birds',
+    region: 'North America to northern South America, and within Argentina',
+    blurb:
+      'Turkey vultures from four populations on two continents, tracked for up to nearly ten years. Some fly from western North America to northern South America; others barely move. They soar on thermals, so warm, sunny weather lets them travel fast for little effort.',
+    package: 'b6a0d056-8a98-4c33-8c29-36047af7a6f5',
+    file: 'd6a353a9-2291-4e2e-9323-5a39ed6976c2',
+    ref: '9b40969c-fb37-4d10-b471-bbe0dc70a243',
+    maxKmh: 90, thinHours: 12, maxGapHours: 24 * 10, maxAnimals: 40, maxPoints: 1500,
+  },
+  {
     id: 'bar-tailed-godwit',
     name: 'Bar-tailed Godwit',
     scientific: 'Limosa lapponica',
@@ -199,6 +238,19 @@ export const DATASETS = [
     ref: '024f37a9-d1f9-45ac-b915-eb8489058663',
     argosClasses: ARGOS_GOOD,
     maxKmh: 120, thinHours: 6, maxGapHours: 24 * 10, maxAnimals: 25, maxPoints: 1500,
+  },
+  {
+    id: 'far-eastern-curlew',
+    name: 'Far Eastern Curlew',
+    scientific: 'Numenius madagascariensis',
+    group: 'birds',
+    region: 'Australia to north-east China and Russia',
+    blurb:
+      'Endangered far eastern curlews tracked from Australia, where they spend over half of each year, to breeding grounds in north-east Asia. Birds from south-east Australia set off earlier, arrived earlier and bred farther south than birds from the north-west.',
+    package: 'a09b1cb2-d2ed-4197-82ea-e6248f0d67c0',
+    file: '7208165e-8015-4929-9a51-9c8d93bb2177',
+    ref: '23239956-dc2b-4565-9ce1-3dbef523ee1a',
+    maxKmh: 100, thinHours: 12, maxGapHours: 24 * 10, maxAnimals: 40, maxPoints: 1500,
   },
 ];
 

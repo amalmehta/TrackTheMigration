@@ -9,7 +9,7 @@ import { frameBounds, frameSpecies } from './globe.js';
 import { STORIES } from './stories.js';
 import { fillStoryText } from './story.js';
 import {
-  state, emit, speciesById, keyOf, instanceTime, viewData, MONTHS_LONG, esc, iconHtml, reducedMotion,
+  state, emit, speciesById, keyOf, instanceTime, viewData, MONTHS_LONG, esc, iconHtml, reducedMotion, t,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -165,10 +165,10 @@ function endTour() {
   ctl.setPlaying(false);
   ctl.setHighlight(null);
   frameSpecies(null);
-  $('#tour-month').textContent = 'One year on Earth';
-  $('#tour-species').textContent = `${state.index.species.length} migrations`;
-  $('#tour-title').textContent = 'That was one year';
-  $('#tour-text').textContent = 'Every track you saw is a real animal, tagged by researchers and shared openly. Pick any migration to explore it, or watch again.';
+  $('#tour-month').textContent = t('One year on Earth');
+  $('#tour-species').textContent = t('{n} migrations', { n: state.index.species.length });
+  $('#tour-title').textContent = t('That was one year');
+  $('#tour-text').textContent = t('Every track you saw is a real animal, tagged by researchers and shared openly. Pick any migration to explore it, or watch again.');
   $('#tour-icon').innerHTML = '';
   $('#tour-bar').style.width = '100%';
   $('#tour-replay').hidden = false;

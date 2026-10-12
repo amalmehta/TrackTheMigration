@@ -53,6 +53,22 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
 - Pick a species, narrow it to a group (sex, age, where tagged) and sort by distance, time tracked, human footprint or date. Search by an animal's name or number.
 - Hover a card to replay the journey; click it to fly to that animal and ride along. Cards tagged **height** have flight heights.
 
+### Who passed near
+- **Who passed near…** on the All migrations card (or **m**). Type a town, park or coast and press **Search**, or **Use my location**, and pick a distance.
+- You get every tracked animal that came that close, nearest first, with the date of its closest approach and how many other visits it made. Click one to jump to that moment and ride along (paused; press play).
+- A searched place is part of the share link. Your own location is rounded to about 10 km, stays in your browser and is never put in a link. Place search uses OpenStreetMap's Nominatim.
+
+### Wind under their wings
+- For birds, every travelling step was matched with the wind 100 m above the ground at that place and hour (ERA5, via Open-Meteo).
+- Following a bird, the readout shows **Wind 100 m up**: a tailwind, headwind or crosswind, and how strong. Birds without flight heights get a wind row in the journey profile: bars up for tailwind, down for headwind.
+- The species charts include **Faster with the wind?**: median travel speed in each wind band, from strong headwind to strong tailwind, and the share of travel done with a tailwind.
+
+### Then vs now
+- For species that migrate far enough, the species charts include **Then vs now**: the date each animal crossed the halfway point of its range, by year and direction, against the usual date. A trend line ("days earlier per decade") appears only with enough data. Click a dot to follow that animal.
+
+### Journey posters
+- Following an animal, press **Poster** to save a print-ready image (2400 × 3200 px) of its whole journey: the route coloured from start to end, its stopovers, key numbers, its latitude through time and the data credits.
+
 ### Share a moment, embed it, record it
 - **Share** (in the time bar) opens a menu:
   - **Copy link** gives a link to exactly what you're looking at:
@@ -134,12 +150,16 @@ Open **https://amalmehta.github.io/TrackTheMigration/**.
   - **,** and **.**: step a day (**<** and **>**: a week)
   - **n** and **p**: move between the animals on screen
   - **Enter** follows the selected animal; **r** adds it to a race
-  - **c**: charts · **l**: layers · **a**: atlas · **d**: describe
+  - **c**: charts · **l**: layers · **a**: atlas · **m**: who passed near · **d**: describe
 - **d** describes the globe in plain words: the date, how many animals are tracked, and for the most active species which way they're heading and how fast.
   - Example: "White Stork: 42 moving, mostly north, about 93 km/day."
   - While following: the animal's speed, what it's doing, how far it went in the last week and in which direction, and the human footprint there.
 - The description is read out automatically when you pause, change species or start following. The map's label carries it too.
 - **Motion** in Settings (Match system / Reduced / Full) turns off camera flights, pulsing and animations. Reduced motion also stops the globe from playing on open.
+
+### Language and performance
+- The site follows your browser's language: English, Spanish (**Español**) or French (**Français**). Choose one under **Settings → Language**.
+- **Settings → Quality**: on **Auto**, if the globe can't keep up it lowers detail step by step (glow, sharpness and trail length, then terrain and night shading) and tells you; it climbs back when there's headroom. **Always full detail** turns this off. **Show frame rate** adds a small meter.
 
 ### Settings and feedback
 - **Settings** is the gear button, or **⌘,** (Ctrl+, on Windows/Linux). Every preference is in one place:
@@ -176,6 +196,7 @@ Each fix is also matched with what's underneath it. The first run downloads abou
 - the Human Footprint for land animals and birds (`data/raw/hf/`)
 - greenness or sea temperature for land and marine animals (`data/raw/gibs/`)
 - the ground height under flying storks (`data/raw/dem/`)
+- the wind along bird routes (`data/raw/wind/`, from Open-Meteo's ERA5 archive). That's about 8,000 samples; the archive's free limits mean the first run takes a few hours, and if the daily limit runs out, run it again the next day to fill the gaps.
 
 ```bash
 npm run assets
@@ -203,19 +224,30 @@ This re-downloads the PhyloPic silhouettes with their credits, and rebuilds the 
    - the colour is too close to another species, or outside its family's hue range
    - the story is missing or malformed
 
+## Translating
+
+Every string is written in English in the code, wrapped in `t('…')`, and looked up in `site/js/lang/es.js` and `fr.js`.
+
+```bash
+node scripts/i18n-keys.mjs
+```
+
+This lists how many strings each language is missing. Add translations with `node scripts/i18n-add.mjs es new.json` (a JSON object of English → translation). `npm test` fails if a language misses a string, a `{placeholder}` or an HTML tag. To add a language, copy `es.js` to a new code, translate it, and add it to `LANGS` in `site/js/i18n.js` and the Language menu in `index.html`.
+
 ## Testing
 
 ```bash
 npm test
 ```
 
-This runs 72 unit tests:
+This runs the unit tests:
 - the track maths, analysis helpers and sun position
 - stopover detection and clustering
 - the night shading and the NASA date handling
 - reference-data facets and share-link parsing
 - the PNG decoder, tile pixel maths and palette or elevation decoding, and TopoJSON
-- picking in-flight fixes for flight height
+- picking in-flight fixes for flight height, passes near a place, halfway crossings and trends, wind components
+- that Spanish and French cover every string the site shows
 - the people overlays' nearest-year logic
 - bearings and compass words for the spoken descriptions, and the sound's pitch and loudness mapping
 - the colour rules for all 13 species and the story content
@@ -224,7 +256,7 @@ This runs 72 unit tests:
 npm run smoke
 ```
 
-This serves the site and clicks through nine flows in headless Chrome: home, a species and its charts, following with conditions, a shared stork link with flight height and the 3D close-up, a story, the atlas, the tour, embed mode and the phone layout. Any page error fails it. It finds Chrome itself; set `CHROME_PATH` to choose another browser.
+This serves the site and clicks through 14 flows in headless Chrome: home, a species and its charts, following with conditions, a shared stork link with flight height and the 3D close-up, a story, the atlas, the tour, who passed near, a poster, the bird charts, embed mode, Spanish, French and the phone layout. Any page error fails it. It finds Chrome itself; set `CHROME_PATH` to choose another browser.
 
 See [System design → Testing](SYSTEM-DESIGN.md#testing) for what's checked by hand.
 

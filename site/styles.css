@@ -253,7 +253,7 @@ body.charts-open .legend { bottom: 420px; }
 .hud-head { display: flex; align-items: center; gap: 10px; }
 .hud-icon { color: var(--sp); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--sp) 55%, transparent)); }
 .hud-names { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.hud-names b { font: 600 17px/1.2 var(--display); }
+.hud-names b { font: 600 17px/1.2 var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hud-names span { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hud-date { margin: 8px 0 6px; font: 600 26px/1.1 var(--display); letter-spacing: -0.01em; }
 .hud-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -409,7 +409,7 @@ body.racing #charts, body.racing #hud, body.racing #compare-tray { display: none
 .atlas-head h2 { margin: 0; font: 600 22px/1.15 var(--display); }
 .atlas-head p { margin: 2px 0 0; font-size: 12.5px; }
 .atlas-filters { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
-.atlas-filters select, .atlas-filters input { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; font-size: 13px; color: var(--text); }
+.near-form input, .near-opts select, .atlas-filters select, .atlas-filters input { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; font-size: 13px; color: var(--text); }
 .atlas-filters select option { background: var(--surface); color: var(--text); }
 .atlas-filters input { min-width: 180px; }
 .atlas-grid { flex: 1; min-height: 0; overflow-y: auto; margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; align-content: start; padding: 2px; }
@@ -539,3 +539,31 @@ body.reduce-motion * { animation: none !important; transition: none !important; 
 .keys dt { white-space: nowrap; }
 .keys dd { margin: 0; color: var(--text-2); }
 kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); border-bottom-width: 2px; background: var(--surface-2); font: 600 12px/1.4 var(--font); text-align: center; }
+
+/* ---------- who passed near ---------- */
+.near { position: fixed; left: 16px; top: 16px; width: 380px; max-height: calc(100vh - 140px); z-index: 8; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; animation: rise .3s ease; }
+.near-head { display: flex; align-items: center; justify-content: space-between; }
+.near-head h2 { margin: 0; font: 600 22px/1.2 var(--display); }
+.near-form { display: flex; gap: 8px; }
+.near-form input { flex: 1; min-width: 0; }
+.near-opts { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-2); }
+.near-choices:empty { display: none; }
+.near-choices .chip { text-align: left; }
+.near-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.near-list:empty { display: none; }
+.near-row { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 7px 10px; border-radius: 10px; border: 1px solid transparent; background: var(--surface-2); color: var(--text); cursor: pointer; border-left: 3px solid var(--sp); }
+.near-row:hover, .near-row:focus-visible { background: var(--surface-3); }
+.near-text { display: flex; flex-direction: column; min-width: 0; }
+.near-text small { color: var(--muted); }
+.near-credit { font-size: 11px; margin: 0; }
+@media (max-width: 719px) {
+  .near { left: 8px; right: 8px; width: auto; top: 8px; max-height: 52vh; }
+}
+
+/* wind */
+.hud-profile line.zero { stroke: var(--text-2); stroke-width: 1; opacity: 0.6; }
+.chart-note { margin: 6px 0 0; font-size: 11.5px; }
+
+/* frame-rate meter */
+.fps { position: fixed; right: 70px; top: 16px; z-index: 6; padding: 4px 10px; border-radius: 99px; font: 600 12px/1.4 var(--sans, Inter), system-ui; font-variant-numeric: tabular-nums; color: var(--text-2); }
+.fps.slow { color: #f59e0b; }

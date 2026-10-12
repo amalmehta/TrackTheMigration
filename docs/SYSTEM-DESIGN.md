@@ -12,6 +12,8 @@ flowchart TB
     REF[reference.mjs<br>who each animal is]
     TILES_B[tiles.mjs + png.mjs<br>read values out of map tiles]
     FP[footprint.mjs · conditions.mjs · elevation.mjs<br>footprint · greenness / sea temp · ground height]
+    WIND[wind.mjs<br>tailwind along bird routes]
+    WIND --> FETCH
     TILES_B --> FP
     REF --> FETCH
     FP --> FETCH
@@ -24,6 +26,7 @@ flowchart TB
   PHY[(PhyloPic API)] -->|silhouettes + credits| ASSETS
   WV[(NASA Worldview palettes)] -->|legend colours| ASSETS
   GIBSB[(NASA GIBS + Terrain Tiles)] -->|tiles, cached| TILES_B
+  OM[(Open-Meteo ERA5 archive)] -->|hourly wind 100 m, cached| WIND
   WA[(world-atlas land)] -->|outline| ASSETS
   FETCH --> DATA[(site/data/*.json)]
   ASSETS --> DATA
@@ -32,7 +35,9 @@ flowchart TB
   subgraph Browser["Browser (site/js/)"]
     APP[app.js<br>clock · selection · startup]
     UI[panel.js · layers.js · map-input.js<br>sharing.js · ui.js]
-    ATLAS[atlas.js<br>journey atlas]
+    ATLAS[atlas.js · near.js · poster.js<br>atlas · who passed near · posters]
+    I18N[i18n.js + lang/es.js, fr.js<br>languages]
+    PERF[perf.js<br>auto quality]
     STORE[store.js<br>shared state · events · formatting]
     GLOBE[globe.js<br>map · layers · frame · night · overlays · camera]
     FOLLOW[follow.js<br>ride-along · readout · profile]
@@ -47,7 +52,8 @@ flowchart TB
     SND[sound.js<br>sonification]
     PURE[tracks.js · solar.js · environment.js · palette.js<br>pure, unit-tested]
     SET[settings.js]
-    APP --> UI & STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & RACE & GAME & A11Y & TOUR & SND & ATLAS
+    APP --> UI & STORE & GLOBE & FOLLOW & CHARTS & STORY & SET & RACE & GAME & A11Y & TOUR & SND & ATLAS & PERF
+    STORE --> I18N
     UI --> SHARE & REC
     GLOBE & FOLLOW & CHARTS & STORY --> STORE
     GLOBE & FOLLOW & CHARTS --> PURE
@@ -55,6 +61,7 @@ flowchart TB
   DATA --> APP
   ICONS --> APP
   GIBS[(NASA GIBS WMTS<br>tiles by date)] --> GLOBE
+  NOM[(OpenStreetMap Nominatim)] -->|place search| ATLAS
   TILES[(Sentinel-2 · OpenFreeMap · Terrain Tiles)] --> GLOBE
   FETCH -. shares .-> PURE
   GH[GitHub Actions] -->|unit tests + browser smoke test,<br>then deploy site/| PAGES[GitHub Pages]
@@ -71,10 +78,17 @@ flowchart TB
 | `scripts/tiles.mjs` | The shared build-time tile sampler. Fetches and caches the 256-px Web-Mercator tiles under a set of points (optionally per date), decodes them, and turns each point's pixel into a number: through a NASA palette's colour table, or as Terrarium elevation. |
 | `scripts/conditions.mjs` | The conditions each animal met: vegetation greenness (NDVI, monthly, zoom 7) under every displayed fix of land animals, and sea surface temperature (daily, snapped to the 1st or 15th, zoom 4) under marine animals. Uses the same date snapping and nearest-year fallback as the live overlays. |
 | `scripts/elevation.mjs` | Ground height (AWS Terrain Tiles, zoom 10) under a bird's in-flight GPS fixes, so flight height = GPS height − ground. |
+| `scripts/wind.mjs` | Wind along bird routes. For every step a bird was travelling (faster than 4 km/h over the step, at most two weeks long; long geolocator flights get one sample a day along the line), the hourly ERA5 wind 100 m above the ground at the step's midpoint and time, split into tailwind and crosswind along the bird's heading. Requests group many places per date, are cached in `data/raw/wind/`, wait out per-minute and hourly limits, and stop for the day at the daily limit so a later run finishes the job. |
+| `scripts/i18n-keys.mjs`, `scripts/i18n-add.mjs` | Collect every English string the site can show (from `t()` calls, the page, and the data) and report what each language is missing; add or update translations. |
 | `scripts/topojson.mjs` | Decodes a TopoJSON object into rings; used for the land outline behind the atlas maps. |
 | `scripts/smoke.mjs` | The browser smoke test: serves `site/`, drives headless Chrome over the DevTools protocol and walks the main flows (home, species and charts, follow with conditions, a shared stork link with flight height and 3D, a story, the atlas, the tour, embed, phone layout). Any uncaught exception or console error fails it. |
 | `scripts/png.mjs` | A dependency-free PNG decoder (8-bit, non-interlaced: palette, grey, RGB, RGBA), using Node's zlib plus the five row filters. |
 | `site/js/atlas.js` | The journey atlas: a card per tracked animal with a small canvas map (equirectangular fit, land from `land.json`, the route fading in from its start). Cards draw lazily as they scroll into view; hovering replays the journey; clicking follows it. Filters by species and "who" group, sorts by distance, duration, footprint or date, and searches by name. |
+| `site/js/near.js` | Who passed near. Place search through OpenStreetMap Nominatim (one request per search), or the browser's location rounded to ~10 km and never put in the link. The overview shortlists species with a wide margin, then each candidate's full tracks give exact passes (`passesNear`: closest approach along each straight line between fixes, not across tracking gaps, split into visits after 14 days away). Clicking a pass jumps, paused, to that moment and follows the animal. A searched place is shareable (`#near=lon,lat,km&nm=name`). |
+| `site/js/poster.js` | Journey posters: a 2400 × 3200 PNG of one animal's journey drawn on a canvas: route coloured from start to end (tracking gaps dashed), stopovers sized by days, start and end labels, four key numbers, a latitude strip and full credits. |
+| `site/js/perf.js` | Auto quality. While the globe is moving or playing it times frames in 2-second windows (after a 10-second warm-up). Two slow windows (< 28 fps) step detail down: no glow → sharpness 1× and 30-day trails → no terrain or night shading and 14-day trails. Eight fast windows step back up, unless a step up had to be undone. It only lowers what's drawn, through `globe.quality`; settings are untouched. An optional frame-rate meter. |
+| `site/js/i18n.js`, `site/js/lang/` | Languages. `t('English text', vars)` looks the text up in the chosen language's dictionary (Spanish, French), or returns the English. Dates and numbers use each language's conventions. Static page text is translated on load; species, groups, stories and layer text are translated once after data loads. The language comes from the browser unless chosen in Settings; changing it reloads the page. |
+| `site/js/land.js` | The land outline, loaded once, shared by the atlas and posters. |
 | `site/js/panel.js` | The side panel: the species list, the info card for the selection, and "who they are" (filter chips, colour-by, stopover summary). |
 | `site/js/layers.js` | The Layers popover (basemap, overlay, terrain, effects) and the overlay legend. |
 | `site/js/map-input.js` | Pointer input on the globe: hover tips, click to follow, shift-click to race, stopover-site tips and picking. |
@@ -137,6 +151,18 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 1. Built from the overview file (≤ 180 points per animal) plus the `attrs`, `hfMedian` and `flies` fields written into it, so it needs no species files.
 2. Cards are created at once, but their canvases draw only as they scroll near view (`IntersectionObserver`). Land is drawn from a 110 m outline, with shifted copies across the antimeridian.
+
+**Wind along the way** (build time) and **Faster with the wind?**
+
+1. `travelSteps` picks the steps a bird was travelling; `windSampler` fetches (or reads from cache) the hourly wind at 100 m for each step's midpoint and hour, on ERA5's 0.25° grid.
+2. `windComponents` turns wind speed and direction into tailwind (positive helps) and crosswind relative to the step's heading.
+3. Each step is stored as `[start, end, tailwind, crosswind, ground speed km/day]`. The readout shows the wind for the step the bird is on; the journey profile draws one bar per step; the species chart compares median travel speed across six wind bands.
+
+**Then vs now**
+
+1. For each animal, the halfway line of its range is the midpoint of the 10th and 90th percentiles along the species' main axis (needs ≥ 4° of range, so land herds that barely migrate are skipped).
+2. A crossing counts only if the animal then stays on the new side for 10 days, and isn't across a tracking gap.
+3. Crossings are grouped by direction and placed by year and by days from that direction's circular-mean date. A least-squares slope gives "days earlier or later per decade" once there are 8 or more crossings in 3 or more years; otherwise the chart says too few.
 
 **Who-they-are filters**
 
@@ -217,6 +243,8 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 | Greenness or sea temperature per fix | `cond` arrays and `condKey` in `site/data/<species>.json`; tiles in `data/raw/gibs/` | Data yes, tiles no |
 | In-flight heights (two white storks) | `alt` arrays `[hours, lon, lat, m above sea, m above ground]`; ground tiles in `data/raw/dem/` | Data yes, tiles no |
 | Land outline for the atlas | `site/data/land.json` (from world-atlas 110 m, rounded to 0.1°) | Yes |
+| Wind per travelling step (birds) | `wind` arrays in bird species files; cache `data/raw/wind/cache.json` | Data yes, cache no |
+| Translations | `site/js/lang/es.js`, `site/js/lang/fr.js` (keyed by the English text) | Yes |
 | Story text | `site/js/stories.js` | Yes |
 | Viewer preferences | Browser `localStorage` key `ttm.settings` | n/a |
 | Imagery, maps, terrain, NASA overlays | Third-party tile servers, fetched at runtime | n/a |
@@ -243,6 +271,15 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Exaggerated walls, labelled as such.** True-scale walls would be a few pixels tall at any zoom that shows the route, so they're 6× taller, and the button's tooltip says so. The numbers in the readout and profile are real.
 - **The atlas draws with canvas, not more maps.** 368 small MapLibre maps would be far too heavy, so each card is a plain 2D canvas, drawn only when it scrolls into view.
 - **A browser smoke test in CI**, written against the DevTools protocol with no dependencies, so a broken page can't deploy. It runs with software rendering on the CI runner, which is slow but needs no GPU.
+- **Four more species, chosen for new places.** Steppe eagle (Central Asia to Arabia and East Africa), Egyptian vulture (Middle East to the Horn of Africa), turkey vulture (two continents, including South America) and far eastern curlew (Australia to north-east Asia) were the strongest open, GPS-tracked studies found; caribou were rejected because the open data barely moves on a map.
+- **Seventeen bird-and-mammal colours still pass the rules.** Nine birds in one green family needed a fresh search, with limits on lightness and saturation so no colour is neon or near-black; the smallest difference is ΔE 31 (light) and 35 (dark).
+- **Wind at 100 m, labelled as such.** The key-free ERA5 archive has 10 m and 100 m wind but no upper-air levels, so it's the wind near the ground, not necessarily where birds fly. It still shows the steppe-eagle study's point (tailwinds speed birds up) and is stated plainly in the chart.
+- **Timing by the halfway crossing, not departure.** Departure dates need species-specific rules; the date an animal crosses the middle of its own range works for any species and resists wandering. The chart is cautious by design: different animals in different years, trend only with enough data.
+- **Who passed near uses the full tracks, after a cheap shortlist.** The overview (≤ 180 points per animal) can miss a pass, so it only picks which species to load; exact passes come from every point. Lines between fixes are checked, not just the fixes, so a stork flying straight over a town counts.
+- **Location privacy.** "Use my location" rounds to about 10 km, runs entirely in the browser and is never written into the link; only a searched place name can be shared.
+- **Posters on a canvas, not the map.** A clean, print-style drawing at fixed size, independent of the screen, with no tile licensing questions; satellite imagery isn't needed to read a journey.
+- **Auto quality lowers drawing, never settings.** On a slow device the glow, sharpness, trail length, terrain and night shading step down in that order, and back up when there's headroom. Choosing "Always full detail" turns it off.
+- **Translations keyed by the English text.** Code stays readable (`t('A year on Earth')`), a missing translation falls back to English, and a test fails if any string the site can show lacks a Spanish or French version or loses a `{placeholder}` or HTML tag. Gendered sentences ("this white stork") were reworded to use the animal's name.
 - **Share state in the hash, not a server.** It works on static hosting, and links stay human-readable. The cost: the overlay in a link becomes the viewer's saved overlay setting.
 - **MapLibre GL 5 globe with terrain, plus D3 for charts.** Both load from cdnjs, with no build step. Charts are SVG, which suits brushing, tooltips and a table view.
 - **NASA GIBS for live layers.** These are key-free and time-enabled.
@@ -258,10 +295,13 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 
 ## Testing
 
-`npm test` runs 72 `node:test` unit tests. `npm run smoke` runs the browser smoke test (9 flows in headless Chrome). CI runs both before every deploy.
+`npm test` runs the `node:test` unit tests (91 at last count). `npm run smoke` runs the browser smoke test (14 flows in headless Chrome). CI runs both before every deploy.
 
 - **Tracks** (`tracks.test.mjs`): distance, unwrap, speed filter, thinning, caps, search, interpolation and gaps, trails, year splitting, season mapping, in-flight fixes (fast, closely spaced steps; trimming by whole flights).
 - **Tiles** (`tiles.test.mjs`): Web-Mercator pixels, palette colour tables, paletted and Terrarium decoding.
+- **Passes, timing** (in `tracks.test.mjs`): closest approach between fixes, separate visits, gaps not bridged, the antimeridian; halfway crossings ignoring jitter and needing range; slope.
+- **Wind** (`wind.test.mjs`): tail and cross components; travel steps skip resting and sample long flights daily.
+- **Languages** (`i18n.test.mjs`): Spanish and French cover every string the site can show, with the same `{placeholders}` and HTML tags.
 - **TopoJSON** (`topojson.test.mjs`): arc decoding and rings.
 - **Analysis** (`analysis.test.mjs`):
   - cumulative distance, speed over a window, year fraction, seasonal movement, main axis of movement
@@ -276,7 +316,14 @@ On narrower screens the panel tucks away, and the camera padding reserves room f
 - **Palette** (`palette.test.mjs`): all 13 species. Covers hue families, pairwise ΔE ≥ 20 (the shades were found by search; the smallest pair is 21.9) and contrast against the background, in light and dark.
 - **Stories** (`stories.test.mjs`): one per species, 4–6 scenes, valid dates, views, overlays and placeholders, each ending in a ride-along.
 
-Checked by hand in headless Chrome for this round:
+Checked by hand in headless Chrome for v7:
+
+- Who passed near: Nairobi (100 km) lists 20 animals from 2 species, closest "right here"; a live search for the Strait of Gibraltar finds 9 storks; clicking jumps, paused, to 2 Mar 2002 with the link updated.
+- Poster: a blue whale poster in about 1 s, 2400 × 3200, 0.56 MB.
+- Auto quality: in headless Chrome (2–3 fps) it stepped to "lighter" then "lightest", hiding glow and terrain, with a toast; the meter shows fps and level.
+- Spanish: home, species card, charts and follow readout fully translated; dates and numbers in Spanish style.
+
+Checked by hand in headless Chrome for v6:
 
 - Atlas: 368 journeys, the stork filter with sex, age and handling groups, sorting, the "height" tag, click to follow.
 - Conditions: wildebeest greenness in the readout; spot values Mara 0.47 (April) and 0.33 (September), Amboseli 0.15; sea temperature 17 °C off California in August, 27.7 °C off Mexico in January.
@@ -314,6 +361,13 @@ Earlier rounds, checked by hand at desktop, 800 px and 375 px phone sizes, with 
 - Phone: bottom-sheet layout, no horizontal scroll.
 
 ## Known limits
+
+- **Wind is 100 m above the ground**, from a 0.25° reanalysis, sampled once per travelling step. Birds often fly much higher, where winds differ, and a step can span many hours of changing wind.
+- **Then vs now is a hint, not a finding.** Different animals were tracked in different years, samples are small, and tags from one year can dominate. Only species with enough crossings get a trend line.
+- **Who passed near is limited by the tracks.** Between fixes animals are assumed to travel in a straight line; with fixes days apart (Argos, geolocators) a pass can be off by tens of kilometres or missed.
+- **Place search depends on OpenStreetMap's free Nominatim service** and its fair-use limits; "Use my location" works without it.
+- **Translations were written for this project**, not by native-speaker reviewers, and the study citations stay in English.
+- **The steppe eagle data covers autumn only** (August–December), so its Season view is empty from January to July.
 
 - **Flight heights for two storks only.** Most of the stork GPS data was sampled 3 h or more apart, too sparse to tell flights apart. GPS heights are themselves noisy (± tens of metres), so readings near the ground can be slightly negative and are shown as 0.
 - **Conditions are snapshots at the nearest NASA date.** Greenness is a monthly composite at ~1 km; sea temperature is taken on the 1st or 15th at ~10 km. Where the animal's year isn't in the archive (before 2000 for greenness, after 2020 for sea temperature), the same season in the nearest covered year is used, as with the overlays. Cloud and ice gaps are left empty.

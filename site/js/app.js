@@ -13,6 +13,7 @@ import { initA11y, announce, describe, clearKbdFocus } from './a11y.js';
 import { initTour, stopTour, tourFrame, inTour } from './tour.js';
 import { setSound, setVolume } from './sound.js';
 import { initAtlas, openAtlas } from './atlas.js';
+import { initNear, openNear } from './near.js';
 import { initFollow, startFollow, stopFollow, followFrame, recenterFollow } from './follow.js';
 import { initCharts, renderCharts, chartsTime, setOpen as setChartsOpen } from './charts.js';
 import { initStory, startStory, stopStory } from './story.js';
@@ -20,10 +21,15 @@ import { initPanel, renderSpeciesList, renderInfo, renderWho } from './panel.js'
 import { wireLayers, renderLayers } from './layers.js';
 import { initMapInput, pickSite } from './map-input.js';
 import { initSharing, writeHash, startWritingHash, applySharedView, setupEmbed } from './sharing.js';
-import { initFeedback, drawStars } from './ui.js';
+import { initFeedback, drawStars, toast, download } from './ui.js';
+import { translatePage } from './i18n.js';
+import { STORIES } from './stories.js';
+import { ENV_LAYERS } from './environment.js';
+import { makePoster } from './poster.js';
+import { initPerf, onQualitySetting } from './perf.js';
 import {
   state, on, emit, speciesById, visibleSpecies, loadSpecies, MONTHS, fmtDate, fmtSeason,
-  isVisible, keyOf, loadOverview, viewData, reducedMotion,
+  isVisible, keyOf, loadOverview, viewData, reducedMotion, t, num,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -80,14 +86,14 @@ function frame() {
     $('#time-label').textContent = label;
     $('#time-year').textContent = sub;
     $('#time-slider').value = Math.round((state.race.day / (state.race.maxDay || 1)) * 1000);
-    $('#time-active').textContent = `${r.moving} of ${state.race.racers.length} racers tracked`;
+    $('#time-active').textContent = t('{n} of {total} racers tracked', { n: r.moving, total: state.race.racers.length });
     raceFrame();
     return;
   }
   tourFrame();
   if (state.mode === 'season') {
     $('#time-label').textContent = fmtSeason(state.frac);
-    $('#time-year').textContent = 'every year';
+    $('#time-year').textContent = t('every year');
     $('#time-slider').value = Math.round(state.frac * 1000);
   } else {
     const label = fmtDate(state.t);
@@ -96,9 +102,10 @@ function frame() {
     const [a, b] = state.range;
     $('#time-slider').value = Math.round(((state.t - a) / (b - a || 1)) * 1000);
   }
-  const what = state.mode === 'season' ? 'animal-years' : 'animals';
-  $('#time-active').textContent = `${r.moving} ${r.moving === 1 ? what.replace(/s$/, '') : what} on the move` +
-    (state.selected === 'all' ? ` · ${r.species} species` : '');
+  const moving = state.mode === 'season'
+    ? t(r.moving === 1 ? '{n} animal-year on the move' : '{n} animal-years on the move', { n: num(r.moving) })
+    : t(r.moving === 1 ? '{n} animal on the move' : '{n} animals on the move', { n: num(r.moving) });
+  $('#time-active').textContent = moving + (state.selected === 'all' ? ` · ${t('{n} species', { n: r.species })}` : '');
   followFrame();
   chartsTime();
 }
@@ -133,7 +140,7 @@ function setPlaying(on) {
   state.playing = on;
   if (!on && state.index) announce(describe()); // say where things stand when the globe stops
   $('#play-btn').classList.toggle('playing', on);
-  $('#play-btn').setAttribute('aria-label', on ? 'Pause' : 'Play');
+  $('#play-btn').setAttribute('aria-label', t(on ? 'Pause' : 'Play'));
   cancelAnimationFrame(rafId); // pausing and resuming within a frame mustn't leave two loops
   if (on) { last = 0; rafId = requestAnimationFrame(tick); }
 }
@@ -166,12 +173,12 @@ async function select(id, { frame: doFrame = true } = {}) {
   clearKbdFocus();
   renderSpeciesList();
   $('#loading').hidden = false;
-  $('#loading').textContent = 'Loading tracks…';
+  $('#loading').textContent = t('Loading tracks…');
   try {
     if (id === 'all') await loadOverview();
     else await loadSpecies(id);
   } catch (err) {
-    if (ticket === selecting) $('#loading').textContent = `Couldn't load tracks: ${err.message}`;
+    if (ticket === selecting) $('#loading').textContent = t("Couldn't load tracks: {e}", { e: err.message });
     return;
   }
   if (ticket !== selecting) return;
@@ -198,7 +205,7 @@ function renderTicks() {
     for (let d = step; d < max; d += step) {
       const s = document.createElement('span');
       s.style.left = `${(d / max) * 100}%`;
-      s.textContent = `day ${d}`;
+      s.textContent = t('day {n}', { n: d });
       ticks.append(s);
     }
     return;
@@ -255,6 +262,24 @@ function wireControls() {
     if (e.code === 'Space') { e.preventDefault(); setPlaying(!state.playing); }
   });
 
+  // A print-ready poster of the followed animal's journey
+  $('#hud-poster').addEventListener('click', async () => {
+    if (!state.follow) return;
+    const btn = $('#hud-poster');
+    btn.disabled = true;
+    btn.textContent = t('Drawing…');
+    try {
+      const { blob, name } = await makePoster(state.follow.species, state.follow.animal);
+      download(blob, name);
+      toast(t('Saved {name}', { name }));
+    } catch (err) {
+      toast(t("Couldn't make the poster: {e}", { e: err.message }));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = t('Poster');
+    }
+  });
+
   // Compare & race from the follow readout
   $('#hud-compare').addEventListener('click', () => {
     if (!state.follow) return;
@@ -264,6 +289,7 @@ function wireControls() {
 }
 
 onSettingsChange((changed) => {
+  if (changed.includes('lang')) { location.reload(); return; } // every string is rebuilt in the new language
   if (!state.index) return; // still loading: main() applies the settings once data is in
   if (changed.includes('theme')) applyTheme();
   if (changed.includes('basemap') || (changed.includes('theme') && settings.basemap === 'theme')) {
@@ -282,6 +308,7 @@ onSettingsChange((changed) => {
   if (changed.includes('sound')) { setSound(settings.sound); emit('sound'); }
   if (changed.includes('volume')) setVolume(settings.volume);
   if (changed.includes('nightShade')) setNightVisible();
+  if (changed.includes('quality') || changed.includes('showFps')) onQualitySetting();
   if (changed.includes('overlay')) applyOverlay();
   if (changed.includes('speed')) setSpeed(settings.speed);
   if (changed.includes('units') || changed.includes('trailDays')) { renderInfo(); renderSpeciesList(); renderCharts(); }
@@ -314,7 +341,7 @@ on('style-ready', () => {
 
 function syncHudCompare() {
   const on = !!state.follow && inCompare(state.follow.species, state.follow.animal);
-  $('#hud-compare').textContent = on ? '✓ In the race' : '+ Race';
+  $('#hud-compare').textContent = t(on ? '✓ In the race' : '+ Race');
   $('#hud-compare').setAttribute('aria-pressed', String(on));
 }
 on('follow', syncHudCompare);
@@ -328,10 +355,23 @@ const controller = {
   toggleCharts: () => setChartsOpen($('#charts').hidden),
   openLayers: () => $('#layers-btn').click(),
   openAtlas: () => openAtlas(state.selected === 'all' ? null : state.selected),
+  openNear: () => openNear(),
   follow: (id, animal, opts) => { const p = startFollow(id, animal, opts); setPlaying(true); return p; },
 };
 
+// Data-driven text (species, groups, stories, NASA layers) in the chosen language.
+function localize(index) {
+  for (const sp of index.species) for (const k of ['name', 'region', 'blurb', 'groupName']) sp[k] = t(sp[k]);
+  for (const g of Object.keys(index.groups)) index.groups[g] = t(index.groups[g]);
+  for (const st of Object.values(STORIES)) {
+    st.title = t(st.title);
+    for (const sc of st.scenes) { sc.title = t(sc.title); sc.text = t(sc.text); }
+  }
+  for (const L of Object.values(ENV_LAYERS)) for (const k of ['title', 'detail', 'why']) if (L[k]) L[k] = t(L[k]);
+}
+
 async function main() {
+  translatePage();
   applyTheme();
   setEffects();
   drawStars();
@@ -341,6 +381,7 @@ async function main() {
     fetch('data/index.json').then((r) => r.json()),
     fetch('data/assets.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
   ]);
+  localize(index);
   state.index = index;
   state.assets = assets;
   wireControls();
@@ -357,6 +398,8 @@ async function main() {
   initA11y(controller);
   initTour(controller);
   initAtlas(controller);
+  initNear(controller);
+  initPerf({ toast });
   // Sound: a toggle in the time bar (browsers only allow audio after a click).
   const soundBtn = $('#sound-btn');
   const syncSound = () => soundBtn.setAttribute('aria-pressed', String(settings.sound));
@@ -385,7 +428,7 @@ async function main() {
 main().catch((err) => {
   console.error(err);
   $('#loading').hidden = false;
-  $('#loading').textContent = `Something went wrong: ${err.message}`;
+  $('#loading').textContent = t('Something went wrong: {e}', { e: err.message });
 });
 
 // For debugging in the console.

@@ -3,7 +3,7 @@
 
 import { settings, updateSettings } from './settings.js';
 import { ENV_LAYERS } from './environment.js';
-import { state, on, speciesById, esc, fmtMonthYear } from './store.js';
+import { state, on, speciesById, esc, fmtMonthYear, t } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -18,7 +18,7 @@ export function renderLayers() {
     if (key === 'vegetation' || key === 'footprint') {
       const h = document.createElement('div');
       h.className = 'legend-group';
-      h.textContent = key === 'vegetation' ? 'Nature, by date' : 'People';
+      h.textContent = t(key === 'vegetation' ? 'Nature, by date' : 'People');
       list.append(h);
     }
     const id = `ov-${key}`;
@@ -26,8 +26,8 @@ export function renderLayers() {
     row.className = 'radio-row';
     row.htmlFor = id;
     row.innerHTML = `<input type="radio" name="overlay" id="${id}" value="${key}" ${settings.overlay === key ? 'checked' : ''}>
-      <span><b>${esc(label)}</b>${L ? `<small>${esc(L.detail)}</small>` : ''}</span>
-      ${L && group && L.for.includes(group) ? '<em class="badge">suits this one</em>' : ''}`;
+      <span><b>${esc(t(label))}</b>${L ? `<small>${esc(L.detail)}</small>` : ''}</span>
+      ${L && group && L.for.includes(group) ? `<em class="badge">${t('suits this one')}</em>` : ''}`;
     row.querySelector('input').addEventListener('change', () => updateSettings({ overlay: key }));
     list.append(row);
   }
@@ -70,8 +70,8 @@ function renderLegend(shown) {
       : (L.period === 'week' ? `${Number(shown.date.slice(8))} ` : '') + fmtMonthYear(shown.date);
   $('#legend-shift').hidden = !shown.shifted;
   $('#legend-ramp').style.background = `linear-gradient(90deg, ${lg.stops.join(',')})`;
-  $('#legend-min').textContent = lg.min;
-  $('#legend-max').textContent = `${lg.max} ${lg.units}`.trim();
+  $('#legend-min').textContent = t(String(lg.min));
+  $('#legend-max').textContent = `${t(String(lg.max))} ${t(lg.units || '')}`.trim();
   $('#legend-why').textContent = L.why;
 }
 

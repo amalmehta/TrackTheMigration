@@ -6,7 +6,7 @@ import { toggleCompare, inCompare } from './race.js';
 import { inGame } from './game.js';
 import { startFollow, stopFollow } from './follow.js';
 import { toast } from './ui.js';
-import { state, speciesById, viewData, keyOf, esc, fmtDist, busiestMonths } from './store.js';
+import { state, speciesById, viewData, keyOf, esc, fmtDist, busiestMonths, t, num } from './store.js';
 
 let ctl = null; // { select, setPlaying, setHighlight }
 
@@ -22,7 +22,7 @@ export function initMapInput(controller) {
       if (!animal) return;
       if (e.originalEvent.shiftKey) {
         toggleCompare(f.properties.species, animal);
-        toast(inCompare(f.properties.species, animal) ? 'Added to the race. Pick another, then press Race.' : 'Removed from the race.');
+        toast(t(inCompare(f.properties.species, animal) ? 'Added to the race. Pick another, then press Race.' : 'Removed from the race.'));
         return;
       }
       startFollow(f.properties.species, animal);
@@ -37,7 +37,7 @@ export function initMapInput(controller) {
     const a = animalFrom(e.features[0]);
     popup.setLngLat(e.lngLat)
       .setHTML(`<div class="tip-date">${esc(sp.name)} · ${esc(p.animal)}${p.year ? ` · ${p.year}` : ''}</div>
-        ${a ? `<div><b>${esc(fmtDist(a.km))}</b> tracked</div>` : ''}<div class="tip-hint">${inGame() || state.race ? '' : 'Click to follow · Shift-click to race'}</div>`)
+        ${a ? `<div>${t('<b>{d}</b> tracked', { d: esc(fmtDist(a.km)) })}</div>` : ''}<div class="tip-hint">${inGame() || state.race ? '' : t('Click to follow · Shift-click to race')}</div>`)
       .addTo(map);
   });
 
@@ -51,11 +51,11 @@ export function initMapInput(controller) {
     const peak = Math.max(...site.months) || 1;
     const bars = site.months.map((m, i) => `<rect x="${i * 9}" y="${22 - (m / peak) * 20}" width="7" height="${Math.max(1, (m / peak) * 20)}" rx="1.5"/>`).join('');
     popup.setLngLat(e.lngLat)
-      .setHTML(`<div class="tip-date">${esc(sp.name)} · a place they stayed</div>
-        <div><b>${site.animals.length}</b> ${site.animals.length === 1 ? 'animal' : 'animals'} · <b>${site.days.toLocaleString()}</b> animal-days</div>
+      .setHTML(`<div class="tip-date">${esc(sp.name)} · ${t('a place they stayed')}</div>
+        <div>${t(site.animals.length === 1 ? '<b>{n}</b> animal' : '<b>{n}</b> animals', { n: site.animals.length })} · ${t('<b>{n}</b> animal-days', { n: num(site.days) })}</div>
         <div class="tip-months"><svg viewBox="0 0 108 22" width="108" height="22" fill="${f.properties.color}" aria-hidden="true">${bars}</svg>
-        <span>busiest: ${esc(busiestMonths(site.months))}</span></div>
-        <div class="tip-hint">Click to pick these animals</div>`)
+        <span>${t('busiest: {m}', { m: esc(busiestMonths(site.months)) })}</span></div>
+        <div class="tip-hint">${t('Click to pick these animals')}</div>`)
       .addTo(map);
   });
   map.on('mouseenter', 'sites', () => { map.getCanvas().style.cursor = 'pointer'; });

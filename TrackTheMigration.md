@@ -156,6 +156,22 @@ Decided without asking (v6):
   - A review found 12 bugs, all fixed.
   - A dependency-free headless-Chrome smoke test now gates every deploy.
 
+Asked and answered (2026-10-11, fifth "keep going"):
+- Build Who passes near me, Wind under their wings, Then vs now, Journey posters, plus more migrations, real-device performance and other languages. ("No, just features" was also ticked; the three extras were taken as wanted.)
+
+Decided without asking (v7):
+- New species: steppe eagle, Egyptian vulture, turkey vulture and far eastern curlew. These were the best open GPS studies found that cover new regions. Caribou were rejected because the open data barely moves on a map.
+- Bird colours were re-searched for nine birds in the green family, within lightness and saturation limits.
+- Wind is ERA5 at 100 m above the ground (Open-Meteo, key-free), the only height available. It is labelled as such.
+- Timing uses the date each animal crossed the halfway point of its range. A trend appears only with 8 or more crossings in 3 or more years.
+- Who passed near:
+  - Place search uses OpenStreetMap Nominatim.
+  - Your own location is rounded to about 10 km and never put in links.
+  - Passes are measured along lines between fixes, not just at the fixes.
+- Posters are a 2400 × 3200 PNG with a clean drawn map rather than satellite imagery.
+- Auto quality steps detail down when frames drop, never changes saved settings, and can be turned off.
+- Languages are Spanish and French, translated for this project, including stories. Citations stay in English. Gendered phrasing was reworded around animal names.
+
 CHANGELOG:
 
 - 2026-10-09 — created
@@ -182,3 +198,4 @@ CHANGELOG:
 - 2026-10-11 — v4: compare & race (split screen, leaderboard, distance chart); human impact layers (footprint, population, night lights) plus footprint per fix in the readout and charts; guess-where game; embed mode and 12-second video export from the Share menu; 61 tests
 - 2026-10-11 — v5: faster first load (overview file, on-demand species); keyboard control, spoken descriptions, reduced-motion setting, shortcuts dialog; A year on Earth guided tour; Listen to the migration (Web Audio sonification); 63 tests
 - 2026-10-11 — v6: journey atlas (a small map of every animal, filter, sort, search); conditions along the route (NASA greenness or sea temperature per fix: readout, profile, monthly chart); white stork flight heights with a 3D curtain close-up; code health (app.js split into modules, 12 review fixes, browser smoke test in CI); 72 tests
+- 2026-10-11 — v7: who passed near (place search or your location); wind along bird routes and 'Faster with the wind?'; 'Then vs now' migration timing by year; journey posters; four more migrations (steppe eagle, Egyptian vulture, turkey vulture, far eastern curlew); auto quality and a frame-rate meter; Spanish and French

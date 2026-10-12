@@ -87,6 +87,7 @@
       <span id="hud-icon" class="hud-icon"></span>
       <div class="hud-names"><b id="hud-title"></b><span id="hud-sub"></span></div>
       <button id="hud-recenter" class="chip" hidden>Recentre</button>
+      <button id="hud-poster" class="chip" title="Save this journey as a print-ready poster (PNG)">Poster</button>
       <button id="hud-compare" class="chip" aria-pressed="false" title="Add this animal to a race">+ Race</button>
       <button id="hud-close" class="icon-btn" aria-label="Stop following (Esc)" title="Stop following (Esc)">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -101,6 +102,9 @@
     </div>
     <div id="hud-alt" class="hud-hf" hidden>
       <span>Flight height</span><span><button id="hud-alt-3d" class="chip" type="button" aria-pressed="false" title="Dive in close and show its flight heights as walls, six times taller than life">See it in 3D</button></span><b id="hud-alt-val"></b>
+    </div>
+    <div id="hud-wind" class="hud-hf" hidden>
+      <span title="Wind 100 m above the ground along its heading (ERA5 via Open-Meteo)">Wind 100 m up</span><span></span><b id="hud-wind-val"></b>
     </div>
     <div id="hud-cond" class="hud-hf" hidden>
       <span id="hud-cond-label"></span>
@@ -185,6 +189,29 @@
     <div id="atlas-grid" class="atlas-grid"></div>
   </section>
 
+  <!-- Who passed near -->
+  <section id="near" class="near glass" hidden aria-label="Who passed near">
+    <header class="near-head">
+      <h2>Who passed near…</h2>
+      <button id="near-close" class="icon-btn" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+    <form id="near-form" class="near-form" role="search">
+      <label class="sr-only" for="near-q">A place</label>
+      <input id="near-q" type="search" placeholder="A town, park or coast…" autocomplete="off">
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+    <div class="near-opts">
+      <button id="near-locate" class="chip" type="button">Use my location</button>
+      <label>within <select id="near-radius" aria-label="Distance"></select></label>
+    </div>
+    <div id="near-choices" class="chips near-choices"></div>
+    <p id="near-summary" class="small muted" aria-live="polite">Every tracked animal that came this close, and when.</p>
+    <ol id="near-list" class="near-list"></ol>
+    <p class="near-credit muted" data-i18n>Place search: <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>. Your location is rounded to about 10 km and stays in your browser.</p>
+  </section>
+
   <!-- A year on Earth -->
   <section id="tour" class="tour glass" hidden aria-label="A year on Earth" aria-live="polite">
     <div class="tour-top">
@@ -223,6 +250,7 @@
   <div id="rec" class="rec glass" hidden role="status"><i class="rec-dot"></i> Recording <span id="rec-left"></span>
     <button id="rec-stop" class="chip">Stop</button></div>
 
+  <output id="fps" class="fps glass" hidden aria-live="off"></output>
   <a id="embed-link" class="embed-link glass" target="_blank" rel="noopener" hidden>Track the Migration ↗</a>
 
   <!-- Charts drawer -->
@@ -300,12 +328,12 @@
       <h2 id="keys-title">Keyboard</h2>
       <dl class="keys">
         <dt><kbd>Space</kbd></dt><dd>Play or pause</dd>
-        <dt><kbd>,</kbd> <kbd>.</kbd></dt><dd>Back or forward one day (<kbd>&lt;</kbd> <kbd>&gt;</kbd>: a week)</dd>
+        <dt><kbd>,</kbd> <kbd>.</kbd></dt><dd data-i18n>Back or forward one day (<kbd>&lt;</kbd> <kbd>&gt;</kbd>: a week)</dd>
         <dt><kbd>n</kbd> <kbd>p</kbd></dt><dd>Next or previous animal on screen</dd>
         <dt><kbd>Enter</kbd></dt><dd>Follow that animal</dd>
         <dt><kbd>r</kbd></dt><dd>Add or remove it from a race</dd>
         <dt><kbd>d</kbd></dt><dd>Describe what's happening (for screen readers)</dd>
-        <dt><kbd>c</kbd> <kbd>l</kbd> <kbd>a</kbd></dt><dd>Charts · Layers · Journey atlas</dd>
+        <dt><kbd>c</kbd> <kbd>l</kbd> <kbd>a</kbd> <kbd>m</kbd></dt><dd>Charts · Layers · Journey atlas · Who passed near</dd>
         <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Story scenes</dd>
         <dt><kbd>Esc</kbd></dt><dd>Stop following, leave a story</dd>
         <dt><kbd>⌘</kbd> <kbd>,</kbd></dt><dd>Settings</dd>
@@ -354,6 +382,11 @@
           <input type="range" name="exaggeration" min="1" max="3" step="0.5"><output data-for="exaggeration"></output></label>
         <label class="field row check"><span>Day &amp; night by season</span><input type="checkbox" name="nightShade"></label>
         <label class="field row check"><span>Glow, pulse and stars</span><input type="checkbox" name="effects"></label>
+        <label class="field row"><span>Language</span>
+          <select name="lang"><option value="auto">Match browser</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option></select></label>
+        <label class="field row"><span>Quality</span>
+          <select name="quality"><option value="auto">Auto: keep it smooth</option><option value="high">Always full detail</option></select></label>
+        <label class="field row check"><span>Show frame rate</span><input type="checkbox" name="showFps"></label>
       </fieldset>
       <fieldset>
         <legend>Tracks</legend>
@@ -376,7 +409,7 @@
         <label class="field row"><span>Motion</span>
           <select name="motion"><option value="system">Match system</option><option value="reduce">Reduced</option><option value="full">Full</option></select></label>
       </fieldset>
-      <p class="muted small">Press <kbd>?</kbd> for every keyboard shortcut, and <kbd>d</kbd> to hear what's happening on the globe.</p>
+      <p class="muted small" data-i18n>Press <kbd>?</kbd> for every keyboard shortcut, and <kbd>d</kbd> to hear what's happening on the globe.</p>
       <div class="actions">
         <button type="button" id="settings-reset" class="btn ghost">Reset to defaults</button>
         <button value="close" class="btn primary">Done</button>

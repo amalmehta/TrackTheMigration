@@ -8,6 +8,7 @@
 // Keys: s species · m=dates · d MM-DD (Season view) · t YYYY-MM-DD (Dates view)
 //       f followed animal · st story scene (1-based) · ov overlay · cb colour-by
 //       hide facet=value,… · c camera lon,lat,zoom,pitch,bearing
+//       near lon,lat,km + nm place name (who passed near; never your own location)
 
 import { seasonToHours } from './tracks.js';
 import { settings } from './settings.js';
@@ -35,6 +36,10 @@ export function encodeView(camera) {
   if (settings.overlay !== 'none') p.set('ov', settings.overlay);
   if (state.colorBy) p.set('cb', state.colorBy);
   if (state.hidden.size) p.set('hide', [...state.hidden].join(','));
+  if (state.near && !state.near.private) {
+    p.set('near', [state.near.lon.toFixed(3), state.near.lat.toFixed(3), state.near.r].join(','));
+    p.set('nm', state.near.name);
+  }
   return p.toString();
 }
 
@@ -50,6 +55,7 @@ export function decodeView(hash) {
     hidden: p.get('hide') ? p.get('hide').split(',').filter(Boolean) : [],
     tour: p.has('tour'),
     camera: null,
+    near: null,
     mode: null,
     frac: null,
     t: null,
@@ -65,6 +71,10 @@ export function decodeView(hash) {
     const [mm, dd] = d.split('-').map(Number);
     view.mode = 'season';
     view.frac = (Date.UTC(2001, mm - 1, dd, 12) - Date.UTC(2001, 0, 1)) / (365 * 86400000);
+  }
+  const nr = (p.get('near') || '').split(',').map(Number);
+  if (nr.length === 3 && nr.every(Number.isFinite) && Math.abs(nr[1]) <= 90 && nr[2] > 0 && nr[2] <= 1000) {
+    view.near = { lon: nr[0], lat: nr[1], r: nr[2], name: (p.get('nm') || 'this place').slice(0, 120) };
   }
   const c = (p.get('c') || '').split(',').map(Number);
   if (c.length === 5 && c.every(Number.isFinite)) {

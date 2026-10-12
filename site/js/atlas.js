@@ -3,14 +3,15 @@
 // route, clicking flies to the animal and follows it.
 
 import { colorFor } from './palette.js';
+import { loadLand, drawLand } from './land.js';
 import { isDark } from './settings.js';
 import {
-  state, loadOverview, fmtDist, esc, iconHtml, year,
+  state, loadOverview, fmtDist, esc, iconHtml, year, t, num,
 } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 let ctl = null;   // { follow }
-let land = null;  // [{ ring, bbox }]
+let land = null;  // [{ ring, bbox }] once loaded
 let observer = null;
 let hover = null; // { canvas, journey, raf }
 
@@ -31,13 +32,14 @@ export function initAtlas(controller) {
   $('#atlas-search').addEventListener('input', () => render());
   $('#atlas').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAtlas(); });
   const sort = $('#atlas-sort');
-  sort.innerHTML = Object.entries(SORTS).map(([k, [label]]) => `<option value="${k}">${label}</option>`).join('');
+  sort.innerHTML = Object.entries(SORTS).map(([k, [label]]) => `<option value="${k}">${t(label)}</option>`).join('');
 }
 
 export async function openAtlas(speciesId = null) {
-  const [ov] = await Promise.all([loadOverview(), land ? null : loadLand()]);
+  const [ov, rings] = await Promise.all([loadOverview(), loadLand()]);
+  land = rings;
   const sel = $('#atlas-species');
-  sel.innerHTML = `<option value="">All ${state.index.species.length} species</option>` +
+  sel.innerHTML = `<option value="">${t('All {n} species', { n: state.index.species.length })}</option>` +
     state.index.species.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
   sel.value = speciesId || '';
   fillGroups();
@@ -54,15 +56,6 @@ export function closeAtlas() {
   stopHover();
 }
 
-async function loadLand() {
-  const rings = await (await fetch('data/land.json')).json();
-  land = rings.map((ring) => {
-    let w = 180, s = 90, e = -180, n = -90;
-    for (const [x, y] of ring) { if (x < w) w = x; if (x > e) e = x; if (y < s) s = y; if (y > n) n = y; }
-    return { ring, bbox: [w, s, e, n] };
-  });
-}
-
 // "Who" groups for the chosen species (sex, site, …), from the overview's attrs.
 function fillGroups() {
   const id = $('#atlas-species').value;
@@ -70,10 +63,10 @@ function fillGroups() {
   const opts = new Map();
   if (id) {
     for (const a of state.overview.get(id).animals) {
-      for (const [k, v] of Object.entries(a.attrs || {})) opts.set(`${k}=${v}`, `${k === 'site' ? 'tagged at' : k === 'stage' ? 'age' : k}: ${v}`);
+      for (const [k, v] of Object.entries(a.attrs || {})) opts.set(`${k}=${v}`, `${t(k === 'site' ? 'tagged at' : k === 'stage' ? 'age' : k)}: ${t(v)}`);
     }
   }
-  sel.innerHTML = '<option value="">Everyone</option>' + [...opts].map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
+  sel.innerHTML = `<option value="">${t('Everyone')}</option>` + [...opts].map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
   sel.parentElement.hidden = opts.size === 0;
 }
 
@@ -101,7 +94,7 @@ function render() {
   observer?.disconnect();
   grid.innerHTML = '';
   const list = journeys();
-  $('#atlas-count').textContent = `${list.length.toLocaleString()} ${list.length === 1 ? 'journey' : 'journeys'}`;
+  $('#atlas-count').textContent = t(list.length === 1 ? '{n} journey' : '{n} journeys', { n: num(list.length) });
   observer = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
@@ -118,10 +111,10 @@ function render() {
     card.style.setProperty('--sp', colorFor(sp.id, 'dark'));
     const y0 = year(new Date(a.pts[0][2] * 3.6e6).toISOString());
     const y1 = year(new Date(a.pts[a.pts.length - 1][2] * 3.6e6).toISOString());
-    card.setAttribute('aria-label', `${sp.name} ${a.id}: ${fmtDist(a.km)} over ${a.days} days, ${y0}${y1 !== y0 ? `–${y1}` : ''}. Follow it.`);
+    card.setAttribute('aria-label', t('{name} {id}: {d} over {days} days, {years}. Follow it.', { name: sp.name, id: a.id, d: fmtDist(a.km), days: a.days, years: `${y0}${y1 !== y0 ? `–${y1}` : ''}` }));
     card.innerHTML = `<canvas width="340" height="210" aria-hidden="true"></canvas>
-      <span class="atlas-meta">${iconHtml(sp.id, 'sil sil-sm')}<b>${esc(a.id)}</b>${a.flies ? '<em class="atlas-tag" title="Flight height recorded">height</em>' : ''}</span>
-      <span class="atlas-sub">${esc(fmtDist(a.km))} · ${a.days.toLocaleString()} d · ${y0}${y1 !== y0 ? `–${y1}` : ''}${a.hfMedian != null ? ` · footprint ${a.hfMedian}` : ''}</span>`;
+      <span class="atlas-meta">${iconHtml(sp.id, 'sil sil-sm')}<b>${esc(a.id)}</b>${a.flies ? `<em class="atlas-tag" title="${t('Flight height recorded')}">${t('height')}</em>` : ''}</span>
+      <span class="atlas-sub">${esc(fmtDist(a.km))} · ${num(a.days)} ${t('d')} · ${y0}${y1 !== y0 ? `–${y1}` : ''}${a.hfMedian != null ? ` · ${t('footprint {n}', { n: a.hfMedian })}` : ''}</span>`;
     card.addEventListener('click', () => { closeAtlas(); ctl.follow(sp.id, a); });
     card.addEventListener('pointerenter', () => startHover(card.querySelector('canvas'), j));
     card.addEventListener('pointerleave', stopHover);
@@ -134,13 +127,12 @@ function render() {
 }
 
 // Equirectangular fit of a track (plus margin) into the card.
-function projection(pts, W, H) {
+export function projection(pts, W, H, pad = 0.18) {
   let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
   for (const [x, y] of pts) { if (x < w) w = x; if (x > e) e = x; if (y < s) s = y; if (y > n) n = y; }
   const k = Math.cos((((s + n) / 2) * Math.PI) / 180);
   let spanX = Math.max(0.05, (e - w) * k);
   let spanY = Math.max(0.05, n - s);
-  const pad = 0.18;
   spanX *= 1 + pad * 2;
   spanY *= 1 + pad * 2;
   const scale = Math.min(W / spanX, H / spanY);
@@ -162,15 +154,7 @@ function draw(canvas, { sp, a }, headAt = null) {
   const { xy, view } = projection(a.pts, W, H);
   // Land, for context (the antimeridian is handled by trying shifted copies).
   g.fillStyle = dark ? '#1b2a3a' : '#f6f2ea';
-  for (const shift of [-360, 0, 360]) {
-    for (const { ring, bbox } of land) {
-      if (bbox[2] + shift < view[0] || bbox[0] + shift > view[2] || bbox[3] < view[1] || bbox[1] > view[3]) continue;
-      g.beginPath();
-      ring.forEach(([x, y], i) => { const [px, py] = xy([x + shift, y]); if (i) g.lineTo(px, py); else g.moveTo(px, py); });
-      g.closePath();
-      g.fill();
-    }
-  }
+  drawLand(g, land, view, xy);
   // The route, fading in from its start.
   const color = colorFor(sp.id, dark ? 'dark' : 'light');
   g.lineWidth = 2.2;

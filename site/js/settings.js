@@ -21,6 +21,9 @@ export const DEFAULTS = Object.freeze({
   motion: 'system',     // system | reduce | full — camera flights, pulsing, animations
   sound: false,         // listen to the migration
   volume: 0.6,
+  quality: 'auto',      // auto (lower detail when frames drop) | high (always full)
+  showFps: false,       // a small frame-rate meter
+  lang: 'auto',         // auto (from the browser) | en | es | fr
 });
 
 function load() {

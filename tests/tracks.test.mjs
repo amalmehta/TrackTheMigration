@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  haversineKm, trackLengthKm, unwrapLongitudes, speedFilter, thinByTime, capPoints, flightFixes,
+  haversineKm, trackLengthKm, unwrapLongitudes, speedFilter, thinByTime, capPoints, flightFixes, passesNear, halfwayCrossings, slope,
   indexAtOrBefore, positionAt, trailAt, splitByYear, yearStartHours, seasonToHours,
 } from '../site/js/tracks.js';
 
@@ -94,4 +94,37 @@ test('flight fixes trim by whole flights', () => {
   for (let f = 0; f < 4; f++) for (let i = 0; i < 3; i++) pts.push([f * 10 + i * 0.5, 0, f * 24 + i, 100]);
   const out = flightFixes(pts, { max: 6 });
   assert.deepEqual(out.map((p) => p[2]), [0, 1, 2, 48, 49, 50]);
+});
+
+test('passes near: closest approach between fixes, not just at them', () => {
+  // A straight line from 1°W to 1°E along 0.5°N passes ~55 km north of (0, 0) at its midpoint.
+  const [v] = passesNear([[-1, 0.5, 0], [1, 0.5, 10]], [0, 0], 60);
+  near(v.km, 55.3, 0.5);
+  near(v.t, 5, 1e-9);
+  near(v.lon, 0, 1e-9);
+  assert.equal(passesNear([[-1, 0.5, 0], [1, 0.5, 10]], [0, 0], 50).length, 0);
+});
+
+test('passes near: separate visits, gaps not bridged, antimeridian', () => {
+  const pts = [[0, 0, 0], [0, 5, 24], [0, 0, 24 * 40], [5, 0, 24 * 41]];
+  assert.equal(passesNear(pts, [0, 0], 10).length, 2);
+  // The line through the place crosses a tracking gap: no pass.
+  assert.equal(passesNear([[-1, 0, 0], [1, 0, 1000]], [0, 0], 10, { maxGapHours: 48 }).length, 0);
+  assert.equal(passesNear([[179.9, 10, 0], [-179.9, 10, 5]], [180, 10], 5).length, 1);
+});
+
+test('halfway crossings: one per migration, ignoring jitter near the line', () => {
+  const d = 24;
+  // South from 50°N to 10°N in autumn, a wobble across the line, back north in spring.
+  const pts = [[0, 50, 0], [0, 50, 100 * d], [0, 50, 200 * d], [0, 30.5, 260 * d], [0, 29.5, 261 * d], [0, 30.5, 262 * d], [0, 10, 280 * d],
+    [0, 10, 350 * d], [0, 10, 450 * d], [0, 50, 470 * d], [0, 50, 540 * d], [0, 50, 600 * d]];
+  const c = halfwayCrossings(pts, 'lat');
+  assert.deepEqual(c.map((e) => e.dir), [-1, 1]);
+  assert.ok(c[0].t > 262 * d && c[0].t < 280 * d);
+  assert.deepEqual(halfwayCrossings(pts.map(([x, y, t]) => [x, 50 + y / 100, t]), 'lat'), []); // too small a range
+});
+
+test('slope', () => {
+  near(slope([1, 2, 3, 4, 5, 6], [2, 4, 6, 8, 10, 12]), 2);
+  assert.equal(slope([1, 2], [1, 2]), null);
 });

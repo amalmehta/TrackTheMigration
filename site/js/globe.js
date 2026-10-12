@@ -31,6 +31,13 @@ const DEM = {
 const GIBS_ATTR = 'Overlays: <a href="https://earthdata.nasa.gov/gibs" target="_blank" rel="noopener">NASA GIBS</a>';
 const SPECIES = Object.keys(SPECIES_COLORS);
 const EMPTY = { type: 'FeatureCollection', features: [] };
+let nearData = EMPTY; // kept so the place survives a basemap switch
+
+// Temporary limits set by Auto quality (perf.js) on slower devices. They sit
+// on top of the person's settings and never change them.
+export const quality = { effects: true, terrain: true, night: true, trailDays: Infinity };
+const fxOn = () => settings.effects && quality.effects;
+const nightOn = () => settings.nightShade && quality.night;
 
 // Track colours follow the map underneath: bright shades on imagery or dark maps.
 export const colorMode = () => (settings.basemap === 'satellite' || isDark() ? 'dark' : 'light');
@@ -114,11 +121,11 @@ function installLayers() {
   });
   map.addLayer({
     id: 'night', type: 'raster', source: 'night',
-    layout: { visibility: settings.nightShade ? 'visible' : 'none' },
+    layout: { visibility: nightOn() ? 'visible' : 'none' },
     paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 2, 1, 4.5, 0.55, 6.5, 0], 'raster-fade-duration': 0 },
   });
 
-  for (const id of ['routes', 'sites', 'curtain', 'trails', 'heads', 'focus', 'guess']) map.addSource(id, { type: 'geojson', data: EMPTY, lineMetrics: id === 'trails' });
+  for (const id of ['routes', 'sites', 'curtain', 'trails', 'heads', 'focus', 'guess', 'near']) map.addSource(id, { type: 'geojson', data: id === 'near' ? nearData : EMPTY, lineMetrics: id === 'trails' });
 
   map.addLayer({
     id: 'routes', type: 'line', source: 'routes',
@@ -138,7 +145,7 @@ function installLayers() {
   // Stopover sites: rings sized by total animal-days, brighter when in use at this time of year.
   const vis = settings.showStops ? 'visible' : 'none';
   map.addLayer({
-    id: 'site-glow', type: 'circle', source: 'sites', layout: { visibility: settings.effects ? vis : 'none' },
+    id: 'site-glow', type: 'circle', source: 'sites', layout: { visibility: fxOn() ? vis : 'none' },
     paint: {
       'circle-color': ['get', 'color'],
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, ['*', ['get', 'r'], 1.2], 7, ['*', ['get', 'r'], 2.6]],
@@ -173,7 +180,7 @@ function installLayers() {
   for (const sp of SPECIES) {
     map.addLayer({
       id: `glow-${sp}`, type: 'line', source: 'trails', filter: ['all', ['==', ['get', 'species'], sp], ['!', ['get', 'cb']]],
-      layout: { 'line-join': 'round', 'line-cap': 'round', visibility: settings.effects ? 'visible' : 'none' },
+      layout: { 'line-join': 'round', 'line-cap': 'round', visibility: fxOn() ? 'visible' : 'none' },
       paint: { 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 9, 6, 7, 10, 5], 'line-blur': ['interpolate', ['linear'], ['zoom'], 1, 7, 10, 4], 'line-gradient': trailGradient(colorFor(sp, colorMode()), 0.5), 'line-opacity': ['interpolate', ['linear'], ['zoom'], 4, ['case', ['get', 'dim'], 0, 1], 9, ['case', ['get', 'dim'], 0, 0.55]] },
     });
   }
@@ -192,7 +199,7 @@ function installLayers() {
   });
   map.addLayer({
     id: 'halo', type: 'circle', source: 'heads',
-    layout: { visibility: settings.effects ? 'visible' : 'none' },
+    layout: { visibility: fxOn() ? 'visible' : 'none' },
     paint: {
       'circle-color': ['get', 'color'],
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 7, 6, 13],
@@ -224,6 +231,19 @@ function installLayers() {
       'circle-pitch-alignment': 'map',
     },
   });
+  // Who passed near: the place and the distance searched around it.
+  map.addLayer({
+    id: 'near-fill', type: 'fill', source: 'near', filter: ['==', ['geometry-type'], 'Polygon'],
+    paint: { 'fill-color': '#ffffff', 'fill-opacity': 0.06 },
+  }, 'routes');
+  map.addLayer({
+    id: 'near-line', type: 'line', source: 'near', filter: ['==', ['geometry-type'], 'Polygon'],
+    paint: { 'line-color': '#ffffff', 'line-width': 1.5, 'line-dasharray': [3, 2], 'line-opacity': 0.75 },
+  }, 'routes');
+  map.addLayer({
+    id: 'near-pin', type: 'circle', source: 'near', filter: ['==', ['geometry-type'], 'Point'],
+    paint: { 'circle-radius': 6, 'circle-color': '#ffffff', 'circle-stroke-color': '#0b1220', 'circle-stroke-width': 2.5, 'circle-pitch-alignment': 'map' },
+  });
   // The guessing game: your guess, the real spot, and the miss between them.
   map.addLayer({
     id: 'guess-line', type: 'line', source: 'guess', filter: ['==', ['geometry-type'], 'LineString'],
@@ -250,7 +270,7 @@ function installLayers() {
 
 export function applyTerrain() {
   if (!map.getSource('dem')) return;
-  map.setTerrain(settings.terrain ? { source: 'dem', exaggeration: settings.exaggeration } : null);
+  map.setTerrain(settings.terrain && quality.terrain ? { source: 'dem', exaggeration: settings.exaggeration } : null);
 }
 
 map.on('style.load', () => {
@@ -273,17 +293,17 @@ export function recolor() {
 
 export function setEffects() {
   if (!map.getLayer('halo')) return;
-  const v = settings.effects ? 'visible' : 'none';
+  const v = fxOn() ? 'visible' : 'none';
   map.setLayoutProperty('halo', 'visibility', v);
-  map.setLayoutProperty('site-glow', 'visibility', settings.effects && settings.showStops ? 'visible' : 'none');
+  map.setLayoutProperty('site-glow', 'visibility', fxOn() && settings.showStops ? 'visible' : 'none');
   for (const sp of SPECIES) map.setLayoutProperty(`glow-${sp}`, 'visibility', v);
-  document.body.classList.toggle('no-effects', !settings.effects);
+  document.body.classList.toggle('no-effects', !fxOn());
 }
 
 export function setStopsVisible() {
   if (!map.getLayer('sites')) return;
   map.setLayoutProperty('sites', 'visibility', settings.showStops ? 'visible' : 'none');
-  map.setLayoutProperty('site-glow', 'visibility', settings.showStops && settings.effects ? 'visible' : 'none');
+  map.setLayoutProperty('site-glow', 'visibility', settings.showStops && fxOn() ? 'visible' : 'none');
 }
 
 export function setRoutesVisible() {
@@ -337,7 +357,7 @@ export function renderFrame() {
   const heads = map.getSource('heads');
   if (!heads || !state.index) return { moving: 0, species: 0 };
   const mode = colorMode();
-  const trailHours = settings.trailDays * 24;
+  const trailHours = Math.min(settings.trailDays, quality.trailDays) * 24;
   const headF = [];
   const trailF = [];
   const speciesMoving = new Set();
@@ -406,7 +426,7 @@ export function refreshSites(month = new Date(currentHours() * 3.6e6).getUTCMont
 
 // Gentle pulse on the heads' halos.
 export function pulse(now) {
-  if (!settings.effects || reducedMotion() || !map.getLayer('halo')) return;
+  if (!fxOn() || reducedMotion() || !map.getLayer('halo')) return;
   const k = 1 + 0.28 * Math.sin(now / 420);
   map.setPaintProperty('halo', 'circle-radius', ['interpolate', ['linear'], ['zoom'], 1, 7 * k, 6, 13 * k]);
 }
@@ -423,7 +443,7 @@ let nightStamp = '';
 // real); its longitude is placed 40° east of the view so the visible face is
 // lit, with night curving round the far western limb.
 function updateNight() {
-  if (!settings.nightShade || !map.getSource('night')) return;
+  if (!nightOn() || !map.getSource('night')) return;
   const date = new Date(currentHours() * 3.6e6);
   const sun = subsolarPoint(date);
   sun.lon = ((map.getCenter().lng + 40 + 540) % 360) - 180;
@@ -440,7 +460,7 @@ map.on('moveend', updateNight);
 
 export function setNightVisible() {
   if (!map.getLayer('night')) return;
-  map.setLayoutProperty('night', 'visibility', settings.nightShade ? 'visible' : 'none');
+  map.setLayoutProperty('night', 'visibility', nightOn() ? 'visible' : 'none');
   nightStamp = '';
   updateNight();
 }
@@ -515,6 +535,24 @@ export function setCurtain(alt, color) {
     });
   }
   src.setData({ type: 'FeatureCollection', features });
+}
+
+// The "who passed near" place: a pin and a circle of radiusKm (null clears).
+export function setNear(place) {
+  nearData = EMPTY;
+  if (place) {
+    const ring = [];
+    const kx = 111.32 * Math.cos((place.lat * Math.PI) / 180);
+    for (let i = 0; i <= 96; i++) {
+      const a = (i / 96) * Math.PI * 2;
+      ring.push([place.lon + (Math.cos(a) * place.r) / kx, Math.max(-89.9, Math.min(89.9, place.lat + (Math.sin(a) * place.r) / 110.57))]);
+    }
+    nearData = { type: 'FeatureCollection', features: [
+      { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } },
+      { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [place.lon, place.lat] } },
+    ] };
+  }
+  map.getSource('near')?.setData(nearData);
 }
 
 export function setGuess(features) {

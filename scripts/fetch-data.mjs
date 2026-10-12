@@ -23,9 +23,11 @@ import { buildFacets } from './reference.mjs';
 import { footprintSampler, footprintSummary } from './footprint.mjs';
 import { conditionsSampler } from './conditions.mjs';
 import { groundSampler } from './elevation.mjs';
+import { windSampler, windAlong } from './wind.mjs';
 
 let sampleFootprint = null; // created on first use (fetches NASA's palette)
 let groundAt = null;        // ground-height sampler, created on first use
+let windAt = null;          // wind sampler, created on first use
 
 // Where an animal counts as having "stopped": within km for at least days.
 const STOP_DEFAULTS = { land: { km: 6, days: 10 }, marine: { km: 40, days: 7 }, birds: { km: 30, days: 3 } };
@@ -254,6 +256,12 @@ async function build(ds) {
     altBy.set(t.id, pts.map((p, i) => [round(p[2], 1), round(p[0], 4), round(p[1], 4), Math.round(p[3]), ground[i] == null ? null : Math.round(p[3] - ground[i])]));
   }
 
+  // Wind 100 m up along each bird's travelling steps (ERA5 via Open-Meteo).
+  const windBy = new Map();
+  if (ds.group === 'birds' && !process.env.NO_WIND) {
+    for (const t of chosen) windBy.set(t.id, await windAlong(t.pts, (windAt ??= windSampler(RAW))));
+  }
+
   const animalsOut = chosen.map(({ stops, ...t }) => ({
     ...t,
     attrs: attrs.get(t.id) || {},
@@ -262,6 +270,8 @@ async function build(ds) {
     ...(condBy.has(t.id) ? { cond: condBy.get(t.id) } : {}),
     // [hours, lon, lat, height above sea (m), height above ground (m) or null]
     ...(altBy.has(t.id) ? { alt: altBy.get(t.id) } : {}),
+    // [step start h, step end h, tailwind km/h (+ helps), crosswind km/h (+ from the left), ground speed km/day]
+    ...(windBy.get(t.id)?.length ? { wind: windBy.get(t.id) } : {}),
   }));
 
   let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
@@ -305,6 +315,7 @@ async function build(ds) {
       footprint: ds.group === 'marine' ? null : footprintSummary(hfAll),
       condition: condKey,
       flyingAnimals: altBy.size,
+      windSteps: [...windBy.values()].reduce((n, w) => n + w.length, 0),
     },
     processing: { maxKmh, thinHours, maxGapHours, maxAnimals, maxPoints, stop },
     _abstract: meta.abstract,
